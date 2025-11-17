@@ -208,7 +208,6 @@ public final class ListPanel<T> extends JScrollPane implements Refreshable
 
             GridBagConstraints constraints = getConstraints();
             buildItemPanels().forEach(component -> {
-                listPanel.add(component);
                 listPanel.add(component, constraints);
                 constraints.gridy++;
             });
