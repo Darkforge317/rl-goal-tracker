@@ -2,28 +2,30 @@ package com.toofifty.goaltracker.ui.components;
 
 import com.toofifty.goaltracker.ui.Refreshable;
 import com.toofifty.goaltracker.utils.ReorderableList;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.ui.ColorScheme;
+import net.runelite.client.ui.components.DragAndDropReorderPane;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 /**
  * Scrollable container that renders and manages a list of items with optional placeholder text.
  * Supports reordering, removal, and refresh of child panels.
  */
+@Slf4j
 public final class ListPanel<T> extends JScrollPane implements Refreshable
 {
-    private final JPanel listPanel = new JPanel(new GridBagLayout());
+    private final DragAndDropReorderPane listPanel = new DragAndDropReorderPane();
 
     private final ReorderableList<T> reorderableList;
-    private final Function<T, ListItemPanel<T>> renderItem;
+    private final BiFunction<JComponent, T, ListItemPanel<T>> renderItem;
 
     private final Map<T, ListItemPanel<T>> itemPanelMap = new HashMap<>();
 
@@ -36,16 +38,42 @@ public final class ListPanel<T> extends JScrollPane implements Refreshable
 
     public ListPanel(
         ReorderableList<T> reorderableList,
-        Function<T, ListItemPanel<T>> renderItem
+        BiFunction<JComponent, T, ListItemPanel<T>> renderItem
     ) {
         super();
         this.reorderableList = reorderableList;
         this.renderItem = renderItem;
 
-
         listPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
         // Add left/right padding so card content aligns with the header
         listPanel.setBorder(new EmptyBorder(0, 10, 0, 10));
+
+        listPanel.addDragListener(new DragAndDropReorderPane.DragListener() {
+            @Override
+            public void onDrag(Component component) {
+                T updatedItem = ((ListItemPanel<T>)component).item;
+                log.info("Dragged: " + updatedItem.toString());
+
+                reorderableList.sort(Comparator.comparing(item ->
+                {
+                    Component[] components = listPanel.getComponents();
+                    for (int idx = 0; idx < components.length; ++idx)
+                    {
+                        ListItemPanel<T> itemPanel = (ListItemPanel<T>) components[idx];
+                        if (itemPanel.item == item)
+                        {
+                            return idx;
+                        }
+                    }
+
+                    return -1;
+                }));
+
+                if (updatedListener != null) updatedListener.accept(updatedItem);
+
+                refresh();
+            }
+        });
 
         JPanel wrapperPanel = new JPanel(new BorderLayout());
         wrapperPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
@@ -116,7 +144,7 @@ public final class ListPanel<T> extends JScrollPane implements Refreshable
             return itemPanelMap.get(item);
         }
 
-        ListItemPanel<T> itemPanel = renderItem.apply(item);
+        ListItemPanel<T> itemPanel = renderItem.apply(listPanel, item);
 
         itemPanel.onReordered((updatedItem) -> {
             tryBuildList();
@@ -175,15 +203,18 @@ public final class ListPanel<T> extends JScrollPane implements Refreshable
             placeholderPanel.setBackground(ColorScheme.DARK_GRAY_COLOR);
             placeholderPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 0, 0));
             placeholderPanel.add(placeholder);
-            listPanel.add(placeholderPanel, getConstraints());
+//            listPanel.add(placeholderPanel, getConstraints());
+            listPanel.add(placeholderPanel);
         } else {
             listPanel.removeAll();
 
-            GridBagConstraints constraints = getConstraints();
-            buildItemPanels().forEach(component -> {
-                listPanel.add(component, constraints);
-                constraints.gridy++;
-            });
+            buildItemPanels().forEach(listPanel::add);
+//            GridBagConstraints constraints = getConstraints();
+//            buildItemPanels().forEach(component -> {
+//                listPanel.add(component);
+//                listPanel.add(component, constraints);
+//                constraints.gridy++;
+//            });
         }
 
         refreshChildMenus();

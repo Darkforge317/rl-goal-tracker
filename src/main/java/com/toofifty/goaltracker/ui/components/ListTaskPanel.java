@@ -43,6 +43,8 @@ public final class ListTaskPanel extends ListItemPanel<Task>
     private void addShiftRemoveListenerRecursive(Component c)
     {
         c.addMouseListener(shiftClickRemoveListener);
+        c.addMouseListener(this.mouseDragEventForwarder);
+        c.addMouseMotionListener(this.mouseDragEventForwarder);
         if (c instanceof Container)
         {
             for (Component child : ((Container) c).getComponents())
@@ -52,9 +54,9 @@ public final class ListTaskPanel extends ListItemPanel<Task>
         }
     }
 
-    public ListTaskPanel(ReorderableList<Task> list, Task item)
+    public ListTaskPanel(ReorderableList<Task> list, Task item, JComponent parent)
     {
-        super(list, item);
+        super(list, item, parent);
 
         indentItem.addActionListener(e -> {
             int index = list.indexOf(item);
