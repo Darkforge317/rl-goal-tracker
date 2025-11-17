@@ -53,8 +53,6 @@ public class ListItemPanel<T> extends JPanel implements Refreshable
     {
         if (clickListenerAdapter == null) return;
         c.addMouseListener(clickListenerAdapter);
-        c.addMouseListener(mouseDragEventForwarder);
-        c.addMouseMotionListener(mouseDragEventForwarder);
         if (c instanceof java.awt.Container)
         {
             for (Component child : ((java.awt.Container) c).getComponents())
@@ -72,6 +70,20 @@ public class ListItemPanel<T> extends JPanel implements Refreshable
             for (Component child : ((java.awt.Container) c).getComponents())
             {
                 addContextMenuListenerRecursive(child);
+            }
+        }
+    }
+
+    protected void addMouseDragEventForwarderRecursive(Component c)
+    {
+        if (mouseDragEventForwarder == null) return;
+        c.addMouseListener(mouseDragEventForwarder);
+        c.addMouseMotionListener(mouseDragEventForwarder);
+        if (c instanceof java.awt.Container)
+        {
+            for (Component child : ((java.awt.Container) c).getComponents())
+            {
+                addMouseDragEventForwarderRecursive(child);
             }
         }
     }
@@ -166,8 +178,7 @@ public class ListItemPanel<T> extends JPanel implements Refreshable
             }
         });
 
-        addMouseListener(mouseDragEventForwarder);
-        addMouseMotionListener(mouseDragEventForwarder);
+        addMouseDragEventForwarderRecursive(this);
     }
 
     @Override

@@ -43,8 +43,6 @@ public final class ListTaskPanel extends ListItemPanel<Task>
     private void addShiftRemoveListenerRecursive(Component c)
     {
         c.addMouseListener(shiftClickRemoveListener);
-        c.addMouseListener(this.mouseDragEventForwarder);
-        c.addMouseMotionListener(this.mouseDragEventForwarder);
         if (c instanceof Container)
         {
             for (Component child : ((Container) c).getComponents())
@@ -378,6 +376,7 @@ public final class ListTaskPanel extends ListItemPanel<Task>
         this.taskContent = taskContent;
         if (taskContent != null) {
             addShiftRemoveListenerRecursive(taskContent);
+            addMouseDragEventForwarderRecursive(taskContent);
         }
     }
 
