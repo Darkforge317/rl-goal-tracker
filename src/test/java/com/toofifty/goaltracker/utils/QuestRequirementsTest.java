@@ -18,24 +18,29 @@ public class QuestRequirementsTest
     {
         List<Task> requirements = QuestRequirements.getRequirements(Quest.FAIRYTALE_I__GROWING_PAINS, 0);
         assertNotNull(requirements, "Requirements list should not be null");
-        assertEquals(3, requirements.size(), "Fairytale I should have 3 direct requirements");
+        // Recursive requirements: LOST_CITY + its 2 skills, NATURE_SPIRIT + its 3 reqs, Farming 18 = 8 total
+        assertEquals(8, requirements.size(), "Fairytale I should have 8 requirements (including recursive sub-quest requirements)");
 
-        // All items should be indented one level when called with indentLevel=0
-        requirements.forEach(t -> assertEquals(1, t.getIndentLevel(), "Each requirement should have indent 1"));
+        // Direct requirements at indent 1, sub-requirements at indent 2
+        long indent1Count = requirements.stream().filter(t -> t.getIndentLevel() == 1).count();
+        long indent2Count = requirements.stream().filter(t -> t.getIndentLevel() == 2).count();
+        assertEquals(3, indent1Count, "Should have 3 direct requirements at indent 1");
+        assertEquals(5, indent2Count, "Should have 5 sub-requirements at indent 2");
 
-        // Expect two quest tasks and one skill requirement
+        // With recursive requirements: 4 quests (LOST_CITY, NATURE_SPIRIT, PRIEST_IN_PERIL, THE_RESTLESS_GHOST)
+        // and 4 skills (Farming 18, Crafting 31, Woodcutting 36, Prayer 18)
         long questCount = requirements.stream().filter(t -> t instanceof QuestTask).count();
         long skillCount = requirements.stream().filter(t -> t instanceof SkillLevelTask).count();
-        assertEquals(2, questCount, "Should contain two QuestTask requirements");
-        assertEquals(1, skillCount, "Should contain one SkillLevelTask requirement");
+        assertEquals(4, questCount, "Should contain 4 QuestTask requirements (including sub-quest prereqs)");
+        assertEquals(4, skillCount, "Should contain 4 SkillLevelTask requirements (including sub-quest prereqs)");
 
-        // Verify specific quests are present
+        // Verify direct quest requirements are present
         boolean hasLostCity = requirements.stream().anyMatch(t -> t instanceof QuestTask && ((QuestTask) t).getQuest() == Quest.LOST_CITY);
         boolean hasNatureSpirit = requirements.stream().anyMatch(t -> t instanceof QuestTask && ((QuestTask) t).getQuest() == Quest.NATURE_SPIRIT);
         assertTrue(hasLostCity, "Lost City should be a requirement");
         assertTrue(hasNatureSpirit, "Nature Spirit should be a requirement");
 
-        // Verify specific skill requirement (Farming 18)
+        // Verify direct skill requirement (Farming 18)
         boolean hasFarming18 = requirements.stream().anyMatch(t -> t instanceof SkillLevelTask && ((SkillLevelTask) t).getSkill() == Skill.FARMING && ((SkillLevelTask) t).getLevel() == 18);
         assertTrue(hasFarming18, "Farming 18 should be a requirement");
     }

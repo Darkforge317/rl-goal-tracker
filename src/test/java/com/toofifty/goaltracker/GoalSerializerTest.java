@@ -10,11 +10,14 @@ import com.toofifty.goaltracker.models.enums.Status;
 import com.toofifty.goaltracker.models.enums.TaskType;
 import com.toofifty.goaltracker.utils.ReorderableList;
 import com.google.common.io.Resources;
+import com.google.gson.Gson;
 import net.runelite.api.Quest;
 import net.runelite.api.Skill;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
@@ -25,7 +28,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 //noinspection UnstableApiUsage
 @SuppressWarnings("null")
 public class GoalSerializerTest {
-    GoalSerializer serializer = new GoalSerializer();
+    GoalSerializer serializer;
+
+    @BeforeEach
+    void setUp() throws Exception {
+        serializer = new GoalSerializer();
+        Field gsonField = GoalSerializer.class.getDeclaredField("gson");
+        gsonField.setAccessible(true);
+        gsonField.set(serializer, new Gson());
+    }
 
     @Test
     public void deserialize_should_parse_successfully() throws IOException {
