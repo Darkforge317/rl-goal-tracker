@@ -131,9 +131,9 @@ public final class GoalPanel extends JPanel implements Refreshable
             }
         });
 
-        taskListPanel = new ListPanel<>(goal.getTasks(), (task) -> {
+        taskListPanel = new ListPanel<>(goal.getTasks(), (parent, task) -> {
             try {
-                ListTaskPanel taskPanel = new ListTaskPanel(goal.getTasks(), task);
+                ListTaskPanel taskPanel = new ListTaskPanel(goal.getTasks(), task, parent);
                 taskPanel.setActionHistory(actionHistory);
                 TaskItemContent taskContent = new TaskItemContent(plugin, goal, task);
                 taskContent.setActionHistory(actionHistory);
@@ -169,7 +169,7 @@ public final class GoalPanel extends JPanel implements Refreshable
             } catch (Throwable t) {
                 t.printStackTrace();
                 // Render a minimal, visible error row instead of breaking the entire list
-                ListTaskPanel fallback = new ListTaskPanel(goal.getTasks(), task);
+                ListTaskPanel fallback = new ListTaskPanel(goal.getTasks(), task, parent);
                 JPanel error = new JPanel(new BorderLayout());
                 error.setOpaque(true);
                 error.setBackground(ColorScheme.DARK_GRAY_COLOR);

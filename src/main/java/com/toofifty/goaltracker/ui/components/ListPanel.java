@@ -3,15 +3,15 @@ package com.toofifty.goaltracker.ui.components;
 import com.toofifty.goaltracker.ui.Refreshable;
 import com.toofifty.goaltracker.utils.ReorderableList;
 import net.runelite.client.ui.ColorScheme;
+import net.runelite.client.ui.components.DragAndDropReorderPane;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 /**
@@ -20,10 +20,10 @@ import java.util.stream.Collectors;
  */
 public final class ListPanel<T> extends JScrollPane implements Refreshable
 {
-    private final JPanel listPanel = new JPanel(new GridBagLayout());
+    private final DragAndDropReorderPane listPanel = new DragAndDropReorderPane();
 
     private final ReorderableList<T> reorderableList;
-    private final Function<T, ListItemPanel<T>> renderItem;
+    private final BiFunction<JComponent, T, ListItemPanel<T>> renderItem;
 
     private final Map<T, ListItemPanel<T>> itemPanelMap = new HashMap<>();
 
@@ -36,7 +36,7 @@ public final class ListPanel<T> extends JScrollPane implements Refreshable
 
     public ListPanel(
         ReorderableList<T> reorderableList,
-        Function<T, ListItemPanel<T>> renderItem
+        BiFunction<JComponent, T, ListItemPanel<T>> renderItem
     ) {
         super();
         this.reorderableList = reorderableList;
@@ -46,6 +46,33 @@ public final class ListPanel<T> extends JScrollPane implements Refreshable
         listPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
         // Add left/right padding so card content aligns with the header
         listPanel.setBorder(new EmptyBorder(0, 10, 0, 10));
+
+        listPanel.addDragListener(new DragAndDropReorderPane.DragListener() {
+            @Override
+            public void onDrag(Component component) {
+                T updatedItem = ((ListItemPanel<T>)component).item;
+
+                // Sort the list based on the new order of the components in listPanel
+                reorderableList.sort(Comparator.comparing(item ->
+                {
+                    Component[] components = listPanel.getComponents();
+                    for (int idx = 0; idx < components.length; ++idx)
+                    {
+                        ListItemPanel<T> itemPanel = (ListItemPanel<T>) components[idx];
+                        if (itemPanel.item == item)
+                        {
+                            return idx;
+                        }
+                    }
+
+                    return -1;
+                }));
+
+                if (updatedListener != null) updatedListener.accept(updatedItem);
+
+                refresh();
+            }
+        });
 
         JPanel wrapperPanel = new JPanel(new BorderLayout());
         wrapperPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
@@ -116,7 +143,7 @@ public final class ListPanel<T> extends JScrollPane implements Refreshable
             return itemPanelMap.get(item);
         }
 
-        ListItemPanel<T> itemPanel = renderItem.apply(item);
+        ListItemPanel<T> itemPanel = renderItem.apply(listPanel, item);
 
         itemPanel.onReordered((updatedItem) -> {
             tryBuildList();

@@ -4,6 +4,7 @@ import com.toofifty.goaltracker.models.Goal;
 import com.toofifty.goaltracker.ui.Refreshable;
 import com.toofifty.goaltracker.utils.ReorderableList;
 import net.runelite.client.ui.ColorScheme;
+import net.runelite.client.ui.components.MouseDragEventForwarder;
 
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -43,6 +44,7 @@ public class ListItemPanel<T> extends JPanel implements Refreshable
     protected BiConsumer<T, Integer> removedWithIndexListener;
 
     private MouseAdapter clickListenerAdapter;
+    MouseDragEventForwarder mouseDragEventForwarder;
 
     // Inner face of the goal card; only this area changes color on hover/press
     private JPanel cardBody;
@@ -72,6 +74,20 @@ public class ListItemPanel<T> extends JPanel implements Refreshable
         }
     }
 
+    protected void addMouseDragEventForwarderRecursive(Component c)
+    {
+        if (mouseDragEventForwarder == null) return;
+        c.addMouseListener(mouseDragEventForwarder);
+        c.addMouseMotionListener(mouseDragEventForwarder);
+        if (c instanceof java.awt.Container)
+        {
+            for (Component child : ((java.awt.Container) c).getComponents())
+            {
+                addMouseDragEventForwarderRecursive(child);
+            }
+        }
+    }
+
     private final MouseAdapter contextMenuListener = new MouseAdapter()
     {
         private void maybeShow(MouseEvent e)
@@ -86,11 +102,12 @@ public class ListItemPanel<T> extends JPanel implements Refreshable
         @Override public void mouseReleased(MouseEvent e) { maybeShow(e); }
     };
 
-    public ListItemPanel(ReorderableList<T> list, T item)
+    public ListItemPanel(ReorderableList<T> list, T item, JComponent parent)
     {
         super(new BorderLayout());
         this.list = list;
         this.item = item;
+        this.mouseDragEventForwarder = new MouseDragEventForwarder(parent);
 
         // Create inner card surface to isolate hover/press background changes
         cardBody = new JPanel(new BorderLayout());
@@ -160,6 +177,8 @@ public class ListItemPanel<T> extends JPanel implements Refreshable
                 }
             }
         });
+
+        addMouseDragEventForwarderRecursive(this);
     }
 
     @Override
