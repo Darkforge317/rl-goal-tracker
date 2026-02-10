@@ -1180,19 +1180,8 @@ public final class QuestRequirements
                 )
         );
 
-        REQUIREMENT_MAP.put(
-                Quest.AN_EXISTENTIAL_CRISIS,
-                Arrays.asList(
-                        QuestTask.builder().quest(Quest.THE_FINAL_DAWN).build()
-                )
-        );
-
-        REQUIREMENT_MAP.put(
-                Quest.IMPENDING_CHAOS,
-                Arrays.asList(
-                        QuestTask.builder().quest(Quest.THE_FINAL_DAWN).build()
-                )
-        );
+        // TODO: Add these quests when/if they're added to the game / re-added to the RuneLite Quest enum
+        // Quest.AN_EXISTENTIAL_CRISIS and Quest.IMPENDING_CHAOS
 
         REQUIREMENT_MAP.put(
                 Quest.VALE_TOTEMS,

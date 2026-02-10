@@ -62,6 +62,7 @@ class TaskUpdateServiceTest {
     @Test
     void update_skillLevelTask_shouldSupportLookingUpThePlayersLevel() {
         when(client.getGameState()).thenReturn(GameState.LOGGED_IN);
+        when(client.isClientThread()).thenReturn(true);
         when(client.getRealSkillLevel(Skill.ATTACK)).thenReturn(99);
 
         SkillLevelTask task = SkillLevelTask.builder().skill(Skill.ATTACK).level(90).build();
@@ -118,6 +119,7 @@ class TaskUpdateServiceTest {
     @Test
     void update_skillXpTask_shouldSupportLookingUpThePlayersLevel() {
         when(client.getGameState()).thenReturn(GameState.LOGGED_IN);
+        when(client.isClientThread()).thenReturn(true);
         when(client.getSkillExperience(Skill.ATTACK)).thenReturn(1234);
 
         SkillXpTask task = SkillXpTask.builder().skill(Skill.ATTACK).xp(1234).build();
