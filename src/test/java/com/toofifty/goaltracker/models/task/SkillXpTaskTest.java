@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class SkillXpTaskTest {
     @Test
     void toString_shouldReturnTheXPAndSkillName() {
-        SkillXpTask task = SkillXpTask.builder().skill(Skill.ATTACK).xp(1234).build();
+        SkillXpTask task = SkillXpTask.builder().skill(Skill.ATTACK).targetSkillXp(1234).build();
 
         assertEquals("1234 Attack XP", task.toString());
     }
