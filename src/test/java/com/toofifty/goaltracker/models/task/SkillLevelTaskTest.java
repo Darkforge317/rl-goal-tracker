@@ -10,7 +10,7 @@ class SkillLevelTaskTest {
 
     @Test
     void toString_shouldReturnTheLevelAndSkillName() {
-        SkillLevelTask task = SkillLevelTask.builder().skill(Skill.ATTACK).level(99).build();
+        SkillLevelTask task = SkillLevelTask.builder().skill(Skill.ATTACK).targetSkillLevel(99).build();
 
         assertEquals("99 Attack", task.toString());
     }

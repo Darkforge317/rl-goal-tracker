@@ -63,7 +63,7 @@ public final class SkillLevelTaskInput extends TaskInput
 
         addTask(SkillLevelTask.builder()
             .skill((Skill) skillField.getSelectedItem())
-            .level(Integer.parseInt(levelField.getText()))
+            .targetSkillLevel(Integer.parseInt(levelField.getText()))
             .build());
     }
 
