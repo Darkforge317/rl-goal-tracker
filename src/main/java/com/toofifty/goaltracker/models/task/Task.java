@@ -61,6 +61,17 @@ public abstract class Task
         return !isFullyIndented();
     }
 
+    public Status getStatus()
+    {
+        // If the task was built without an explicit status,
+        // ensure the application reads it safely as NOT_STARTED.
+        if (this.status == null)
+        {
+            return Status.NOT_STARTED;
+        }
+        return this.status;
+    }
+
 
     @Override
     abstract public String toString();

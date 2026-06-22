@@ -497,6 +497,25 @@ public final class GoalTrackerPlugin extends Plugin
         return s;
     }
 
+    /**
+     * Safe, multithreaded entry point to force a full data validation sweep across all task types.
+     * Typically used after batch mutations like adding the quest prerequisites.
+     */
+    public void refreshAllTasks(Runnable onCompleteUIHandler)
+    {
+        // Force the execution to run safely on the OSRS client thread
+        clientThread.invokeLater(() -> {
+            refreshSkillLevelTasks();
+            refreshQuestTasks();
+
+            // If the caller provided a UI update script, bounce it back to the Swing thread
+            if (onCompleteUIHandler != null)
+            {
+                javax.swing.SwingUtilities.invokeLater(onCompleteUIHandler);
+            }
+        });
+    }
+
     private void refreshQuestTasks()
     {
         if (goalManager == null || client == null) return;

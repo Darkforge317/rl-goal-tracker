@@ -36,21 +36,34 @@ public final class Goal
     @Builder.Default
     private ReorderableList<Task> tasks = new ReorderableList<>();
 
+    /**
+     * Safely retrieves the collection of tasks inside this goal.
+     * Intercepts null pointers injected during malformed third-party JSON imports
+     */
+    public ReorderableList<Task> getTasks()
+    {
+        if (this.tasks == null)
+        {
+            this.tasks = new ReorderableList<>();
+        }
+        return this.tasks;
+    }
+
     private List<Task> filterBy(Predicate<Task> predicate)
     {
-        return tasks.stream().filter(predicate).collect(Collectors.toList());
+        return getTasks().stream().filter(predicate).collect(Collectors.toList());
     }
 
     /** True if all tasks are of the given status. */
     public boolean isStatus(Status status)
     {
-        return tasks.stream().allMatch(task -> task.getStatus() == status);
+        return getTasks().stream().allMatch(task -> task.getStatus() == status);
     }
 
     /** True if any task matches one of the given statuses. */
     public boolean isAnyStatus(Status... statuses)
     {
-        return tasks.stream().anyMatch(task ->
+        return getTasks().stream().anyMatch(task ->
             Arrays.stream(statuses).anyMatch(s -> s == task.getStatus()));
     }
 
@@ -77,7 +90,7 @@ public final class Goal
     /** Mark all tasks as complete or not started. */
     public void setAllTasksCompleted(boolean completed)
     {
-        for (Task task : tasks)
+        for (Task task : getTasks())
         {
             task.setStatus(completed ? Status.COMPLETED : Status.NOT_STARTED);
         }
