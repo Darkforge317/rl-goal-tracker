@@ -229,17 +229,28 @@ public final class GoalTrackerPlugin extends Plugin
         }
 
         goalTrackerPanel.onGoalUpdated((goal) -> goalManager.save());
+
         goalTrackerPanel.onTaskAdded((task) -> {
-            if (taskUpdateService.update(task)) {
-                if (task.getStatus().isCompleted()) {
-                    notifyTask(task);
-                }
-
-                uiStatusManager.refresh(task);
-            }
-
+            // Instantly save the new task so the UI stays responsive
             goalManager.save();
+
+            // Send to the client thread to respect taskUpdateService's thread-safety guards.
+            // Otherwise, it would prevent an update that was called from this UI thread
+            clientThread.invokeLater(() -> {
+                // If the task status updated
+                if (taskUpdateService.update(task)) {
+                    if (task.getStatus().isCompleted()) {
+                        notifyTask(task);
+                    }
+
+                    uiStatusManager.refresh(task);
+
+                    // Re-save only if verification math changed the completion state
+                    goalManager.save();
+                }
+            });
         });
+
         goalTrackerPanel.onTaskUpdated((task) -> goalManager.save());
 
         // Preload item icons at plugin startup so they are visible immediately
@@ -282,11 +293,23 @@ public final class GoalTrackerPlugin extends Plugin
     {
         if (event.getGameState() == GameState.LOGGED_IN)
         {
-            // Re-check quest tasks after login
-            clientThread.invokeLater(() -> refreshQuestTasks());
+            // Defer task refreshes until the player's data is loaded in, preventing a race condition.
+            // Would otherwise cause a check of level-0/0xp against tasks, invalidating our login check entirely.
+            clientThread.invokeLater(() -> {
 
-            // Refresh the panel once, 10s after login, after detection settles
-            schedulePanelRefresh(10_000);
+                // If player data hasn't loaded from the server yet, wait and try again next frame
+                if (client.getRealSkillLevel(Skill.ATTACK) <= 0) { return false; }
+
+                // Refresh tasks now that player data exists
+                refreshQuestTasks();
+                refreshSkillLevelTasks();
+
+                // Give the UI a moment to settle after data updates before repainting the panel
+                schedulePanelRefresh(200);
+
+                // Stop the refresh frame loop
+                return true;
+            });
         }
     }
 
@@ -488,6 +511,22 @@ public final class GoalTrackerPlugin extends Plugin
             }
         }
     }
+
+    private void refreshSkillLevelTasks()
+    {
+       if (goalManager == null || client == null) return;
+       List<SkillLevelTask> skillLevelTasks = goalManager.getIncompleteTasksByType(TaskType.SKILL_LEVEL);
+       for (SkillLevelTask task : skillLevelTasks)
+       {
+           task.refreshStatus(client);
+           uiStatusManager.refresh(task);
+           if (task.getStatus().isCompleted())
+           {
+               notifyTask(task);
+           }
+       }
+    }
+
     @Provides
     public GoalTrackerConfig provideConfig(ConfigManager configManager)
     {

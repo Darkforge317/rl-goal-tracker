@@ -60,7 +60,8 @@ public final class TaskUpdateService
     public boolean update(SkillLevelTask task, int level)
     {
         final Status oldStatus = task.getStatus();
-        task.setStatus(level >= task.getLevel() ? Status.COMPLETED : Status.NOT_STARTED);
+        task.setCurrentSkillLevel(level);
+        task.setStatus(level >= task.getTargetSkillLevel() ? Status.COMPLETED : Status.NOT_STARTED);
         return oldStatus != task.getStatus();
     }
 
