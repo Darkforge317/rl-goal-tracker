@@ -282,9 +282,32 @@ public final class GoalTrackerPlugin extends Plugin
     @Subscribe
     public void onStatChanged(StatChanged event)
     {
+        boolean anyTaskChanged = false;
+
+        // 1. Process Skill Level task updates
         List<SkillLevelTask> skillLevelTasks = goalManager.getIncompleteTasksByType(TaskType.SKILL_LEVEL);
         for (SkillLevelTask task : skillLevelTasks) {
+            // If this skill level task did not receive a status change
             if (!taskUpdateService.update(task, event)) continue;
+            // If the skill level task DID receive a status change
+            else {
+                anyTaskChanged = true;
+
+                // Update the UI immediately to reflect the new status
+                uiStatusManager.refresh(task);
+
+                // If we completed the task, notify the player
+                if (task.getStatus().isCompleted()) {
+                    notifyTask(task);
+                }
+            }
+        }
+
+        // TODO: PROCESS XP TASKS
+
+        // Save once if any status changes occurred
+        if (anyTaskChanged) {
+            goalManager.save();
         }
     }
 
