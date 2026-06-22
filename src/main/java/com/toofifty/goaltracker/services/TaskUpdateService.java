@@ -91,7 +91,7 @@ public final class TaskUpdateService
     public boolean update(SkillXpTask task, int xp)
     {
         final Status oldStatus = task.getStatus();
-        task.setStatus(xp >= task.getXp() ? Status.COMPLETED : Status.NOT_STARTED);
+        task.setStatus(xp >= task.getTargetSkillXp() ? Status.COMPLETED : Status.NOT_STARTED);
         return oldStatus != task.getStatus();
     }
 

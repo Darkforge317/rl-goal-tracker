@@ -6,6 +6,7 @@ import com.toofifty.goaltracker.models.enums.TaskType;
 import com.toofifty.goaltracker.models.task.ItemTask;
 import com.toofifty.goaltracker.models.task.QuestTask;
 import com.toofifty.goaltracker.models.task.SkillLevelTask;
+import com.toofifty.goaltracker.models.task.SkillXpTask;
 import com.toofifty.goaltracker.models.task.Task;
 import com.toofifty.goaltracker.services.TaskIconService;
 import com.toofifty.goaltracker.services.TaskUpdateService;
@@ -303,7 +304,24 @@ public final class GoalTrackerPlugin extends Plugin
             }
         }
 
-        // TODO: PROCESS XP TASKS
+        // 2. Process Skill XP task updates
+        List<SkillXpTask> skillXpTasks = goalManager.getIncompleteTasksByType(TaskType.SKILL_XP);
+        for (SkillXpTask task : skillXpTasks) {
+            // If this skill XP task did not receive a status change
+            if (!taskUpdateService.update(task, event)) continue;
+            // If the skill XP task DID receive a status change
+            else {
+                anyTaskChanged = true;
+
+                // Update the UI immediately to reflect the new status
+                uiStatusManager.refresh(task);
+
+                // If we completed the task, notify the player
+                if (task.getStatus().isCompleted()) {
+                    notifyTask(task);
+                }
+            }
+        }
 
         // Save once if any status changes occurred
         if (anyTaskChanged) {
@@ -326,6 +344,7 @@ public final class GoalTrackerPlugin extends Plugin
                 // Refresh tasks now that player data exists
                 refreshQuestTasks();
                 refreshSkillLevelTasks();
+                refreshSkillXpTasks();
 
                 // Give the UI a moment to settle after data updates before repainting the panel
                 schedulePanelRefresh(200);
@@ -530,6 +549,7 @@ public final class GoalTrackerPlugin extends Plugin
         clientThread.invokeLater(() -> {
             refreshSkillLevelTasks();
             refreshQuestTasks();
+            refreshSkillXpTasks();
 
             // If the caller provided a UI update script, bounce it back to the Swing thread
             if (onCompleteUIHandler != null)
@@ -567,6 +587,22 @@ public final class GoalTrackerPlugin extends Plugin
                notifyTask(task);
            }
        }
+    }
+
+    private void refreshSkillXpTasks()
+    {
+        if (goalManager == null || client == null) return;
+
+        List<SkillXpTask> skillXpTasks = goalManager.getIncompleteTasksByType(TaskType.SKILL_XP);
+        for (SkillXpTask task : skillXpTasks)
+        {
+            task.refreshStatus(client);
+            uiStatusManager.refresh(task);
+            if (task.getStatus().isCompleted())
+            {
+                notifyTask(task);
+            }
+        }
     }
 
     @Provides

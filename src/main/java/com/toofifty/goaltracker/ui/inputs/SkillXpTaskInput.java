@@ -82,7 +82,7 @@ public final class SkillXpTaskInput extends TaskInput
 
         addTask(SkillXpTask.builder()
             .skill((Skill) skillField.getSelectedItem())
-            .xp(Integer.parseInt(xpField.getText()))
+            .targetSkillXp(Integer.parseInt(xpField.getText()))
             .build());
     }
 

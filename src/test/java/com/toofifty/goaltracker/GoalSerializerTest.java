@@ -87,7 +87,7 @@ public class GoalSerializerTest {
 
         SkillXpTask skillXpTask = (SkillXpTask) goals.get(0).getTasks().get(2);
 
-        assertEquals(1234, skillXpTask.getXp());
+        assertEquals(1234, skillXpTask.getTargetSkillXp());
         assertEquals(Skill.ATTACK, skillXpTask.getSkill());
         assertEquals(2, skillXpTask.getIndentLevel());
 
@@ -157,7 +157,7 @@ public class GoalSerializerTest {
                                         .status(Status.NOT_STARTED)
                                         .notified(false)
                                         .indentLevel(2)
-                                        .xp(1234)
+                                        .targetSkillXp(1234)
                                         .skill(Skill.ATTACK)
                                         .build(),
                                 QuestTask.builder()

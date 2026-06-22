@@ -49,7 +49,7 @@ class TaskUpdateServiceTest {
         when(itemCache.getTotalQuantity(314)).thenReturn(100);
 
         assertTrue(service.update((Task) SkillLevelTask.builder().skill(Skill.ATTACK).targetSkillLevel(90).build()));
-        assertTrue(service.update((Task) SkillXpTask.builder().skill(Skill.ATTACK).xp(1234).build()));
+        assertTrue(service.update((Task) SkillXpTask.builder().skill(Skill.ATTACK).targetSkillXp(1234).build()));
         assertTrue(service.update((Task) QuestTask.builder().quest(quest).build()));
         assertTrue(service.update((Task) ItemTask.builder().itemId(314).acquired(0).quantity(100).build()));
     }
@@ -122,7 +122,7 @@ class TaskUpdateServiceTest {
         when(client.isClientThread()).thenReturn(true);
         when(client.getSkillExperience(Skill.ATTACK)).thenReturn(1234);
 
-        SkillXpTask task = SkillXpTask.builder().skill(Skill.ATTACK).xp(1234).build();
+        SkillXpTask task = SkillXpTask.builder().skill(Skill.ATTACK).targetSkillXp(1234).build();
 
         assertTrue(service.update(task));
         assertEquals(Status.COMPLETED, task.getStatus());
@@ -132,7 +132,7 @@ class TaskUpdateServiceTest {
     void update_skillXpTask_shouldReturnFalseIfWeAreNotLoggedIn() {
         when(client.getGameState()).thenReturn(GameState.STARTING);
 
-        SkillXpTask task = SkillXpTask.builder().skill(Skill.ATTACK).xp(1234).build();
+        SkillXpTask task = SkillXpTask.builder().skill(Skill.ATTACK).targetSkillXp(1234).build();
 
         assertFalse(service.update(task));
     }
@@ -142,7 +142,7 @@ class TaskUpdateServiceTest {
         when(statChangedEvent.getSkill()).thenReturn(Skill.ATTACK);
         when(statChangedEvent.getXp()).thenReturn(1234);
 
-        SkillXpTask task = SkillXpTask.builder().skill(Skill.ATTACK).xp(1234).build();
+        SkillXpTask task = SkillXpTask.builder().skill(Skill.ATTACK).targetSkillXp(1234).build();
 
         assertTrue(service.update(task, statChangedEvent));
         assertEquals(Status.COMPLETED, task.getStatus());
@@ -152,14 +152,14 @@ class TaskUpdateServiceTest {
     void update_skillXpTask_shouldIgnoreStatChangedEventsForTheWrongSkill() {
         when(statChangedEvent.getSkill()).thenReturn(Skill.AGILITY);
 
-        SkillXpTask task = SkillXpTask.builder().skill(Skill.ATTACK).xp(1234).build();
+        SkillXpTask task = SkillXpTask.builder().skill(Skill.ATTACK).targetSkillXp(1234).build();
 
         assertFalse(service.update(task, statChangedEvent));
     }
 
     @Test
     void update_skillXpTask_shouldReturnTrueIfThePlayerXPExceedsTheGoal() {
-        SkillXpTask task = SkillXpTask.builder().skill(Skill.ATTACK).xp(1234).build();
+        SkillXpTask task = SkillXpTask.builder().skill(Skill.ATTACK).targetSkillXp(1234).build();
 
         assertTrue(service.update(task, 1234));
         assertEquals(Status.COMPLETED, task.getStatus());
@@ -167,7 +167,7 @@ class TaskUpdateServiceTest {
 
     @Test
     void update_skillXPTask_shouldReturnFalseIfThePlayerXPDoesNotExceedTheGoal() {
-        SkillXpTask task = SkillXpTask.builder().skill(Skill.ATTACK).xp(1234).build();
+        SkillXpTask task = SkillXpTask.builder().skill(Skill.ATTACK).targetSkillXp(1234).build();
 
         assertFalse(service.update(task, 1233));
         assertEquals(Status.NOT_STARTED, task.getStatus());
