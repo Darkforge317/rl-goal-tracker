@@ -359,9 +359,23 @@ public final class GoalPanel extends JPanel implements Refreshable
 
         // Refresh UI/state after batch
         plugin.setValidateAll(true);
-        plugin.getUiStatusManager().refresh(goal);
-        refreshTaskList();
-        updateUndoRedoButtons();
+
+        // If new prerequisites were actually added, run our clean validation sweep
+        if (invoked > 0)
+        {
+            plugin.refreshAllTasks(() -> {
+                plugin.getUiStatusManager().refresh(goal);
+                refreshTaskList();
+                updateUndoRedoButtons();
+            });
+        }
+        else
+        {
+            // If nothing was added, refresh the UI instantly on the UI thread
+            plugin.getUiStatusManager().refresh(goal);
+            refreshTaskList();
+            updateUndoRedoButtons();
+        }
 
         if (processed == 0)
         {
