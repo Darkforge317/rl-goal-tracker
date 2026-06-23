@@ -52,9 +52,13 @@ public final class SkillXpTask extends Task
 
         currentSkillXp = client.getSkillExperience(skill);
 
-        if(hasReachedTargetLevel())
+        if(hasReachedTargetXp())
         {
             setStatus(Status.COMPLETED);
+        }
+        // This covers cases where players log into a separate character that no longer meets the task requirements
+        else {
+            setStatus(Status.NOT_STARTED);
         }
     }
 
@@ -65,7 +69,7 @@ public final class SkillXpTask extends Task
      *     <li>{@code false} - Target Xp <b>HAS NOT</b> been reached</li>
      * </ul>
      */
-    public boolean hasReachedTargetLevel()
+    public boolean hasReachedTargetXp()
     {
         return (currentSkillXp >= targetSkillXp);
     }
@@ -78,7 +82,7 @@ public final class SkillXpTask extends Task
      *     <li>{@code false} - Target Xp <b>HAS NOT</b> been reached</li>
      * </ul>
      */
-    public boolean wouldReachTargetLevel(int xp)
+    public boolean wouldReachTargetXp(int xp)
     {
         return (xp >= targetSkillXp);
     }

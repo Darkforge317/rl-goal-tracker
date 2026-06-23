@@ -2,6 +2,7 @@ package com.toofifty.goaltracker;
 
 
 import com.google.inject.Provides;
+import com.toofifty.goaltracker.models.enums.Status;
 import com.toofifty.goaltracker.models.enums.TaskType;
 import com.toofifty.goaltracker.models.task.ItemTask;
 import com.toofifty.goaltracker.models.task.QuestTask;
@@ -232,23 +233,23 @@ public final class GoalTrackerPlugin extends Plugin
         goalTrackerPanel.onGoalUpdated((goal) -> goalManager.save());
 
         goalTrackerPanel.onTaskAdded((task) -> {
-            // Instantly save the new task so the UI stays responsive
-            goalManager.save();
-
-            // Send to the client thread to respect taskUpdateService's thread-safety guards.
-            // Otherwise, it would prevent an update that was called from this UI thread
+            // Send directly to the client thread to fetch live player stats
             clientThread.invokeLater(() -> {
-                // If the task status updated
-                if (taskUpdateService.update(task)) {
-                    if (task.getStatus().isCompleted()) {
-                        notifyTask(task);
-                    }
+                // Populate the live metrics into memory instantly upon creation
+                taskUpdateService.update(task);
 
-                    uiStatusManager.refresh(task);
+                // Perform the disk write safely on the background game thread
+                goalManager.save();
 
-                    // Re-save only if verification math changed the completion state
-                    goalManager.save();
+                // If the task is instantly completed, notify the player
+                if (task.getStatus().isCompleted()) {
+                    notifyTask(task);
                 }
+
+                // Send to the UI thread to handle screen graphics
+                SwingUtilities.invokeLater(() -> {
+                    uiStatusManager.refresh(task);
+                });
             });
         });
 
@@ -592,7 +593,6 @@ public final class GoalTrackerPlugin extends Plugin
     private void refreshSkillXpTasks()
     {
         if (goalManager == null || client == null) return;
-
         List<SkillXpTask> skillXpTasks = goalManager.getIncompleteTasksByType(TaskType.SKILL_XP);
         for (SkillXpTask task : skillXpTasks)
         {
