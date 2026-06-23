@@ -58,6 +58,10 @@ public final class SkillLevelTask extends Task
         {
             setStatus(Status.COMPLETED);
         }
+        // This covers cases where players log into a separate character that no longer meets the task requirements
+        else {
+            setStatus(Status.NOT_STARTED);
+        }
     }
 
     /**

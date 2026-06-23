@@ -91,6 +91,10 @@ public final class TaskUpdateService
     public boolean update(SkillXpTask task, int xp)
     {
         final Status oldStatus = task.getStatus();
+
+        // Store the live player experience in the task's cache
+        task.setCurrentSkillXp(xp);
+
         task.setStatus(xp >= task.getTargetSkillXp() ? Status.COMPLETED : Status.NOT_STARTED);
         return oldStatus != task.getStatus();
     }
