@@ -874,6 +874,109 @@ public final class QuestRequirements
         );
 
         REQUIREMENT_MAP.put(
+                Quest.RECIPE_FOR_DISASTER__ANOTHER_COOKS_QUEST,
+                Arrays.asList(
+                        QuestTask.builder().quest(Quest.COOKS_ASSISTANT).build(),
+                        SkillLevelTask.builder().skill(Skill.COOKING).level(10).build()
+                )
+        );
+
+        REQUIREMENT_MAP.put(
+                Quest.RECIPE_FOR_DISASTER__CULINAROMANCER,
+                Arrays.asList(
+                        QuestTask.builder().quest(Quest.DESERT_TREASURE_I).build(),
+                        QuestTask.builder().quest(Quest.HORROR_FROM_THE_DEEP).build(),
+                        QuestTask.builder().quest(Quest.RECIPE_FOR_DISASTER__EVIL_DAVE).build(),
+                        QuestTask.builder().quest(Quest.RECIPE_FOR_DISASTER__WARTFACE__BENTNOZE).build(),
+                        QuestTask.builder().quest(Quest.RECIPE_FOR_DISASTER__LUMBRIDGE_GUIDE).build(),
+                        QuestTask.builder().quest(Quest.RECIPE_FOR_DISASTER__MOUNTAIN_DWARF).build(),
+                        QuestTask.builder().quest(Quest.RECIPE_FOR_DISASTER__PIRATE_PETE).build(),
+                        QuestTask.builder().quest(Quest.RECIPE_FOR_DISASTER__SIR_AMIK_VARZE).build(),
+                        QuestTask.builder().quest(Quest.RECIPE_FOR_DISASTER__SKRACH_UGLOGWEE).build(),
+                        QuestTask.builder().quest(Quest.RECIPE_FOR_DISASTER__KING_AWOWOGEI).build()
+                )
+        );
+
+        REQUIREMENT_MAP.put(
+                Quest.RECIPE_FOR_DISASTER__EVIL_DAVE,
+                Arrays.asList(
+                        QuestTask.builder().quest(Quest.GERTRUDES_CAT).build(),
+                        QuestTask.builder().quest(Quest.RECIPE_FOR_DISASTER__ANOTHER_COOKS_QUEST).build(),
+                        QuestTask.builder().quest(Quest.SHADOW_OF_THE_STORM).build()
+                )
+        );
+
+        REQUIREMENT_MAP.put(
+                Quest.RECIPE_FOR_DISASTER__KING_AWOWOGEI,
+                Arrays.asList(
+                        QuestTask.builder().quest(Quest.MONKEY_MADNESS_I).build(),
+                        QuestTask.builder().quest(Quest.RECIPE_FOR_DISASTER__ANOTHER_COOKS_QUEST).build(),
+                        SkillLevelTask.builder().skill(Skill.COOKING).level(70).build(),
+                        SkillLevelTask.builder().skill(Skill.AGILITY).level(48).build()
+                )
+        );
+
+        REQUIREMENT_MAP.put(
+                Quest.RECIPE_FOR_DISASTER__LUMBRIDGE_GUIDE,
+                Arrays.asList(
+                        QuestTask.builder().quest(Quest.BIG_CHOMPY_BIRD_HUNTING).build(),
+                        QuestTask.builder().quest(Quest.BIOHAZARD).build(),
+                        QuestTask.builder().quest(Quest.DEMON_SLAYER).build(),
+                        QuestTask.builder().quest(Quest.MURDER_MYSTERY).build(),
+                        QuestTask.builder().quest(Quest.NATURE_SPIRIT).build(),
+                        QuestTask.builder().quest(Quest.RECIPE_FOR_DISASTER__ANOTHER_COOKS_QUEST).build(),
+                        QuestTask.builder().quest(Quest.WITCHS_HOUSE).build(),
+                        SkillLevelTask.builder().skill(Skill.COOKING).level(40).build()
+                )
+        );
+
+        REQUIREMENT_MAP.put(
+                Quest.RECIPE_FOR_DISASTER__MOUNTAIN_DWARF,
+                Arrays.asList(
+                        QuestTask.builder().quest(Quest.RECIPE_FOR_DISASTER__ANOTHER_COOKS_QUEST).build(),
+                        QuestTask.builder().quest(Quest.FISHING_CONTEST).build()
+                )
+        );
+
+        REQUIREMENT_MAP.put(
+                Quest.RECIPE_FOR_DISASTER__PIRATE_PETE,
+                Arrays.asList(
+                        QuestTask.builder().quest(Quest.RECIPE_FOR_DISASTER__ANOTHER_COOKS_QUEST).build(),
+                        SkillLevelTask.builder().skill(Skill.COOKING).level(31).build()
+                )
+        );
+
+        REQUIREMENT_MAP.put(
+                Quest.RECIPE_FOR_DISASTER__SIR_AMIK_VARZE,
+                Arrays.asList(
+                        QuestTask.builder().quest(Quest.FAMILY_CREST).build(),
+                        QuestTask.builder().quest(Quest.HEROES_QUEST).build(),
+                        QuestTask.builder().quest(Quest.RECIPE_FOR_DISASTER__ANOTHER_COOKS_QUEST).build(),
+                        QuestTask.builder().quest(Quest.SHILO_VILLAGE).build(),
+                        QuestTask.builder().quest(Quest.UNDERGROUND_PASS).build(),
+                        QuestTask.builder().quest(Quest.WATERFALL_QUEST).build()
+                )
+        );
+
+        REQUIREMENT_MAP.put(
+                Quest.RECIPE_FOR_DISASTER__SKRACH_UGLOGWEE,
+                Arrays.asList(
+                        QuestTask.builder().quest(Quest.BIG_CHOMPY_BIRD_HUNTING).build(),
+                        QuestTask.builder().quest(Quest.RECIPE_FOR_DISASTER__ANOTHER_COOKS_QUEST).build(),
+                        SkillLevelTask.builder().skill(Skill.COOKING).level(41).build(),
+                        SkillLevelTask.builder().skill(Skill.FIREMAKING).level(20).build()
+                )
+        );
+
+        REQUIREMENT_MAP.put(
+                Quest.RECIPE_FOR_DISASTER__WARTFACE__BENTNOZE,
+                Arrays.asList(
+                        QuestTask.builder().quest(Quest.RECIPE_FOR_DISASTER__ANOTHER_COOKS_QUEST).build(),
+                        QuestTask.builder().quest(Quest.GOBLIN_DIPLOMACY).build()
+                )
+        );
+
+        REQUIREMENT_MAP.put(
                 Quest.REGICIDE,
                 Arrays.asList(
                         QuestTask.builder().quest(Quest.UNDERGROUND_PASS).build(),
