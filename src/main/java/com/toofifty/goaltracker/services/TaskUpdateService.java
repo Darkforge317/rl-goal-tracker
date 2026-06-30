@@ -1,6 +1,7 @@
 package com.toofifty.goaltracker.services;
 
 import com.toofifty.goaltracker.ItemCache;
+import com.toofifty.goaltracker.KillCountManager;
 import com.toofifty.goaltracker.models.enums.Status;
 import com.toofifty.goaltracker.models.task.*;
 import net.runelite.api.Client;
@@ -18,6 +19,7 @@ public final class TaskUpdateService
 {
     @Inject private Client client;
     @Inject private ItemCache itemCache;
+    @Inject private KillCountManager killCountManager;
 
     /**
      * Dispatch update for a generic task, returning true if status/values changed.
@@ -30,6 +32,7 @@ public final class TaskUpdateService
             case SKILL_XP:    return update((SkillXpTask) task);
             case QUEST:       return update((QuestTask) task);
             case ITEM:        return update((ItemTask) task);
+            case KILL_COUNT:   return update((KillCountTask) task);
             default:          return false;
         }
     }
@@ -125,5 +128,21 @@ public final class TaskUpdateService
         );
 
         return oldAcquired != task.getAcquired() || oldStatus != task.getStatus();
+    }
+
+    // -------------------- Kill Count --------------------
+
+    /**
+     * Recompute a KillCountTask from live KC data.
+     * @return true if status or current kills changed
+     */
+    public boolean update(KillCountTask task)
+    {
+        if (!killCountManager.isLoaded())
+        {
+            return false;
+        }
+        int liveCount = killCountManager.getData().getKillCount(task.getNpcId());
+        return task.recomputeFromCount(liveCount);
     }
 }

@@ -36,6 +36,8 @@ public final class TaskAdapter implements JsonSerializer<Task>, JsonDeserializer
                 return context.deserialize(json, QuestTask.class);
             case SKILL_LEVEL:
                 return context.deserialize(json, SkillLevelTask.class);
+            case KILL_COUNT:
+                return context.deserialize(json, KillCountTask.class);
             default:
                 log.error("Unknown task type: " + taskType);
                 return null;

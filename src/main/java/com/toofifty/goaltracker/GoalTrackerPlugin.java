@@ -3,10 +3,7 @@ package com.toofifty.goaltracker;
 
 import com.google.inject.Provides;
 import com.toofifty.goaltracker.models.enums.TaskType;
-import com.toofifty.goaltracker.models.task.ItemTask;
-import com.toofifty.goaltracker.models.task.QuestTask;
-import com.toofifty.goaltracker.models.task.SkillLevelTask;
-import com.toofifty.goaltracker.models.task.Task;
+import com.toofifty.goaltracker.models.task.*;
 import com.toofifty.goaltracker.services.TaskIconService;
 import com.toofifty.goaltracker.services.TaskUpdateService;
 import com.toofifty.goaltracker.ui.GoalTrackerPanel;
@@ -14,10 +11,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
-import net.runelite.api.events.GameStateChanged;
-import net.runelite.api.events.ItemContainerChanged;
-import net.runelite.api.events.StatChanged;
-import net.runelite.api.events.VarbitChanged;
+import net.runelite.api.events.*;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.chat.QueuedMessage;
@@ -110,6 +104,10 @@ public final class GoalTrackerPlugin extends Plugin
     @Getter
     @Inject
     private GoalManager goalManager;
+
+    @Getter
+    @Inject
+    private KillCountManager killCountManager;
 
     @Inject
     private GoalTrackerPanel goalTrackerPanel;
@@ -257,6 +255,62 @@ public final class GoalTrackerPlugin extends Plugin
         }
     }
 
+
+    @Subscribe
+    public void onActorDeath(ActorDeath event)
+    {
+        // Only care about NPC deaths
+        if (!(event.getActor() instanceof NPC))
+        {
+            return;
+        }
+
+        // Only record kills when data is loaded (i.e. player is logged in)
+        if (!killCountManager.isLoaded())
+        {
+            return;
+        }
+
+        NPC npc = (NPC) event.getActor();
+
+        // Credit the kill if the NPC was last interacting with the local player.
+        // This is the standard approach used by RuneLite's own KC tracking —
+        // not perfect in multi-combat but reliable for the vast majority of kills.
+        if (npc.getInteracting() != client.getLocalPlayer())
+        {
+            return;
+        }
+
+        int npcId = npc.getId();
+        killCountManager.recordKill(npcId);
+
+        // Update any KC tasks watching this NPC ID
+        List<KillCountTask> tasks = goalManager.getIncompleteTasksByType(TaskType.KILL_COUNT);
+        boolean anyChanged = false;
+        for (KillCountTask task : tasks)
+        {
+            if (task.getNpcId() != npcId)
+            {
+                continue;
+            }
+            if (taskUpdateService.update(task))
+            {
+                anyChanged = true;
+                uiStatusManager.refresh(task);
+                if (task.getStatus().isCompleted())
+                {
+                    notifyTask(task);
+                }
+            }
+        }
+
+        if (anyChanged)
+        {
+            goalManager.save();
+            schedulePanelRefresh(200);
+        }
+    }
+
     @Subscribe
     public void onSessionOpen(SessionOpen event)
     {
@@ -282,11 +336,24 @@ public final class GoalTrackerPlugin extends Plugin
     {
         if (event.getGameState() == GameState.LOGGED_IN)
         {
+            long accountHash = client.getAccountHash();
+            if (accountHash != -1L)
+            {
+                killCountManager.load(accountHash);
+                // Refresh KC tasks now that live data is available
+                refreshKillCountTasks();
+            }
+
             // Re-check quest tasks after login
             clientThread.invokeLater(() -> refreshQuestTasks());
 
             // Refresh the panel once, 10s after login, after detection settles
             schedulePanelRefresh(10_000);
+        }
+        else if (event.getGameState() == GameState.LOGIN_SCREEN
+                || event.getGameState() == GameState.HOPPING)
+        {
+            killCountManager.unload();
         }
     }
 
@@ -488,6 +555,28 @@ public final class GoalTrackerPlugin extends Plugin
             }
         }
     }
+
+    /**
+     * Recompute all incomplete KC tasks from live KillCountManager data.
+     * Called on login after KC data is loaded.
+     */
+    private void refreshKillCountTasks()
+    {
+        if (goalManager == null || !killCountManager.isLoaded()) return;
+        List<KillCountTask> tasks = goalManager.getIncompleteTasksByType(TaskType.KILL_COUNT);
+        for (KillCountTask task : tasks)
+        {
+            if (taskUpdateService.update(task))
+            {
+                uiStatusManager.refresh(task);
+                if (task.getStatus().isCompleted())
+                {
+                    notifyTask(task);
+                }
+            }
+        }
+    }
+
     @Provides
     public GoalTrackerConfig provideConfig(ConfigManager configManager)
     {

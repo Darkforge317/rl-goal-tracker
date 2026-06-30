@@ -21,7 +21,9 @@ public enum TaskType
     @SerializedName("quest")
     QUEST("quest"),
     @SerializedName("item")
-    ITEM("item");
+    ITEM("item"),
+    @SerializedName("kill_count")
+    KILL_COUNT("kill_count");
 
     private final String name;
 

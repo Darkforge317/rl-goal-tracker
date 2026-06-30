@@ -104,6 +104,9 @@ public final class NewTaskPanel extends JPanel
 
         moreOptionsPanel.add(new ItemTaskInput(plugin, goal).onSubmit((task) -> this.listener.accept(task)), constraints);
         constraints.gridy++;
+
+        moreOptionsPanel.add(new KillCountTaskInput(plugin, goal).onSubmit((task) -> this.listener.accept(task)), constraints);
+        constraints.gridy++;
     }
 
     public void onTaskAdded(Consumer<Task> listener)

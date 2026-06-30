@@ -60,6 +60,10 @@ public final class TaskIconService
         {
             return get((QuestTask) task);
         }
+        if (task instanceof KillCountTask)
+        {
+            return get((KillCountTask) task);
+        }
 
         BufferedImage image = null;
         if (task instanceof SkillLevelTask)
@@ -110,6 +114,11 @@ public final class TaskIconService
             task.setCachedIcon(itemManager.getImage(task.getItemId()));
         }
         return task.getCachedIcon();
+    }
+
+    public ImageIcon get(KillCountTask task)
+    {
+        return task.isDone() ? CHECK_MARK_ICON : CROSS_MARK_ICON;
     }
 
     private ImageIcon iconify(BufferedImage img)
