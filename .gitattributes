@@ -1,0 +1,25 @@
+# Force LF line endings for text files, regardless of platform or local
+# git config (core.autocrlf). This prevents CRLF from being reintroduced
+# by Windows editors/tools and silently breaking exact-string JSON
+# comparisons in tests (see: GoalSerializerTest CRLF mismatch, Issue #38).
+
+* text=auto eol=lf
+
+*.java text eol=lf
+*.json text eol=lf
+*.gradle text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.properties text eol=lf
+
+# Windows-specific scripts should keep CRLF
+*.bat text eol=crlf
+
+# Binary files — do not touch
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.jar binary

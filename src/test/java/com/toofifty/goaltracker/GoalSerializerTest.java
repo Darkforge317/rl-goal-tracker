@@ -1,11 +1,7 @@
 package com.toofifty.goaltracker;
 
 import com.toofifty.goaltracker.models.Goal;
-import com.toofifty.goaltracker.models.task.ManualTask;
-import com.toofifty.goaltracker.models.task.SkillLevelTask;
-import com.toofifty.goaltracker.models.task.SkillXpTask;
-import com.toofifty.goaltracker.models.task.QuestTask;
-import com.toofifty.goaltracker.models.task.ItemTask;
+import com.toofifty.goaltracker.models.task.*;
 import com.toofifty.goaltracker.models.enums.Status;
 import com.toofifty.goaltracker.models.enums.TaskType;
 import com.toofifty.goaltracker.utils.ReorderableList;
@@ -70,7 +66,7 @@ public class GoalSerializerTest {
         assertEquals(1, goals.size());
         assertEquals("My Goal", goals.get(0).getDescription());
         assertEquals(-1, goals.get(0).getDisplayOrder());
-        assertEquals(5, goals.get(0).getTasks().size());
+        assertEquals(6, goals.get(0).getTasks().size());
 
         assertEquals(ManualTask.class, goals.get(0).getTasks().get(0).getClass());
         assertEquals(0, goals.get(0).getTasks().get(0).getIndentLevel());
@@ -107,6 +103,16 @@ public class GoalSerializerTest {
         assertEquals(10, itemTask.getQuantity());
         assertEquals("Feather", itemTask.getItemName());
         assertEquals(0, itemTask.getIndentLevel());
+
+
+        assertEquals(KillCountTask.class, goals.get(0).getTasks().get(5).getClass());
+        KillCountTask killCountTask = (KillCountTask) goals.get(0).getTasks().get(5);
+        assertEquals(2, killCountTask.getNpcId());
+        assertEquals("Goblin", killCountTask.getNpcName());
+        assertEquals(100, killCountTask.getTargetKills());
+        assertEquals(42, killCountTask.getCurrentKills());
+        assertEquals(Status.IN_PROGRESS, killCountTask.getStatus());
+        assertEquals(0, killCountTask.getIndentLevel());
     }
 
     @Test
@@ -174,6 +180,15 @@ public class GoalSerializerTest {
                                         .acquired(4)
                                         .itemId(314)
                                         .itemName("Feather")
+                                        .build(),
+                                KillCountTask.builder()
+                                        .status(Status.IN_PROGRESS)
+                                        .notified(false)
+                                        .indentLevel(0)
+                                        .npcId(2)
+                                        .npcName("Goblin")
+                                        .targetKills(100)
+                                        .currentKills(42)
                                         .build()
                         ))).build()
         );

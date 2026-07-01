@@ -43,6 +43,16 @@
         "has_been_notified": false,
         "indent_level": 0,
         "type": "item"
+      },
+      {
+        "npc_id": 2,
+        "npc_name": "Goblin",
+        "target_kills": 100,
+        "current_kills": 42,
+        "status": "in_progress",
+        "has_been_notified": false,
+        "indent_level": 0,
+        "type": "kill_count"
       }
     ]
   }

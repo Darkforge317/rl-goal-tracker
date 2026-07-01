@@ -80,6 +80,8 @@ public final class KillCountManager
      */
     public int recordKill(int npcId)
     {
+        log.info("GoalTracker: recordKill({}) starting...", npcId);
+
         if (currentData == null)
         {
             log.warn("recordKill called before load() — ignoring npcId={}", npcId);
@@ -87,27 +89,34 @@ public final class KillCountManager
         }
         int newCount = currentData.increment(npcId);
         save();
-        log.debug("Kill recorded npcId={} newCount={}", npcId, newCount);
+        log.debug("save() returned. Kill recorded npcId={} newCount={}", npcId, newCount);
         return newCount;
     }
 
     /** @return current KC data, or null if not loaded */
     public KillCountData getData()
     {
+        log.debug("GoalTracker: KC Manager's getData() was called. currentData={}", currentData);
         return currentData;
     }
 
     public boolean isLoaded()
     {
+        log.info("GoalTracker: KC Manager's isLoaded() was called. currentData exists={}", currentData != null);
         return currentData != null;
     }
 
     private void save()
     {
+        log.info("GoalTracker: Starting KC Save...");
         if (currentData == null || currentKey == null)
         {
+            log.info("GoalTracker: save() had no currentData or currentKey. currentData={} and currentKey={}", currentData, currentKey);
             return;
         }
+        log.info("GoalTracker: Running setConfiguration...");
+        log.info("GoalTracker: CONFIG_GROUP={}, currentKey={}, currentDataJson={}",CONFIG_GROUP,currentKey, gson.toJson(currentData));
         configManager.setConfiguration(CONFIG_GROUP, currentKey, gson.toJson(currentData));
+        log.info("GoalTracker: setConfiguration finished. Saved configuration is: {}", configManager.getConfiguration(CONFIG_GROUP, currentKey));
     }
 }

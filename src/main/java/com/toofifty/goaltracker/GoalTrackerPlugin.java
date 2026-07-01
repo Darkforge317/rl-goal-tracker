@@ -264,24 +264,33 @@ public final class GoalTrackerPlugin extends Plugin
         {
             return;
         }
+        log.info("GoalTracker: Death was an NPC");
 
         // Only record kills when data is loaded (i.e. player is logged in)
         if (!killCountManager.isLoaded())
         {
             return;
         }
+        log.info("GoalTracker: killCountManager had data");
 
         NPC npc = (NPC) event.getActor();
+        log.info("GoalTracker: NPC name was {}",npc.getName());
+        log.info("GoalTracker: NPC actor was {}",npc);
+
 
         // Credit the kill if the NPC was last interacting with the local player.
         // This is the standard approach used by RuneLite's own KC tracking —
         // not perfect in multi-combat but reliable for the vast majority of kills.
         if (npc.getInteracting() != client.getLocalPlayer())
         {
+            log.info("GoalTracker: NPC was NOT being attacked by local player");
             return;
         }
+        log.info("GoalTracker: NPC WAS being attacked by local player");
 
         int npcId = npc.getId();
+        log.info("GoalTracker: NPC ID was {}", npcId);
+
         killCountManager.recordKill(npcId);
 
         // Update any KC tasks watching this NPC ID

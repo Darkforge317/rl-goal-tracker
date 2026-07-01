@@ -3,6 +3,7 @@ package com.toofifty.goaltracker.models;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -12,6 +13,7 @@ import java.util.Map;
  * Stored in RuneLite config under a key scoped to the account hash,
  * so it persists across sessions and syncs across devices automatically.
  */
+@Slf4j
 @Getter
 @Setter
 @NoArgsConstructor
@@ -32,6 +34,7 @@ public class KillCountData
     public int increment(int npcId)
     {
         int newCount = getKillCount(npcId) + 1;
+        log.info("GoalTracker: KC for NPC {} increased to {}", npcId, newCount);
         kills.put(npcId, newCount);
         return newCount;
     }

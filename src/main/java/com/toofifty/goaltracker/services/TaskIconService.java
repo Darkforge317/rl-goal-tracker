@@ -25,6 +25,8 @@ public final class TaskIconService
     public static final ImageIcon CHECK_MARK_ICON;
     public static final ImageIcon QUEST_ICON;
     public static final ImageIcon QUEST_COMPLETE_ICON;
+    public static final ImageIcon KC_ICON;
+    public static final ImageIcon KC_COMPLETE_ICON;
     public static final ImageIcon UNKNOWN_ICON;
 
     static
@@ -40,6 +42,12 @@ public final class TaskIconService
         );
         QUEST_COMPLETE_ICON = new ImageIcon(
             ImageUtil.loadImageResource(GoalTrackerPlugin.class, "/quest_complete.png")
+        );
+        KC_ICON = new ImageIcon(
+            ImageUtil.loadImageResource(GoalTrackerPlugin.class, "/kc_skull.png")
+        );
+        KC_COMPLETE_ICON = new ImageIcon(
+                ImageUtil.loadImageResource(GoalTrackerPlugin.class, "/kc_skull_complete.png")
         );
         UNKNOWN_ICON = new ImageIcon(
             ImageUtil.loadImageResource(GoalTrackerPlugin.class, "/question_mark.png")
@@ -118,7 +126,7 @@ public final class TaskIconService
 
     public ImageIcon get(KillCountTask task)
     {
-        return task.isDone() ? CHECK_MARK_ICON : CROSS_MARK_ICON;
+        return task.isDone() ? KC_COMPLETE_ICON : KC_ICON;
     }
 
     private ImageIcon iconify(BufferedImage img)
