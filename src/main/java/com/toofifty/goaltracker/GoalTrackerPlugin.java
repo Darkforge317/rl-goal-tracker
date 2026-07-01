@@ -51,6 +51,18 @@ public final class GoalTrackerPlugin extends Plugin
             InventoryID.GROUP_STORAGE.getId()
     };
 
+    /**
+     * How many ticks a hit on an NPC still counts toward kill credit,
+     * even if another player lands the final blow.
+     */
+    private static final int KILL_CREDIT_WINDOW_TICKS = 17; // ~10 seconds
+
+    /**
+     * npcIndex -> ticks remaining before a hit the local player landed on
+     * that NPC stops counting toward kill credit.
+     */
+    private final java.util.Map<Integer, Integer> npcHitTicksRemaining = new java.util.HashMap<>();
+
     @Getter
     @Inject
     private Client client;
@@ -108,6 +120,14 @@ public final class GoalTrackerPlugin extends Plugin
     @Getter
     @Inject
     private KillCountManager killCountManager;
+
+    /**
+     * Maps NPC index -> last game tick the local player hit-splatted that NPC.
+     * Used in combination with {@link #KILL_CREDIT_WINDOW_TICKS} to still attribute
+     * kills to the player even if they were not the final hit.
+     */
+    private final java.util.Map<Integer, Integer> lastPlayerHitTick = new java.util.HashMap<>();
+    private int currentTick = 0;
 
     @Inject
     private GoalTrackerPanel goalTrackerPanel;
@@ -256,68 +276,75 @@ public final class GoalTrackerPlugin extends Plugin
     }
 
 
+
     @Subscribe
-    public void onActorDeath(ActorDeath event)
-    {
+    public void onActorDeath(ActorDeath event) {
         // Only care about NPC deaths
-        if (!(event.getActor() instanceof NPC))
-        {
+        if (!(event.getActor() instanceof NPC)) {
             return;
         }
-        log.info("GoalTracker: Death was an NPC");
 
         // Only record kills when data is loaded (i.e. player is logged in)
-        if (!killCountManager.isLoaded())
-        {
+        if (!killCountManager.isLoaded()) {
             return;
         }
-        log.info("GoalTracker: killCountManager had data");
 
         NPC npc = (NPC) event.getActor();
-        log.info("GoalTracker: NPC name was {}",npc.getName());
-        log.info("GoalTracker: NPC actor was {}",npc);
 
+        // Credit the kill if EITHER:
+        //   (a) the NPC was interacting with the local player at time of death, or
+        //   (b) the local player landed a hit (including a 0) on this NPC within KILL_CREDIT_WINDOW_TICKS,
+        //       even if someone else's hit actually killed it.
+        boolean isInteracting = npc.getInteracting() == client.getLocalPlayer();
+        boolean recentlyHitByPlayer = npcHitTicksRemaining.containsKey(npc.getIndex());
 
-        // Credit the kill if the NPC was last interacting with the local player.
-        // This is the standard approach used by RuneLite's own KC tracking —
-        // not perfect in multi-combat but reliable for the vast majority of kills.
-        if (npc.getInteracting() != client.getLocalPlayer())
-        {
-            log.info("GoalTracker: NPC was NOT being attacked by local player");
+        if (!isInteracting && !recentlyHitByPlayer) {
             return;
         }
-        log.info("GoalTracker: NPC WAS being attacked by local player");
 
         int npcId = npc.getId();
-        log.info("GoalTracker: NPC ID was {}", npcId);
-
         killCountManager.recordKill(npcId);
+        npcHitTicksRemaining.remove(npc.getIndex());
 
         // Update any KC tasks watching this NPC ID
         List<KillCountTask> tasks = goalManager.getIncompleteTasksByType(TaskType.KILL_COUNT);
-        boolean anyChanged = false;
-        for (KillCountTask task : tasks)
-        {
-            if (task.getNpcId() != npcId)
-            {
+
+        for (KillCountTask task : tasks) {
+            if (task.getNpcId() != npcId) {
                 continue;
             }
-            if (taskUpdateService.update(task))
-            {
-                anyChanged = true;
+            if (taskUpdateService.update(task)) {
                 uiStatusManager.refresh(task);
-                if (task.getStatus().isCompleted())
-                {
+                if (task.getStatus().isCompleted()) {
                     notifyTask(task);
                 }
             }
         }
 
-        if (anyChanged)
+        schedulePanelRefresh(200);
+    }
+
+    @Subscribe
+    public void onGameTick(net.runelite.api.events.GameTick event)
+    {
+        npcHitTicksRemaining.replaceAll((npcIndex, ticksLeft) -> ticksLeft - 1);
+        npcHitTicksRemaining.values().removeIf(ticksLeft -> ticksLeft <= 0);
+    }
+
+    @Subscribe
+    public void onHitsplatApplied(net.runelite.api.events.HitsplatApplied event)
+    {
+        if (!(event.getActor() instanceof NPC))
         {
-            goalManager.save();
-            schedulePanelRefresh(200);
+            return;
         }
+        if (!event.getHitsplat().isMine())
+        {
+            return;
+        }
+
+        NPC npc = (NPC) event.getActor();
+        npcHitTicksRemaining.put(npc.getIndex(), KILL_CREDIT_WINDOW_TICKS);
     }
 
     @Subscribe
