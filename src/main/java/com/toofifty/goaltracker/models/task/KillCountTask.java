@@ -62,11 +62,7 @@ public final class KillCountTask extends Task
     @Override
     public String toString()
     {
-        if (currentKills > 0 && currentKills < targetKills)
-        {
-            return String.format("%d/%d %s kills", currentKills, targetKills, npcName);
-        }
-        return String.format("%d x %s kills", targetKills, npcName);
+        return String.format("%d/%d %s kills", currentKills, targetKills, npcName);
     }
 
     @Override
