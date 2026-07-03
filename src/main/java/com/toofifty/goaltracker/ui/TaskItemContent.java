@@ -48,6 +48,22 @@ public final class TaskItemContent extends JPanel implements Refreshable
     private final GoalTrackerPlugin plugin;
     private ActionHistory actionHistory;
 
+    // Custom Trash Cursor Assets
+    private static final Cursor DEFAULT_PANEL_CURSOR = Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR);
+    private static final Cursor TRASH_CURSOR;
+
+    static {
+        Cursor tempCursor;
+        try {
+            java.awt.image.BufferedImage trashImg = net.runelite.client.util.ImageUtil.loadImageResource(TaskItemContent.class, "/trash.png");
+            Point hotspot = new Point(0, 0);
+            tempCursor = java.awt.Toolkit.getDefaultToolkit().createCustomCursor(trashImg, hotspot, "TrashCursor");
+        } catch (Exception e) {
+            tempCursor = Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR);
+        }
+        TRASH_CURSOR = tempCursor;
+    }
+
     TaskItemContent(GoalTrackerPlugin plugin, Goal goal, Task task)
     {
         super(new BorderLayout());
@@ -159,7 +175,7 @@ public final class TaskItemContent extends JPanel implements Refreshable
                         SwingUtilities.invokeLater(() -> forceTooltipUpdate(isShiftDown));
                     }
                 }
-                return false; // Pass the event along so other text inputs function normally
+                return false;
             }
         };
 
@@ -179,7 +195,56 @@ public final class TaskItemContent extends JPanel implements Refreshable
             @Override
             public void ancestorMoved(javax.swing.event.AncestorEvent event) {}
         });
+
+        // Ensure that cursor styles actively adapt whenever the mouse slides onto or off a row layout
+        MouseAdapter rowHoverCursorAdapter = new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                boolean isShiftCurrentlyDown = (e.getModifiersEx() & java.awt.event.InputEvent.SHIFT_DOWN_MASK) != 0;
+                if (isShiftCurrentlyDown) {
+                    updateAllChildCursors(TRASH_CURSOR);
+                } else {
+                    updateAllChildCursors(DEFAULT_PANEL_CURSOR);
+                }
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                PointerInfo pi = MouseInfo.getPointerInfo();
+                if (pi != null) {
+                    Point mousePos = pi.getLocation();
+                    SwingUtilities.convertPointFromScreen(mousePos, TaskItemContent.this);
+
+                    if (!TaskItemContent.this.contains(mousePos)) {
+                        updateAllChildCursors(DEFAULT_PANEL_CURSOR);
+                    }
+                } else {
+                    updateAllChildCursors(DEFAULT_PANEL_CURSOR);
+                }
+            }
+        };
+
+        this.addMouseListener(rowHoverCursorAdapter);
+        titleStack.addMouseListener(rowHoverCursorAdapter);
+        titleLabel.addMouseListener(rowHoverCursorAdapter);
+        titleEdit.addMouseListener(rowHoverCursorAdapter);
+        iconLabel.addMouseListener(rowHoverCursorAdapter);
+        if (iconWrapper != null) {
+            iconWrapper.addMouseListener(rowHoverCursorAdapter);
+        }
     }
+
+    private void updateAllChildCursors(Cursor cursor) {
+        this.setCursor(cursor);
+        titleStack.setCursor(cursor);
+        titleLabel.setCursor(cursor);
+        titleEdit.setCursor(cursor);
+        iconLabel.setCursor(cursor);
+        if (iconWrapper != null) {
+            iconWrapper.setCursor(cursor);
+        }
+    }
+
     private void forceTooltipUpdate(boolean isShiftActive)
     {
         PointerInfo pointerInfo = MouseInfo.getPointerInfo();
@@ -193,25 +258,15 @@ public final class TaskItemContent extends JPanel implements Refreshable
         {
             long now = System.currentTimeMillis();
             int modifiers = isShiftActive ? java.awt.event.InputEvent.SHIFT_DOWN_MASK : 0;
-
-            // 1. Explicitly mutate the underlying text property string
-            // This forces Swing to register a change in state and clear its internal raster cache
             if (isShiftActive) {
                 titleLabel.setToolTipText("Shift-click to remove task and children");
+                updateAllChildCursors(TRASH_CURSOR);
             } else {
                 String full = task.toString();
                 titleLabel.setToolTipText((full == null || full.isEmpty()) ? null : full);
+                updateAllChildCursors(DEFAULT_PANEL_CURSOR);
             }
-
-            // 2. Synthesize a live mouse movement event at the cursor's current position
-            // We pass the exact shift modifier mask down into the tracking system
-            MouseEvent moveEvent = new MouseEvent(
-                    titleLabel, MouseEvent.MOUSE_MOVED, now,
-                    modifiers, mousePos.x, mousePos.y, 0, false
-            );
-
-            // 3. Command the active manager instance to evaluate the position
-            // Since the text property just changed, the manager is forced to immediately update the visual bubble
+            MouseEvent moveEvent = new MouseEvent(titleLabel, MouseEvent.MOUSE_MOVED, now, modifiers, mousePos.x, mousePos.y, 0, false);
             ToolTipManager.sharedInstance().mouseMoved(moveEvent);
         }
     }
