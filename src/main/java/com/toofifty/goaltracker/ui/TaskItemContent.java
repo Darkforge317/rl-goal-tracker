@@ -13,10 +13,7 @@ import com.toofifty.goaltracker.ui.components.ListItemPanel;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.*;
 import java.util.Locale;
 
 import static com.toofifty.goaltracker.utils.Constants.STATUS_TO_COLOR;
@@ -33,7 +30,15 @@ public final class TaskItemContent extends JPanel implements Refreshable
     private final Task task;
     private final Goal goal;
     private final TaskIconService iconService;
-    private final JLabel titleLabel = new JLabel();
+    private final JLabel titleLabel = new JLabel() {
+        @Override
+        public String getToolTipText(MouseEvent event) {
+            if (event != null && (event.getModifiersEx() & java.awt.event.InputEvent.SHIFT_DOWN_MASK) != 0) {
+                return "Shift-click to remove task and children";
+            }
+            return super.getToolTipText();
+        }
+    };
     private final JTextField titleEdit = new JTextField();
     private final JPanel titleStack = new JPanel(new CardLayout());
     private final JLabel iconLabel = new JLabel();
@@ -134,6 +139,81 @@ public final class TaskItemContent extends JPanel implements Refreshable
         titleLabel.addMouseListener(contextMenuListener);
         titleEdit.addMouseListener(contextMenuListener);
         iconLabel.addMouseListener(contextMenuListener);
+
+        // Track the Shift key toggling entirely within the Swing thread context
+        KeyEventDispatcher shiftWatcher = new KeyEventDispatcher()
+        {
+            private boolean shiftWasDown = false;
+
+            @Override
+            public boolean dispatchKeyEvent(KeyEvent e)
+            {
+                if (e.getKeyCode() == KeyEvent.VK_SHIFT)
+                {
+                    boolean isShiftDown = e.isShiftDown();
+                    // Only fire an update when the state actually cuts over (press or release)
+                    if (isShiftDown != shiftWasDown)
+                    {
+                        shiftWasDown = isShiftDown;
+                        // Pass the exact shift state safely to the EDT loop
+                        SwingUtilities.invokeLater(() -> forceTooltipUpdate(isShiftDown));
+                    }
+                }
+                return false; // Pass the event along so other text inputs function normally
+            }
+        };
+
+
+        // Bind the listener when this component is physically displayed on screen, and unbind to prevent leaks
+        this.addAncestorListener(new javax.swing.event.AncestorListener() {
+            @Override
+            public void ancestorAdded(javax.swing.event.AncestorEvent event) {
+                KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(shiftWatcher);
+            }
+
+            @Override
+            public void ancestorRemoved(javax.swing.event.AncestorEvent event) {
+                KeyboardFocusManager.getCurrentKeyboardFocusManager().removeKeyEventDispatcher(shiftWatcher);
+            }
+
+            @Override
+            public void ancestorMoved(javax.swing.event.AncestorEvent event) {}
+        });
+    }
+    private void forceTooltipUpdate(boolean isShiftActive)
+    {
+        PointerInfo pointerInfo = MouseInfo.getPointerInfo();
+        if (pointerInfo == null) return;
+
+        Point mousePos = pointerInfo.getLocation();
+        SwingUtilities.convertPointFromScreen(mousePos, titleLabel);
+
+        // Only process if the cursor is resting inside our text label coordinates
+        if (titleLabel.contains(mousePos))
+        {
+            long now = System.currentTimeMillis();
+            int modifiers = isShiftActive ? java.awt.event.InputEvent.SHIFT_DOWN_MASK : 0;
+
+            // 1. Explicitly mutate the underlying text property string
+            // This forces Swing to register a change in state and clear its internal raster cache
+            if (isShiftActive) {
+                titleLabel.setToolTipText("Shift-click to remove task and children");
+            } else {
+                String full = task.toString();
+                titleLabel.setToolTipText((full == null || full.isEmpty()) ? null : full);
+            }
+
+            // 2. Synthesize a live mouse movement event at the cursor's current position
+            // We pass the exact shift modifier mask down into the tracking system
+            MouseEvent moveEvent = new MouseEvent(
+                    titleLabel, MouseEvent.MOUSE_MOVED, now,
+                    modifiers, mousePos.x, mousePos.y, 0, false
+            );
+
+            // 3. Command the active manager instance to evaluate the position
+            // Since the text property just changed, the manager is forced to immediately update the visual bubble
+            ToolTipManager.sharedInstance().mouseMoved(moveEvent);
+        }
     }
 
     public void setActionHistory(ActionHistory history)
