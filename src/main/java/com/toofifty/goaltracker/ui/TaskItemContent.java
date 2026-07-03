@@ -12,8 +12,11 @@ import com.toofifty.goaltracker.ui.components.ListItemPanel;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.AncestorEvent;
+import javax.swing.event.AncestorListener;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.image.BufferedImage;
 import java.util.Locale;
 
 import static com.toofifty.goaltracker.utils.Constants.STATUS_TO_COLOR;
@@ -33,7 +36,7 @@ public final class TaskItemContent extends JPanel implements Refreshable
     private final JLabel titleLabel = new JLabel() {
         @Override
         public String getToolTipText(MouseEvent event) {
-            if (event != null && (event.getModifiersEx() & java.awt.event.InputEvent.SHIFT_DOWN_MASK) != 0) {
+            if (event != null && (event.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) != 0) {
                 return "Shift-click to remove task and children";
             }
             return super.getToolTipText();
@@ -55,7 +58,7 @@ public final class TaskItemContent extends JPanel implements Refreshable
     static {
         Cursor tempCursor;
         try {
-            java.awt.image.BufferedImage trashImg = net.runelite.client.util.ImageUtil.loadImageResource(TaskItemContent.class, "/trash.png");
+            BufferedImage trashImg = net.runelite.client.util.ImageUtil.loadImageResource(TaskItemContent.class, "/trash.png");
             Point hotspot = new Point(0, 0);
             tempCursor = java.awt.Toolkit.getDefaultToolkit().createCustomCursor(trashImg, hotspot, "TrashCursor");
         } catch (Exception e) {
@@ -101,8 +104,8 @@ public final class TaskItemContent extends JPanel implements Refreshable
                 @Override public void mouseClicked(MouseEvent e) { enterEdit(); }
             });
             titleEdit.addActionListener(e -> exitEdit(true));
-            titleEdit.addFocusListener(new java.awt.event.FocusAdapter() {
-                @Override public void focusLost(java.awt.event.FocusEvent e) { exitEdit(true); }
+            titleEdit.addFocusListener(new FocusAdapter() {
+                @Override public void focusLost(FocusEvent e) { exitEdit(true); }
             });
         }
 
@@ -181,26 +184,26 @@ public final class TaskItemContent extends JPanel implements Refreshable
 
 
         // Bind the listener when this component is physically displayed on screen, and unbind to prevent leaks
-        this.addAncestorListener(new javax.swing.event.AncestorListener() {
+        this.addAncestorListener(new AncestorListener() {
             @Override
-            public void ancestorAdded(javax.swing.event.AncestorEvent event) {
+            public void ancestorAdded(AncestorEvent event) {
                 KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(shiftWatcher);
             }
 
             @Override
-            public void ancestorRemoved(javax.swing.event.AncestorEvent event) {
+            public void ancestorRemoved(AncestorEvent event) {
                 KeyboardFocusManager.getCurrentKeyboardFocusManager().removeKeyEventDispatcher(shiftWatcher);
             }
 
             @Override
-            public void ancestorMoved(javax.swing.event.AncestorEvent event) {}
+            public void ancestorMoved(AncestorEvent event) {}
         });
 
         // Ensure that cursor styles actively adapt whenever the mouse slides onto or off a row layout
         MouseAdapter rowHoverCursorAdapter = new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
-                boolean isShiftCurrentlyDown = (e.getModifiersEx() & java.awt.event.InputEvent.SHIFT_DOWN_MASK) != 0;
+                boolean isShiftCurrentlyDown = (e.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) != 0;
                 if (isShiftCurrentlyDown) {
                     updateAllChildCursors(TRASH_CURSOR);
                 } else {
@@ -257,7 +260,7 @@ public final class TaskItemContent extends JPanel implements Refreshable
         if (titleLabel.contains(mousePos))
         {
             long now = System.currentTimeMillis();
-            int modifiers = isShiftActive ? java.awt.event.InputEvent.SHIFT_DOWN_MASK : 0;
+            int modifiers = isShiftActive ? InputEvent.SHIFT_DOWN_MASK : 0;
             if (isShiftActive) {
                 titleLabel.setToolTipText("Shift-click to remove task and children");
                 updateAllChildCursors(TRASH_CURSOR);
