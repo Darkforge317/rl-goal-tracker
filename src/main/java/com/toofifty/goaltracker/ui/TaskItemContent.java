@@ -148,9 +148,8 @@ public final class TaskItemContent extends JPanel implements Refreshable
         updateTitleLabel();
 
         int level = Math.max(0, task.getIndentLevel());
-        // Shift rendering so level 0 = 0px, level 1 = 0px, level 2 = 12px, etc.
-        // This avoids the first child appearing with an extra indent when prereqs are added.
-        int indent = (level <= 1) ? 0 : (level - 1) * INDENT_PER_LEVEL;
+        // Indent level scales linearly: 0 = 0px, 1 = 12px, 2 = 24px, 3 = 36px, etc.
+        int indent = level * INDENT_PER_LEVEL;
 
         iconLabel.setIcon(iconService.get(task));
         // Apply indent to the wrapper instead of the label to avoid double padding
