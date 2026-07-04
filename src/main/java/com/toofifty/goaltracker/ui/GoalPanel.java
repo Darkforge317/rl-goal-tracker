@@ -143,7 +143,7 @@ public final class GoalPanel extends JPanel implements Refreshable
                 taskPanel.setOpaque(true);
                 taskPanel.setBackground(ColorScheme.DARK_GRAY_COLOR);
                 taskPanel.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createMatteBorder(1, 6, 0, 6, ColorScheme.DARKER_GRAY_COLOR), // thinner divider
+                    BorderFactory.createMatteBorder(1, 0, 0, 0, ColorScheme.DARKER_GRAY_COLOR), // thinner divider
                     new EmptyBorder(2, 4, 2, 4)
                 ));
 

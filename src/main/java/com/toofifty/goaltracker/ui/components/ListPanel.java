@@ -44,8 +44,9 @@ public final class ListPanel<T> extends JScrollPane implements Refreshable
 
 
         listPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-        // Add left/right padding so card content aligns with the header
-        listPanel.setBorder(new EmptyBorder(0, 10, 0, 10));
+        // Supports padding. Previously had 10px left/right padding, but introduction
+        // of a horizontal scroll panel in GoalPanel.java caused the padding to look out of place
+        listPanel.setBorder(new EmptyBorder(0, 0, 0, 0));
 
         listPanel.addDragListener(new DragAndDropReorderPane.DragListener() {
             @Override
