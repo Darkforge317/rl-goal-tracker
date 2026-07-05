@@ -51,7 +51,8 @@ public final class TaskItemContent extends JPanel implements Refreshable
         this.goal = goal;
         iconService = plugin.getTaskIconService();
 
-        titleLabel.setPreferredSize(new Dimension(0, 24));
+        // Let the label calculate its own natural width while keeping the 24px height.
+        titleLabel.setPreferredSize(new Dimension(titleLabel.getPreferredSize().width, 24));
         titleLabel.setBorder(null);
         titleLabel.setOpaque(false);
         titleEdit.setBorder(null);
@@ -70,9 +71,9 @@ public final class TaskItemContent extends JPanel implements Refreshable
 
         plugin.getUiStatusManager().addRefresher(task, this::refresh);
 
-        this.addComponentListener(new ComponentAdapter() {
-            @Override public void componentResized(ComponentEvent e) { updateTitleLabel(); }
-        });
+//        this.addComponentListener(new ComponentAdapter() {
+//            @Override public void componentResized(ComponentEvent e) { updateTitleLabel(); }
+//        });
 
         titleEditable = (task instanceof ManualTask);
         if (titleEditable) {
@@ -171,32 +172,20 @@ public final class TaskItemContent extends JPanel implements Refreshable
     private void updateTitleLabel()
     {
         String full = task.toString();
-        titleLabel.setToolTipText((full == null || full.isEmpty()) ? null : full);
-        if (getWidth() <= 0) { titleLabel.setText(full); return; }
-
-        int insets = 0;
-        if (getBorder() != null) {
-            Insets ins = getBorder().getBorderInsets(this);
-            insets = (ins.left + ins.right);
-        }
-        int iconW = iconWrapper != null ? iconWrapper.getPreferredSize().width : 0;
-        int gap = 8;
-        int avail = Math.max(16, getWidth() - insets - iconW - gap);
-
-        FontMetrics fm = titleLabel.getFontMetrics(titleLabel.getFont());
         if (full == null) full = "";
-        if (fm.stringWidth(full) <= avail) { titleLabel.setText(full); return; }
 
-        String ellipsis = "…";
-        int lo = 0, hi = full.length();
-        int cut = hi;
-        while (lo <= hi) {
-            int mid = (lo + hi) >>> 1;
-            String candidate = full.substring(0, Math.max(0, mid)) + ellipsis;
-            if (fm.stringWidth(candidate) <= avail) { cut = mid; lo = mid + 1; }
-            else { hi = mid - 1; }
-        }
-        titleLabel.setText(full.substring(0, Math.max(0, cut)) + ellipsis);
+        titleLabel.setToolTipText(full.isEmpty() ? null : full);
+
+        // Always set the full string without truncating it
+        titleLabel.setText(full);
+
+        // Get Swing to calculate the true physical width of this full text string
+        FontMetrics fm = titleLabel.getFontMetrics(titleLabel.getFont());
+        int naturalWidth = fm.stringWidth(full);
+
+        // Apply the true width to the label so parent containers expand horizontally
+        titleLabel.setPreferredSize(new Dimension(naturalWidth, 24));
+        titleStack.revalidate();
     }
 
     private void enterEdit()
