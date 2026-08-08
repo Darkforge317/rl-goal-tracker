@@ -2,10 +2,12 @@ package com.toofifty.goaltracker;
 
 
 import com.google.inject.Provides;
+import com.toofifty.goaltracker.models.enums.Status;
 import com.toofifty.goaltracker.models.enums.TaskType;
 import com.toofifty.goaltracker.models.task.ItemTask;
 import com.toofifty.goaltracker.models.task.QuestTask;
 import com.toofifty.goaltracker.models.task.SkillLevelTask;
+import com.toofifty.goaltracker.models.task.SkillXpTask;
 import com.toofifty.goaltracker.models.task.Task;
 import com.toofifty.goaltracker.services.TaskIconService;
 import com.toofifty.goaltracker.services.TaskUpdateService;
@@ -229,17 +231,28 @@ public final class GoalTrackerPlugin extends Plugin
         }
 
         goalTrackerPanel.onGoalUpdated((goal) -> goalManager.save());
+
         goalTrackerPanel.onTaskAdded((task) -> {
-            if (taskUpdateService.update(task)) {
+            // Send directly to the client thread to fetch live player stats
+            clientThread.invokeLater(() -> {
+                // Populate the live metrics into memory instantly upon creation
+                taskUpdateService.update(task);
+
+                // Perform the disk write safely on the background game thread
+                goalManager.save();
+
+                // If the task is instantly completed, notify the player
                 if (task.getStatus().isCompleted()) {
                     notifyTask(task);
                 }
 
-                uiStatusManager.refresh(task);
-            }
-
-            goalManager.save();
+                // Send to the UI thread to handle screen graphics
+                SwingUtilities.invokeLater(() -> {
+                    uiStatusManager.refresh(task);
+                });
+            });
         });
+
         goalTrackerPanel.onTaskUpdated((task) -> goalManager.save());
 
         // Preload item icons at plugin startup so they are visible immediately
@@ -271,9 +284,49 @@ public final class GoalTrackerPlugin extends Plugin
     @Subscribe
     public void onStatChanged(StatChanged event)
     {
+        boolean anyTaskChanged = false;
+
+        // 1. Process Skill Level task updates
         List<SkillLevelTask> skillLevelTasks = goalManager.getIncompleteTasksByType(TaskType.SKILL_LEVEL);
         for (SkillLevelTask task : skillLevelTasks) {
+            // If this skill level task did not receive a status change
             if (!taskUpdateService.update(task, event)) continue;
+            // If the skill level task DID receive a status change
+            else {
+                anyTaskChanged = true;
+
+                // Update the UI immediately to reflect the new status
+                uiStatusManager.refresh(task);
+
+                // If we completed the task, notify the player
+                if (task.getStatus().isCompleted()) {
+                    notifyTask(task);
+                }
+            }
+        }
+
+        // 2. Process Skill XP task updates
+        List<SkillXpTask> skillXpTasks = goalManager.getIncompleteTasksByType(TaskType.SKILL_XP);
+        for (SkillXpTask task : skillXpTasks) {
+            // If this skill XP task did not receive a status change
+            if (!taskUpdateService.update(task, event)) continue;
+            // If the skill XP task DID receive a status change
+            else {
+                anyTaskChanged = true;
+
+                // Update the UI immediately to reflect the new status
+                uiStatusManager.refresh(task);
+
+                // If we completed the task, notify the player
+                if (task.getStatus().isCompleted()) {
+                    notifyTask(task);
+                }
+            }
+        }
+
+        // Save once if any status changes occurred
+        if (anyTaskChanged) {
+            goalManager.save();
         }
     }
 
@@ -282,11 +335,24 @@ public final class GoalTrackerPlugin extends Plugin
     {
         if (event.getGameState() == GameState.LOGGED_IN)
         {
-            // Re-check quest tasks after login
-            clientThread.invokeLater(() -> refreshQuestTasks());
+            // Defer task refreshes until the player's data is loaded in, preventing a race condition.
+            // Would otherwise cause a check of level-0/0xp against tasks, invalidating our login check entirely.
+            clientThread.invokeLater(() -> {
 
-            // Refresh the panel once, 10s after login, after detection settles
-            schedulePanelRefresh(10_000);
+                // If player data hasn't loaded from the server yet, wait and try again next frame
+                if (client.getRealSkillLevel(Skill.ATTACK) <= 0) { return false; }
+
+                // Refresh tasks now that player data exists
+                refreshQuestTasks();
+                refreshSkillLevelTasks();
+                refreshSkillXpTasks();
+
+                // Give the UI a moment to settle after data updates before repainting the panel
+                schedulePanelRefresh(200);
+
+                // Stop the refresh frame loop
+                return true;
+            });
         }
     }
 
@@ -474,6 +540,26 @@ public final class GoalTrackerPlugin extends Plugin
         return s;
     }
 
+    /**
+     * Safe, multithreaded entry point to force a full data validation sweep across all task types.
+     * Typically used after batch mutations like adding the quest prerequisites.
+     */
+    public void refreshAllTasks(Runnable onCompleteUIHandler)
+    {
+        // Force the execution to run safely on the OSRS client thread
+        clientThread.invokeLater(() -> {
+            refreshSkillLevelTasks();
+            refreshQuestTasks();
+            refreshSkillXpTasks();
+
+            // If the caller provided a UI update script, bounce it back to the Swing thread
+            if (onCompleteUIHandler != null)
+            {
+                javax.swing.SwingUtilities.invokeLater(onCompleteUIHandler);
+            }
+        });
+    }
+
     private void refreshQuestTasks()
     {
         if (goalManager == null || client == null) return;
@@ -488,6 +574,37 @@ public final class GoalTrackerPlugin extends Plugin
             }
         }
     }
+
+    private void refreshSkillLevelTasks()
+    {
+       if (goalManager == null || client == null) return;
+       List<SkillLevelTask> skillLevelTasks = goalManager.getIncompleteTasksByType(TaskType.SKILL_LEVEL);
+       for (SkillLevelTask task : skillLevelTasks)
+       {
+           task.refreshStatus(client);
+           uiStatusManager.refresh(task);
+           if (task.getStatus().isCompleted())
+           {
+               notifyTask(task);
+           }
+       }
+    }
+
+    private void refreshSkillXpTasks()
+    {
+        if (goalManager == null || client == null) return;
+        List<SkillXpTask> skillXpTasks = goalManager.getIncompleteTasksByType(TaskType.SKILL_XP);
+        for (SkillXpTask task : skillXpTasks)
+        {
+            task.refreshStatus(client);
+            uiStatusManager.refresh(task);
+            if (task.getStatus().isCompleted())
+            {
+                notifyTask(task);
+            }
+        }
+    }
+
     @Provides
     public GoalTrackerConfig provideConfig(ConfigManager configManager)
     {

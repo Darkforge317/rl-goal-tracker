@@ -60,7 +60,8 @@ public final class TaskUpdateService
     public boolean update(SkillLevelTask task, int level)
     {
         final Status oldStatus = task.getStatus();
-        task.setStatus(level >= task.getLevel() ? Status.COMPLETED : Status.NOT_STARTED);
+        task.setCurrentSkillLevel(level);
+        task.setStatus(level >= task.getTargetSkillLevel() ? Status.COMPLETED : Status.NOT_STARTED);
         return oldStatus != task.getStatus();
     }
 
@@ -90,7 +91,11 @@ public final class TaskUpdateService
     public boolean update(SkillXpTask task, int xp)
     {
         final Status oldStatus = task.getStatus();
-        task.setStatus(xp >= task.getXp() ? Status.COMPLETED : Status.NOT_STARTED);
+
+        // Store the live player experience in the task's cache
+        task.setCurrentSkillXp(xp);
+
+        task.setStatus(xp >= task.getTargetSkillXp() ? Status.COMPLETED : Status.NOT_STARTED);
         return oldStatus != task.getStatus();
     }
 

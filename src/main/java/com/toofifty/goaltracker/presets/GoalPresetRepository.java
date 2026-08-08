@@ -50,9 +50,9 @@ public class GoalPresetRepository {
                 .description("Early Ironman Progression")
                 .tasks(ReorderableList.from(
                         // Core Early Skills (unlock movement & teleports)
-                        SkillLevelTask.builder().skill(Skill.AGILITY).level(30).build(),
-                        SkillLevelTask.builder().skill(Skill.MAGIC).level(37).build(), // Falador/Camelot teles
-                        SkillLevelTask.builder().skill(Skill.THIEVING).level(20).build(),
+                        SkillLevelTask.builder().skill(Skill.AGILITY).targetSkillLevel(30).build(),
+                        SkillLevelTask.builder().skill(Skill.MAGIC).targetSkillLevel(37).build(), // Falador/Camelot teles
+                        SkillLevelTask.builder().skill(Skill.THIEVING).targetSkillLevel(20).build(),
                         // Early set-up gear
                         ItemTask.builder().itemId(GRACEFUL_HOOD).itemName("Graceful hood").quantity(1).build(),
                         ItemTask.builder().itemId(GRACEFUL_TOP).itemName("Graceful top").quantity(1).build(),
@@ -69,12 +69,12 @@ public class GoalPresetRepository {
                         // Birdhouse runs (Fossil Island access)
                         QuestTask.builder().quest(Quest.THE_DIG_SITE).build(),
                         QuestTask.builder().quest(Quest.BONE_VOYAGE).build(),
-                        SkillLevelTask.builder().skill(Skill.HUNTER).level(5).build(),
-                        SkillLevelTask.builder().skill(Skill.CRAFTING).level(8).build(), // clockwork
-                        SkillLevelTask.builder().skill(Skill.CONSTRUCTION).level(16).build(), // clockmaker's bench
+                        SkillLevelTask.builder().skill(Skill.HUNTER).targetSkillLevel(5).build(),
+                        SkillLevelTask.builder().skill(Skill.CRAFTING).targetSkillLevel(8).build(), // clockwork
+                        SkillLevelTask.builder().skill(Skill.CONSTRUCTION).targetSkillLevel(16).build(), // clockmaker's bench
 
                         // Seaweed runs (Giant seaweed patches on Fossil Island)
-                        SkillLevelTask.builder().skill(Skill.FARMING).level(23).build()
+                        SkillLevelTask.builder().skill(Skill.FARMING).targetSkillLevel(23).build()
                 ))
                 .build();
         return new Preset("Early Ironman Progression", "Stats, gear, and quest goals for early game Ironman.", Arrays.asList(early));
@@ -85,13 +85,13 @@ public class GoalPresetRepository {
                 .description("Mid Ironman Progression")
                 .tasks(ReorderableList.from(
                         // Midgame Skill Targets
-                        SkillLevelTask.builder().skill(Skill.ATTACK).level(60).build(),
-                        SkillLevelTask.builder().skill(Skill.STRENGTH).level(60).build(),
-                        SkillLevelTask.builder().skill(Skill.DEFENCE).level(60).build(),
-                        SkillLevelTask.builder().skill(Skill.RANGED).level(60).build(),
-                        SkillLevelTask.builder().skill(Skill.MAGIC).level(55).build(), // High Alch
-                        SkillLevelTask.builder().skill(Skill.PRAYER).level(43).build(), // Protect prayers
-                        SkillLevelTask.builder().skill(Skill.AGILITY).level(60).build(),
+                        SkillLevelTask.builder().skill(Skill.ATTACK).targetSkillLevel(60).build(),
+                        SkillLevelTask.builder().skill(Skill.STRENGTH).targetSkillLevel(60).build(),
+                        SkillLevelTask.builder().skill(Skill.DEFENCE).targetSkillLevel(60).build(),
+                        SkillLevelTask.builder().skill(Skill.RANGED).targetSkillLevel(60).build(),
+                        SkillLevelTask.builder().skill(Skill.MAGIC).targetSkillLevel(55).build(), // High Alch
+                        SkillLevelTask.builder().skill(Skill.PRAYER).targetSkillLevel(43).build(), // Protect prayers
+                        SkillLevelTask.builder().skill(Skill.AGILITY).targetSkillLevel(60).build(),
                         // Midgame Gear & Upgrades
                         ItemTask.builder().itemId(DRAGON_SCIMITAR).itemName("Dragon scimitar").quantity(1).build(),
                         ItemTask.builder().itemId(DRAGON_DEFENDER).itemName("Dragon defender").quantity(1).build(),
@@ -116,12 +116,12 @@ public class GoalPresetRepository {
                 .description("Late Ironman Progression")
                 .tasks(ReorderableList.from(
                         // Late Skill Targets
-                        SkillLevelTask.builder().skill(Skill.ATTACK).level(85).build(),
-                        SkillLevelTask.builder().skill(Skill.STRENGTH).level(85).build(),
-                        SkillLevelTask.builder().skill(Skill.DEFENCE).level(85).build(),
-                        SkillLevelTask.builder().skill(Skill.MAGIC).level(94).build(), // Vengeance/Ice Barrage
-                        SkillLevelTask.builder().skill(Skill.PRAYER).level(77).build(), // Rigour/Augury
-                        SkillLevelTask.builder().skill(Skill.RANGED).level(85).build(),
+                        SkillLevelTask.builder().skill(Skill.ATTACK).targetSkillLevel(85).build(),
+                        SkillLevelTask.builder().skill(Skill.STRENGTH).targetSkillLevel(85).build(),
+                        SkillLevelTask.builder().skill(Skill.DEFENCE).targetSkillLevel(85).build(),
+                        SkillLevelTask.builder().skill(Skill.MAGIC).targetSkillLevel(94).build(), // Vengeance/Ice Barrage
+                        SkillLevelTask.builder().skill(Skill.PRAYER).targetSkillLevel(77).build(), // Rigour/Augury
+                        SkillLevelTask.builder().skill(Skill.RANGED).targetSkillLevel(85).build(),
                         // Late Gear Goals
                         ItemTask.builder().itemId(ABYSSAL_TENTACLE).itemName("Abyssal tentacle").quantity(1).build(),
                         ItemTask.builder().itemId(TOXIC_BLOWPIPE).itemName("Toxic blowpipe").quantity(1).build(),

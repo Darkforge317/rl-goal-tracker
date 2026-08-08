@@ -41,7 +41,7 @@ public class QuestRequirementsTest
         assertTrue(hasNatureSpirit, "Nature Spirit should be a requirement");
 
         // Verify direct skill requirement (Farming 18)
-        boolean hasFarming18 = requirements.stream().anyMatch(t -> t instanceof SkillLevelTask && ((SkillLevelTask) t).getSkill() == Skill.FARMING && ((SkillLevelTask) t).getLevel() == 18);
+        boolean hasFarming18 = requirements.stream().anyMatch(t -> t instanceof SkillLevelTask && ((SkillLevelTask) t).getSkill() == Skill.FARMING && ((SkillLevelTask) t).getTargetSkillLevel() == 18);
         assertTrue(hasFarming18, "Farming 18 should be a requirement");
     }
 
