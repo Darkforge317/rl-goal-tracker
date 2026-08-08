@@ -28,6 +28,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 //noinspection UnstableApiUsage
 @SuppressWarnings("null")
 public class GoalSerializerTest {
+    /**
+     * Normalizes all line endings to LF (\n) for consistent string comparisons across platforms.
+     * 
+     * @param dirtyString The string whose line-endings you want to normalize.
+     * @return The normalized string with the requested line endings.
+     */
+    private String normalizeLineEndings(String dirtyString) {
+        if (dirtyString == null) return null;
+
+        // Replace and return LF line endings
+        return dirtyString.replace("\r\n", "\n").replace("\r", "\n");
+    }
+
     GoalSerializer serializer;
 
     @BeforeEach
@@ -127,8 +140,10 @@ public class GoalSerializerTest {
                 .build()
         );
 
-        assertEquals(expectedJson, serializer.serialize(goals, true));
-        
+        assertEquals(
+            normalizeLineEndings(expectedJson),
+            normalizeLineEndings(serializer.serialize(goals, true))
+        );
     }
 
     @Test
@@ -178,6 +193,9 @@ public class GoalSerializerTest {
                         ))).build()
         );
 
-        assertEquals(expectedJson, serializer.serialize(goals, true));
+        assertEquals(
+            normalizeLineEndings(expectedJson),
+            normalizeLineEndings(serializer.serialize(goals, true))
+        );
     }
 }
