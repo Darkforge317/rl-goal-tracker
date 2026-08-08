@@ -12,11 +12,11 @@ import com.toofifty.goaltracker.ui.components.ListItemPanel;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.AncestorEvent;
+import javax.swing.event.AncestorListener;
 import java.awt.*;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.*;
+import java.awt.image.BufferedImage;
 import java.util.Locale;
 
 import static com.toofifty.goaltracker.utils.Constants.STATUS_TO_COLOR;
@@ -33,7 +33,15 @@ public final class TaskItemContent extends JPanel implements Refreshable
     private final Task task;
     private final Goal goal;
     private final TaskIconService iconService;
-    private final JLabel titleLabel = new JLabel();
+    private final JLabel titleLabel = new JLabel() {
+        @Override
+        public String getToolTipText(MouseEvent event) {
+            if (event != null && (event.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) != 0) {
+                return "Shift-click to remove task and children";
+            }
+            return super.getToolTipText();
+        }
+    };
     private final JTextField titleEdit = new JTextField();
     private final JPanel titleStack = new JPanel(new CardLayout());
     private final JLabel iconLabel = new JLabel();
@@ -42,6 +50,22 @@ public final class TaskItemContent extends JPanel implements Refreshable
 
     private final GoalTrackerPlugin plugin;
     private ActionHistory actionHistory;
+
+    // Custom Trash Cursor Assets
+    private static final Cursor DEFAULT_PANEL_CURSOR = Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR);
+    private static final Cursor TRASH_CURSOR;
+
+    static {
+        Cursor tempCursor;
+        try {
+            BufferedImage trashImg = net.runelite.client.util.ImageUtil.loadImageResource(TaskItemContent.class, "/trash.png");
+            Point hotspot = new Point(0, 0);
+            tempCursor = java.awt.Toolkit.getDefaultToolkit().createCustomCursor(trashImg, hotspot, "TrashCursor");
+        } catch (Exception e) {
+            tempCursor = Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR);
+        }
+        TRASH_CURSOR = tempCursor;
+    }
 
     TaskItemContent(GoalTrackerPlugin plugin, Goal goal, Task task)
     {
@@ -80,8 +104,8 @@ public final class TaskItemContent extends JPanel implements Refreshable
                 @Override public void mouseClicked(MouseEvent e) { enterEdit(); }
             });
             titleEdit.addActionListener(e -> exitEdit(true));
-            titleEdit.addFocusListener(new java.awt.event.FocusAdapter() {
-                @Override public void focusLost(java.awt.event.FocusEvent e) { exitEdit(true); }
+            titleEdit.addFocusListener(new FocusAdapter() {
+                @Override public void focusLost(FocusEvent e) { exitEdit(true); }
             });
         }
 
@@ -134,6 +158,120 @@ public final class TaskItemContent extends JPanel implements Refreshable
         titleLabel.addMouseListener(contextMenuListener);
         titleEdit.addMouseListener(contextMenuListener);
         iconLabel.addMouseListener(contextMenuListener);
+
+        // Track the Shift key toggling entirely within the Swing thread context
+        KeyEventDispatcher shiftWatcher = new KeyEventDispatcher()
+        {
+            private boolean shiftWasDown = false;
+
+            @Override
+            public boolean dispatchKeyEvent(KeyEvent e)
+            {
+                if (e.getKeyCode() == KeyEvent.VK_SHIFT)
+                {
+                    boolean isShiftDown = e.isShiftDown();
+                    // Only fire an update when the state actually cuts over (press or release)
+                    if (isShiftDown != shiftWasDown)
+                    {
+                        shiftWasDown = isShiftDown;
+                        // Pass the exact shift state safely to the EDT loop
+                        SwingUtilities.invokeLater(() -> forceTooltipUpdate(isShiftDown));
+                    }
+                }
+                return false;
+            }
+        };
+
+
+        // Bind the listener when this component is physically displayed on screen, and unbind to prevent leaks
+        this.addAncestorListener(new AncestorListener() {
+            @Override
+            public void ancestorAdded(AncestorEvent event) {
+                KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(shiftWatcher);
+            }
+
+            @Override
+            public void ancestorRemoved(AncestorEvent event) {
+                KeyboardFocusManager.getCurrentKeyboardFocusManager().removeKeyEventDispatcher(shiftWatcher);
+            }
+
+            @Override
+            public void ancestorMoved(AncestorEvent event) {}
+        });
+
+        // Ensure that cursor styles actively adapt whenever the mouse slides onto or off a row layout
+        MouseAdapter rowHoverCursorAdapter = new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                boolean isShiftCurrentlyDown = (e.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) != 0;
+                if (isShiftCurrentlyDown) {
+                    updateAllChildCursors(TRASH_CURSOR);
+                } else {
+                    updateAllChildCursors(DEFAULT_PANEL_CURSOR);
+                }
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                PointerInfo pi = MouseInfo.getPointerInfo();
+                if (pi != null) {
+                    Point mousePos = pi.getLocation();
+                    SwingUtilities.convertPointFromScreen(mousePos, TaskItemContent.this);
+
+                    if (!TaskItemContent.this.contains(mousePos)) {
+                        updateAllChildCursors(DEFAULT_PANEL_CURSOR);
+                    }
+                } else {
+                    updateAllChildCursors(DEFAULT_PANEL_CURSOR);
+                }
+            }
+        };
+
+        this.addMouseListener(rowHoverCursorAdapter);
+        titleStack.addMouseListener(rowHoverCursorAdapter);
+        titleLabel.addMouseListener(rowHoverCursorAdapter);
+        titleEdit.addMouseListener(rowHoverCursorAdapter);
+        iconLabel.addMouseListener(rowHoverCursorAdapter);
+        if (iconWrapper != null) {
+            iconWrapper.addMouseListener(rowHoverCursorAdapter);
+        }
+    }
+
+    private void updateAllChildCursors(Cursor cursor) {
+        this.setCursor(cursor);
+        titleStack.setCursor(cursor);
+        titleLabel.setCursor(cursor);
+        titleEdit.setCursor(cursor);
+        iconLabel.setCursor(cursor);
+        if (iconWrapper != null) {
+            iconWrapper.setCursor(cursor);
+        }
+    }
+
+    private void forceTooltipUpdate(boolean isShiftActive)
+    {
+        PointerInfo pointerInfo = MouseInfo.getPointerInfo();
+        if (pointerInfo == null) return;
+
+        Point mousePos = pointerInfo.getLocation();
+        SwingUtilities.convertPointFromScreen(mousePos, titleLabel);
+
+        // Only process if the cursor is resting inside our text label coordinates
+        if (titleLabel.contains(mousePos))
+        {
+            long now = System.currentTimeMillis();
+            int modifiers = isShiftActive ? InputEvent.SHIFT_DOWN_MASK : 0;
+            if (isShiftActive) {
+                titleLabel.setToolTipText("Shift-click to remove task and children");
+                updateAllChildCursors(TRASH_CURSOR);
+            } else {
+                String full = task.toString();
+                titleLabel.setToolTipText((full == null || full.isEmpty()) ? null : full);
+                updateAllChildCursors(DEFAULT_PANEL_CURSOR);
+            }
+            MouseEvent moveEvent = new MouseEvent(titleLabel, MouseEvent.MOUSE_MOVED, now, modifiers, mousePos.x, mousePos.y, 0, false);
+            ToolTipManager.sharedInstance().mouseMoved(moveEvent);
+        }
     }
 
     public void setActionHistory(ActionHistory history)
