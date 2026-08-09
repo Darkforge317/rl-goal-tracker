@@ -1,0 +1,34 @@
+package com.darkforge317.goaltracker.models;
+
+import com.darkforge317.goaltracker.models.task.Task;
+import com.darkforge317.goaltracker.models.enums.Status;
+
+/**
+ * Action for toggling a task's completion state.
+ * Directly depends on Status enum for compliance with RuneLite rules.
+ */
+public final class ToggleCompleteAction implements ActionHistory.Action
+{
+    private final Task task;
+    private final boolean oldValue;
+    private final boolean newValue;
+
+    public ToggleCompleteAction(Task task, boolean oldValue, boolean newValue)
+    {
+        this.task = task;
+        this.oldValue = oldValue;
+        this.newValue = newValue;
+    }
+
+    @Override
+    public void undo()
+    {
+        task.setStatus(oldValue ? Status.COMPLETED : Status.NOT_STARTED);
+    }
+
+    @Override
+    public void redo()
+    {
+        task.setStatus(newValue ? Status.COMPLETED : Status.NOT_STARTED);
+    }
+}

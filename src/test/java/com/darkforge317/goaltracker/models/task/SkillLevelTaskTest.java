@@ -1,0 +1,24 @@
+package com.darkforge317.goaltracker.models.task;
+
+import com.darkforge317.goaltracker.models.enums.TaskType;
+import net.runelite.api.Skill;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+class SkillLevelTaskTest {
+
+    @Test
+    void toString_shouldReturnTheLevelAndSkillName() {
+        SkillLevelTask task = SkillLevelTask.builder().skill(Skill.ATTACK).targetSkillLevel(99).build();
+
+        assertEquals("99 Attack", task.toString());
+    }
+
+    @Test
+    void getType_shouldReturnSkill() {
+        SkillLevelTask task = SkillLevelTask.builder().build();
+
+        assertEquals(TaskType.SKILL_LEVEL, task.getType());
+    }
+}
