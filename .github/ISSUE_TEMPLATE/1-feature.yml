@@ -7,13 +7,35 @@ body:
     attributes:
       value: |
         Thanks for taking the time to submit a feature request!
+  - type: checkboxes
+    id: duplicate-check
+    attributes:
+      label: Is there an existing request for this?
+      description: Please search to see if a similar feature has already been requested.
+      options:
+        - label: I have searched the existing issues and will write a comment on it to indicate my support for this feature.
+          required: true
   - type: textarea
     id: description
     attributes:
       label: Description
-      description: Describe your feature request to us!
+      description: Describe the feature you'd like to see.
     validations:
       required: true
+  - type: textarea
+    id: value-prop
+    attributes:
+      label: Why would this be a good addition?
+      description: What would this make easier, faster, or more useful for people using the plugin?
+    validations:
+      required: true
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Anything else that might help explain the request (mockups, examples from other plugins, etc.)
+    validations:
+      required: false
   - type: markdown
     attributes:
-      value: "Thanks for completing our form!"
+      value: "Thanks for submitting a feature request! People like you help make the plugin better for everyone."

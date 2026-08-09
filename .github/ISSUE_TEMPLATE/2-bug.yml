@@ -6,28 +6,72 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to fill out this bug report!
+        Thanks for taking the time to fill out a bug report!
+  - type: checkboxes
+    id: duplicate-check
+    attributes:
+      label: Is there an existing issue for this?
+      description: Please search to see if an issue already exists for the bug you encountered.
+      options:
+        - label: I have searched the existing issues and will write a comment on it to indicate my need for it to be addressed.
+          required: true
   - type: textarea
     id: steps-to-reproduce
     attributes:
       label: Steps to Reproduce
-      description: A details list of steps to reproduce your issue!
+      description: A detailed list of steps to reproduce your issue.
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. See error
     validations:
       required: true
-  - type: input
+  - type: textarea
     id: expected-results
     attributes:
       label: Expected Results
-      description: Tell us what you expected to happen!
+      description: Tell us what you expected to happen.
     validations:
       required: true
-  - type: input
+  - type: textarea
     id: actual-results
     attributes:
       label: Actual Results
-      description: Tell us what actually happened!
+      description: Tell us what actually happened.
     validations:
       required: true
+  - type: textarea
+    id: screenshots-logs
+    attributes:
+      label: Screenshots or Logs
+      description: If applicable, add screenshots or paste any relevant log output. You can drag and drop images directly into this field.
+    validations:
+      required: false
+  - type: textarea
+    id: debugging
+    attributes:
+      label: Debugging Attempts
+      description: If applicable, describe things you've tried in order to resolve the issue locally. (e.g. restarting Runelite, reinstalling the plugin, etc...)
+    validations:
+      required: false
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Other
+    validations:
+      required: false
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Anything else that might help us understand the issue.
+    validations:
+      required: false
   - type: markdown
     attributes:
-      value: "Thanks for completing our form!"
+      value: "Thanks for submitting this bug report! It not only helps us, but helps all people using the plugin as well."
