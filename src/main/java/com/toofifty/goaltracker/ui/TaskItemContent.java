@@ -54,13 +54,31 @@ public final class TaskItemContent extends JPanel implements Refreshable
     // Custom Trash Cursor Assets
     private static final Cursor DEFAULT_PANEL_CURSOR = Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR);
     private static final Cursor TRASH_CURSOR;
+    private static final int TRASH_ICON_SIZE = 20;
 
     static {
         Cursor tempCursor;
         try {
             BufferedImage trashImg = net.runelite.client.util.ImageUtil.loadImageResource(TaskItemContent.class, "/trash.png");
+
+            // The OS enforces its own native cursor canvas size (often 32x32 on Windows)
+            // and will stretch whatever we pass in to fill it - so instead of shrinking
+            // the whole image, we draw a small icon inside a canvas of the OS's actual size.
+            Dimension nativeSize = java.awt.Toolkit.getDefaultToolkit()
+                    .getBestCursorSize(TRASH_ICON_SIZE, TRASH_ICON_SIZE);
+            int canvasW = Math.max(nativeSize.width, TRASH_ICON_SIZE);
+            int canvasH = Math.max(nativeSize.height, TRASH_ICON_SIZE);
+
+            BufferedImage canvas = new BufferedImage(canvasW, canvasH, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g2d = canvas.createGraphics();
+            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            // Draw the icon at its intended small size, anchored top-left so the hotspot stays accurate
+            g2d.drawImage(trashImg, 0, 0, TRASH_ICON_SIZE, TRASH_ICON_SIZE, null);
+            g2d.dispose();
+
             Point hotspot = new Point(0, 0);
-            tempCursor = java.awt.Toolkit.getDefaultToolkit().createCustomCursor(trashImg, hotspot, "TrashCursor");
+            tempCursor = java.awt.Toolkit.getDefaultToolkit().createCustomCursor(canvas, hotspot, "TrashCursor");
         } catch (Exception e) {
             tempCursor = Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR);
         }

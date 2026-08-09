@@ -2,6 +2,7 @@ package com.toofifty.goaltracker.models.task;
 
 import com.toofifty.goaltracker.models.enums.Status;
 import com.toofifty.goaltracker.models.enums.TaskType;
+import com.google.gson.annotations.SerializedName;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
@@ -18,8 +19,10 @@ import net.runelite.api.Skill;
 public final class SkillXpTask extends Task
 {
     private Skill skill;
-    private int currentSkillXp;
+
+    @SerializedName("xp")
     private int targetSkillXp;
+    private int currentSkillXp;
 
     @Override
     public String toString()

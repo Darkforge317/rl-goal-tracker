@@ -2,6 +2,7 @@ package com.toofifty.goaltracker.models.task;
 
 import com.toofifty.goaltracker.models.enums.TaskType;
 import com.toofifty.goaltracker.models.enums.Status;
+import com.google.gson.annotations.SerializedName;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
@@ -18,6 +19,8 @@ import net.runelite.api.Client;
 public final class SkillLevelTask extends Task
 {
     private Skill skill;
+
+    @SerializedName("level")
     private int targetSkillLevel;
     private int currentSkillLevel;
 
