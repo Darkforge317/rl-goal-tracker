@@ -1,0 +1,92 @@
+package com.darkforge317.goaltracker.models.task;
+
+import com.darkforge317.goaltracker.models.enums.Status;
+import com.darkforge317.goaltracker.models.enums.TaskType;
+import com.google.gson.annotations.SerializedName;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.SuperBuilder;
+import net.runelite.api.Client;
+import net.runelite.api.Skill;
+
+@Getter
+@Setter
+@SuperBuilder
+/**
+ * Task representing earning a target XP amount in a skill.
+ * Stores the RuneLite Skill and required XP.
+ */
+public final class SkillXpTask extends Task
+{
+    private Skill skill;
+
+    @SerializedName("xp")
+    private int targetSkillXp;
+    private int currentSkillXp;
+
+    @Override
+    public String toString()
+    {
+        return String.format("%d %s XP", targetSkillXp, skill.getName());
+    }
+
+    @Override
+    public String getDisplayName()
+    {
+        return String.format("%d %s XP", targetSkillXp, skill.getName());
+    }
+
+    @Override
+    public TaskType getType()
+    {
+        return TaskType.SKILL_XP;
+    }
+
+    /**
+     * Re-evaluate the player's Xp in the skill and update the Task.status field.
+     * Safe to call on login and whenever relevant varbits/varps change.
+     */
+    public void refreshStatus(final Client client)
+    {
+        if (client == null || skill == null)
+        {
+            return;
+        }
+
+        currentSkillXp = client.getSkillExperience(skill);
+
+        if(hasReachedTargetXp())
+        {
+            setStatus(Status.COMPLETED);
+        }
+        // This covers cases where players log into a separate character that no longer meets the task requirements
+        else {
+            setStatus(Status.NOT_STARTED);
+        }
+    }
+
+    /**
+     * Whether the player has reached the target Xp for this task.
+     * @return <ul>
+     *     <li>{@code true} - Target Xp <b>HAS</b> been reached</li>
+     *     <li>{@code false} - Target Xp <b>HAS NOT</b> been reached</li>
+     * </ul>
+     */
+    public boolean hasReachedTargetXp()
+    {
+        return (currentSkillXp >= targetSkillXp);
+    }
+
+    /**
+     * Whether the player would reach the target Xp for this task given the xp provided.
+     * @param xp The Xp value to check against
+     * @return <ul>
+     *     <li>{@code true} - Target Xp <b>HAS</b> been reached</li>
+     *     <li>{@code false} - Target Xp <b>HAS NOT</b> been reached</li>
+     * </ul>
+     */
+    public boolean wouldReachTargetXp(int xp)
+    {
+        return (xp >= targetSkillXp);
+    }
+}

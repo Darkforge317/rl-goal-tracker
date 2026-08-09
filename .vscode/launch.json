@@ -9,7 +9,7 @@
             "type": "java",
             "name": "GoalTrackerPluginTest",
             "request": "launch",
-            "mainClass": "com.toofifty.goaltracker.GoalTrackerPluginTest",
+            "mainClass": "com.darkforge317.goaltracker.GoalTrackerPluginTest",
             "projectName": "rl-goal-tracker",
         }
     ]
