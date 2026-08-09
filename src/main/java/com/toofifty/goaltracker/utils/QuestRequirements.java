@@ -877,7 +877,7 @@ public final class QuestRequirements
                 Quest.RECIPE_FOR_DISASTER__ANOTHER_COOKS_QUEST,
                 Arrays.asList(
                         QuestTask.builder().quest(Quest.COOKS_ASSISTANT).build(),
-                        SkillLevelTask.builder().skill(Skill.COOKING).level(10).build()
+                        SkillLevelTask.builder().skill(Skill.COOKING).targetSkillLevel(10).build()
                 )
         );
 
@@ -911,8 +911,8 @@ public final class QuestRequirements
                 Arrays.asList(
                         QuestTask.builder().quest(Quest.MONKEY_MADNESS_I).build(),
                         QuestTask.builder().quest(Quest.RECIPE_FOR_DISASTER__ANOTHER_COOKS_QUEST).build(),
-                        SkillLevelTask.builder().skill(Skill.COOKING).level(70).build(),
-                        SkillLevelTask.builder().skill(Skill.AGILITY).level(48).build()
+                        SkillLevelTask.builder().skill(Skill.COOKING).targetSkillLevel(70).build(),
+                        SkillLevelTask.builder().skill(Skill.AGILITY).targetSkillLevel(48).build()
                 )
         );
 
@@ -926,7 +926,7 @@ public final class QuestRequirements
                         QuestTask.builder().quest(Quest.NATURE_SPIRIT).build(),
                         QuestTask.builder().quest(Quest.RECIPE_FOR_DISASTER__ANOTHER_COOKS_QUEST).build(),
                         QuestTask.builder().quest(Quest.WITCHS_HOUSE).build(),
-                        SkillLevelTask.builder().skill(Skill.COOKING).level(40).build()
+                        SkillLevelTask.builder().skill(Skill.COOKING).targetSkillLevel(40).build()
                 )
         );
 
@@ -942,7 +942,7 @@ public final class QuestRequirements
                 Quest.RECIPE_FOR_DISASTER__PIRATE_PETE,
                 Arrays.asList(
                         QuestTask.builder().quest(Quest.RECIPE_FOR_DISASTER__ANOTHER_COOKS_QUEST).build(),
-                        SkillLevelTask.builder().skill(Skill.COOKING).level(31).build()
+                        SkillLevelTask.builder().skill(Skill.COOKING).targetSkillLevel(31).build()
                 )
         );
 
@@ -963,8 +963,8 @@ public final class QuestRequirements
                 Arrays.asList(
                         QuestTask.builder().quest(Quest.BIG_CHOMPY_BIRD_HUNTING).build(),
                         QuestTask.builder().quest(Quest.RECIPE_FOR_DISASTER__ANOTHER_COOKS_QUEST).build(),
-                        SkillLevelTask.builder().skill(Skill.COOKING).level(41).build(),
-                        SkillLevelTask.builder().skill(Skill.FIREMAKING).level(20).build()
+                        SkillLevelTask.builder().skill(Skill.COOKING).targetSkillLevel(41).build(),
+                        SkillLevelTask.builder().skill(Skill.FIREMAKING).targetSkillLevel(20).build()
                 )
         );
 
