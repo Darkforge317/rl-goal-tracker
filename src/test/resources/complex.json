@@ -14,6 +14,7 @@
       {
         "skill": "Attack",
         "level": 99,
+        "current_skill_level": 0,
         "status": "in_progress",
         "has_been_notified": false,
         "indent_level": 1,
@@ -22,6 +23,7 @@
       {
         "skill": "Attack",
         "xp": 1234,
+        "current_skill_xp": 0,
         "status": "not_started",
         "has_been_notified": false,
         "indent_level": 2,
