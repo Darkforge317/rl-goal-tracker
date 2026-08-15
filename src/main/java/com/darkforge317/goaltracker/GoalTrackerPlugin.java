@@ -399,11 +399,23 @@ public final class GoalTrackerPlugin extends Plugin
         }
     }
 
+    private volatile boolean questRefreshPending = false;
+
     @Subscribe
     public void onVarbitChanged(VarbitChanged event)
     {
-        // Quest progress often updates via varbits/varps
-        clientThread.invokeLater(() -> refreshQuestTasks());
+        // Quest progress often updates via varbits/varps. Bank UI (and other interfaces)
+        // also fire unrelated varbit changes frequently, so without this guard a burst of
+        // rapid, unrelated varbit changes would queue many redundant refreshQuestTasks()
+        // calls back-to-back on the client thread instead of just one.
+        if (!questRefreshPending)
+        {
+            questRefreshPending = true;
+            clientThread.invokeLater(() -> {
+                questRefreshPending = false;
+                refreshQuestTasks();
+            });
+        }
 
         // Debounce UI refresh during rapid quest varbit updates
         schedulePanelRefresh(750);
