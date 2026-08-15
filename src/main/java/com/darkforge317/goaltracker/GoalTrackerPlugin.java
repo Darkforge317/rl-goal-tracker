@@ -378,6 +378,15 @@ public final class GoalTrackerPlugin extends Plugin
                 refreshSkillLevelTasks();
                 refreshSkillXpTasks();
 
+                // Container contents (bank/inventory/equipment/etc.) can differ from what was
+                // cached at plugin startup, e.g. on character switch - rebuild all caches, then
+                // re-evaluate item tasks against the fresh counts.
+                for (InventoryID inv : TRACKED_INVENTORIES)
+                {
+                    refreshContainerCache(inv);
+                }
+                refreshItemTasks();
+
                 // Give the UI a moment to settle after data updates before repainting the panel
                 schedulePanelRefresh(200);
 
@@ -397,22 +406,12 @@ public final class GoalTrackerPlugin extends Plugin
         schedulePanelRefresh(750);
     }
 
-    @Subscribe
-    public void onItemContainerChanged(ItemContainerChanged event)
+    /**
+     * Re-evaluates all incomplete item tasks against the current cached container counts.
+     * Callers must ensure relevant container caches are already up to date.
+     */
+    private void refreshItemTasks()
     {
-        // Only react to the player's inventory/equipment/bank-like containers
-        if (!isPlayerInventoryContainer(event.getContainerId()))
-        {
-            return;
-        }
-
-        // Rebuild the cache for only the container that changed, not all 5.
-        final InventoryID changedInventory = inventoryIdFromContainerId(event.getContainerId());
-        if (changedInventory != null)
-        {
-            refreshContainerCache(changedInventory);
-        }
-
         List<ItemTask> itemTasks = goalManager.getIncompleteTasksByType(TaskType.ITEM);
         for (ItemTask task : itemTasks)
         {
@@ -435,6 +434,25 @@ public final class GoalTrackerPlugin extends Plugin
                 notifyTask(task);
             }
         }
+    }
+
+    @Subscribe
+    public void onItemContainerChanged(ItemContainerChanged event)
+    {
+        // Only react to the player's inventory/equipment/bank-like containers
+        if (!isPlayerInventoryContainer(event.getContainerId()))
+        {
+            return;
+        }
+
+        // Rebuild the cache for only the container that changed, not all 5.
+        final InventoryID changedInventory = inventoryIdFromContainerId(event.getContainerId());
+        if (changedInventory != null)
+        {
+            refreshContainerCache(changedInventory);
+        }
+
+        refreshItemTasks();
 
         // Debounce panel refresh; coalesce multiple rapid inventory changes
         schedulePanelRefresh(400);
