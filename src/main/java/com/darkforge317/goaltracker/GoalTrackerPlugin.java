@@ -235,10 +235,13 @@ public final class GoalTrackerPlugin extends Plugin
 
         // Populate initial container caches so item-task counts are accurate
         // immediately, before any ItemContainerChanged event has fired.
-        for (InventoryID inv : TRACKED_INVENTORIES)
-        {
-            refreshContainerCache(inv);
-        }
+        // client.getItemContainer() must be called on the client thread.
+        clientThread.invokeLater(() -> {
+            for (InventoryID inv : TRACKED_INVENTORIES)
+            {
+                refreshContainerCache(inv);
+            }
+        });
 
         goalTrackerPanel.home();
 
