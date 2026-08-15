@@ -374,6 +374,8 @@ public final class GoalTrackerPlugin extends Plugin
             return;
         }
 
+        final long start = System.nanoTime();
+
         List<ItemTask> itemTasks = goalManager.getIncompleteTasksByType(TaskType.ITEM);
         for (ItemTask task : itemTasks)
         {
@@ -399,6 +401,9 @@ public final class GoalTrackerPlugin extends Plugin
 
         // Debounce panel refresh; coalesce multiple rapid inventory changes
         schedulePanelRefresh(400);
+
+        final long elapsedMs = (System.nanoTime() - start) / 1_000_000;
+        log.info("Pre-Patch: onItemContainerChanged took {}ms this tick", elapsedMs);
     }
 
     private static boolean isPlayerInventoryContainer(int containerId)
