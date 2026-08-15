@@ -39,7 +39,11 @@ import net.runelite.client.util.ColorUtil;
 import javax.inject.Inject;
 import javax.swing.*;
 import java.awt.*;
+import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 @Slf4j
 @PluginDescriptor(name = "Goal Tracker", description = "Keep track of your goals and complete them automatically")
@@ -125,6 +129,27 @@ public final class GoalTrackerPlugin extends Plugin
     // Debounced UI refresh timer (coalesces many varbit changes into one repaint)
     private Timer uiRefreshTimer;
 
+    private static final List<InventoryID> TRACKED_INVENTORIES = List.of(
+            InventoryID.INVENTORY,
+            InventoryID.EQUIPMENT,
+            InventoryID.BANK,
+            InventoryID.SEED_VAULT,
+            InventoryID.GROUP_STORAGE
+    );
+
+    // Per-container cached counts, keyed by normalized item name and by raw item ID.
+    // Rebuilt only for the single container that actually changed (see refreshContainerCache),
+    // instead of rescanning all 5 containers on every ItemContainerChanged event.
+    private final Map<InventoryID, Map<String, Integer>> containerNameCounts = new EnumMap<>(InventoryID.class);
+    private final Map<InventoryID, Map<Integer, Integer>> containerIdCounts = new EnumMap<>(InventoryID.class);
+
+    // Cached normalized display name per item ID, since ItemManager composition lookups
+    // are relatively expensive and the same IDs repeat across containers/tasks/events.
+    private final Map<Integer, String> itemNameCache = new HashMap<>();
+
+    private static final Pattern TRAILING_NUMBER_PATTERN = Pattern.compile("\\s[0-9]{1,3}$");
+    private static final Pattern MULTI_SPACE_PATTERN = Pattern.compile("\\s+");
+
     private void notifyTask(Task task)
     {
         if (task == null) { return; }
@@ -206,6 +231,13 @@ public final class GoalTrackerPlugin extends Plugin
             itemCache.load();
         } catch (Exception ex) {
             log.error("GoalTrackerPlugin: failed to load persisted state", ex);
+        }
+
+        // Populate initial container caches so item-task counts are accurate
+        // immediately, before any ItemContainerChanged event has fired.
+        for (InventoryID inv : TRACKED_INVENTORIES)
+        {
+            refreshContainerCache(inv);
         }
 
         goalTrackerPanel.home();
@@ -374,6 +406,13 @@ public final class GoalTrackerPlugin extends Plugin
             return;
         }
 
+        // Rebuild the cache for only the container that changed, not all 5.
+        final InventoryID changedInventory = inventoryIdFromContainerId(event.getContainerId());
+        if (changedInventory != null)
+        {
+            refreshContainerCache(changedInventory);
+        }
+
         List<ItemTask> itemTasks = goalManager.getIncompleteTasksByType(TaskType.ITEM);
         for (ItemTask task : itemTasks)
         {
@@ -413,62 +452,81 @@ public final class GoalTrackerPlugin extends Plugin
         return false;
     }
 
+    /**
+     * Rebuilds cached item counts (by ID and by normalized name) for a single container.
+     * Called only when that specific container reports a change, instead of rescanning
+     * all 5 tracked containers on every ItemContainerChanged event.
+     */
+    private void refreshContainerCache(final InventoryID inventoryId)
+    {
+        final Map<String, Integer> nameCounts = new HashMap<>();
+        final Map<Integer, Integer> idCounts = new HashMap<>();
+
+        final ItemContainer container = client.getItemContainer(inventoryId);
+        if (container != null)
+        {
+            for (Item i : container.getItems())
+            {
+                if (i == null || i.getId() <= 0)
+                {
+                    continue;
+                }
+                final int qty = Math.max(1, i.getQuantity());
+
+                idCounts.merge(i.getId(), qty, Integer::sum);
+
+                final String normalized = normalizedNameFor(i.getId());
+                if (normalized != null)
+                {
+                    nameCounts.merge(normalized, qty, Integer::sum);
+                }
+            }
+        }
+
+        containerNameCounts.put(inventoryId, nameCounts);
+        containerIdCounts.put(inventoryId, idCounts);
+    }
+
+    private static InventoryID inventoryIdFromContainerId(final int containerId)
+    {
+        for (InventoryID inv : TRACKED_INVENTORIES)
+        {
+            if (inv.getId() == containerId)
+            {
+                return inv;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Cached normalized-name lookup for an item ID. Composition lookup + regex
+     * normalization only happens once per item ID rather than once per item slot
+     * per task per event.
+     */
+    private String normalizedNameFor(final int itemId)
+    {
+        return itemNameCache.computeIfAbsent(itemId, id -> {
+            try
+            {
+                return normalizeBarrowsName(itemManager.getItemComposition(id).getName());
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+        });
+    }
+
     private int countHeld(final int itemId)
     {
         int total = 0;
-        final ItemContainer inv = client.getItemContainer(InventoryID.INVENTORY);
-        if (inv != null)
+        for (InventoryID inv : TRACKED_INVENTORIES)
         {
-            for (Item i : inv.getItems())
+            final Map<Integer, Integer> idCounts = containerIdCounts.get(inv);
+            if (idCounts != null)
             {
-                if (i != null && i.getId() == itemId)
-                {
-                    total += Math.max(1, i.getQuantity());
-                }
-            }
-        }
-        final ItemContainer equip = client.getItemContainer(InventoryID.EQUIPMENT);
-        if (equip != null)
-        {
-            for (Item i : equip.getItems())
-            {
-                if (i != null && i.getId() == itemId)
-                {
-                    total += Math.max(1, i.getQuantity());
-                }
-            }
-        }
-        final ItemContainer bank = client.getItemContainer(InventoryID.BANK);
-        if (bank != null)
-        {
-            for (Item i : bank.getItems())
-            {
-                if (i != null && i.getId() == itemId)
-                {
-                    total += Math.max(1, i.getQuantity());
-                }
-            }
-        }
-        final ItemContainer seedVault = client.getItemContainer(InventoryID.SEED_VAULT);
-        if (seedVault != null)
-        {
-            for (Item i : seedVault.getItems())
-            {
-                if (i != null && i.getId() == itemId)
-                {
-                    total += Math.max(1, i.getQuantity());
-                }
-            }
-        }
-        final ItemContainer groupStorage = client.getItemContainer(InventoryID.GROUP_STORAGE);
-        if (groupStorage != null)
-        {
-            for (Item i : groupStorage.getItems())
-            {
-                if (i != null && i.getId() == itemId)
-                {
-                    total += Math.max(1, i.getQuantity());
-                }
+                total += idCounts.getOrDefault(itemId, 0);
             }
         }
         return total;
@@ -485,42 +543,18 @@ public final class GoalTrackerPlugin extends Plugin
         final String baseName = normalizeBarrowsName(targetItemName);
         int total = 0;
 
-        total += countContainerByName(InventoryID.INVENTORY, baseName);
-        total += countContainerByName(InventoryID.EQUIPMENT, baseName);
-        total += countContainerByName(InventoryID.BANK, baseName);
-        total += countContainerByName(InventoryID.SEED_VAULT, baseName);
-        total += countContainerByName(InventoryID.GROUP_STORAGE, baseName);
+        for (InventoryID inv : TRACKED_INVENTORIES)
+        {
+            final Map<String, Integer> nameCounts = containerNameCounts.get(inv);
+            if (nameCounts != null)
+            {
+                total += nameCounts.getOrDefault(baseName, 0);
+            }
+        }
 
         // Include the exact base ID too, in case some pieces don't use numeric suffixes
         total += countHeld(targetItemId);
         return total;
-    }
-
-    private int countContainerByName(final InventoryID id, final String baseName)
-    {
-        final ItemContainer c = client.getItemContainer(id);
-        if (c == null)
-        {
-            return 0;
-        }
-        int subtotal = 0;
-        for (Item i : c.getItems())
-        {
-            if (i == null)
-            {
-                continue;
-            }
-            try
-            {
-                final String name = normalizeBarrowsName(itemManager.getItemComposition(i.getId()).getName());
-                if (name.equals(baseName))
-                {
-                    subtotal += Math.max(1, i.getQuantity());
-                }
-            }
-            catch (Exception ignored) { }
-        }
-        return subtotal;
     }
 
     /**
@@ -534,8 +568,8 @@ public final class GoalTrackerPlugin extends Plugin
             return "";
         }
         // Strip trailing space+digits (e.g., " 100") and collapse double spaces
-        String s = raw.replaceAll("\\s[0-9]{1,3}$", "").trim();
-        s = s.replaceAll("\\s+", " ");
+        String s = TRAILING_NUMBER_PATTERN.matcher(raw).replaceAll("").trim();
+        s = MULTI_SPACE_PATTERN.matcher(s).replaceAll(" ");
         return s;
     }
 
@@ -576,17 +610,17 @@ public final class GoalTrackerPlugin extends Plugin
 
     private void refreshSkillLevelTasks()
     {
-       if (goalManager == null || client == null) return;
-       List<SkillLevelTask> skillLevelTasks = goalManager.getIncompleteTasksByType(TaskType.SKILL_LEVEL);
-       for (SkillLevelTask task : skillLevelTasks)
-       {
-           task.refreshStatus(client);
-           uiStatusManager.refresh(task);
-           if (task.getStatus().isCompleted())
-           {
-               notifyTask(task);
-           }
-       }
+        if (goalManager == null || client == null) return;
+        List<SkillLevelTask> skillLevelTasks = goalManager.getIncompleteTasksByType(TaskType.SKILL_LEVEL);
+        for (SkillLevelTask task : skillLevelTasks)
+        {
+            task.refreshStatus(client);
+            uiStatusManager.refresh(task);
+            if (task.getStatus().isCompleted())
+            {
+                notifyTask(task);
+            }
+        }
     }
 
     private void refreshSkillXpTasks()
