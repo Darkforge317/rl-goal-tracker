@@ -219,9 +219,8 @@ public final class ItemTaskInput extends TaskInput
         ActionListener tryShow = new ActionListener() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent ev) {
-                Component focusOwner = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
-                final JTextComponent searchField = (focusOwner instanceof JTextComponent) ? (JTextComponent) focusOwner : null;
-                Window target = (focusOwner != null) ? SwingUtilities.getWindowAncestor(focusOwner) : null;
+                Window target = findItemSearchWindow();
+                final JTextComponent searchField = (target instanceof Container) ? findTextField((Container) target) : null;
 
                 if (target == null || searchField == null)
                 {
@@ -335,11 +334,6 @@ public final class ItemTaskInput extends TaskInput
                     return w;
                 }
             }
-        }
-        Window active = KeyboardFocusManager.getCurrentKeyboardFocusManager().getActiveWindow();
-        if (active != null && active.isShowing() && active instanceof Container && containsTextField((Container) active))
-        {
-            return active;
         }
         for (Window w : Window.getWindows())
         {
