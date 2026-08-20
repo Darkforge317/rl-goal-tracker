@@ -1,6 +1,7 @@
 package com.darkforge317.goaltracker;
 
 
+import com.darkforge317.goaltracker.services.KeyInputService;
 import com.google.inject.Provides;
 import com.darkforge317.goaltracker.models.enums.TaskType;
 import com.darkforge317.goaltracker.models.task.ItemTask;
@@ -29,6 +30,7 @@ import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.SkillIconManager;
 import net.runelite.client.game.chatbox.ChatboxItemSearch;
 import net.runelite.client.game.chatbox.ChatboxPanelManager;
+import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
@@ -107,6 +109,14 @@ public final class GoalTrackerPlugin extends Plugin
     @Getter
     @Inject
     private TaskIconService taskIconService;
+
+    @Inject
+    private KeyManager keyManager;
+
+    @Inject
+    private KeyInputService keyInputService;
+
+    public KeyInputService getKeyInputService() { return keyInputService; }
 
     @Getter
     @Inject
@@ -218,6 +228,10 @@ public final class GoalTrackerPlugin extends Plugin
     @Override
     protected void startUp()
     {
+        // Listens to keyboard state with net.runelite.client.input.KeyManager,
+        // currently used for Shift-Click task removal
+        keyManager.registerKeyListener(keyInputService);
+
         // Defensive guards to avoid NPEs during test bootstrap if DI bindings are missing
         if (goalManager == null || itemCache == null || goalTrackerPanel == null || itemManager == null || clientToolbar == null)
         {
@@ -297,6 +311,9 @@ public final class GoalTrackerPlugin extends Plugin
     @Override
     protected void shutDown()
     {
+        // Removes the keyboard state listener when the plugin is disabled
+        keyManager.unregisterKeyListener(keyInputService);
+
         if (uiNavigationButton != null)
         {
             clientToolbar.removeNavigation(uiNavigationButton);

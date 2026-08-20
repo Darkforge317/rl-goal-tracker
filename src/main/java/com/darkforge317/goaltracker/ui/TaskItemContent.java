@@ -12,6 +12,8 @@ import com.darkforge317.goaltracker.ui.components.ListItemPanel;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.AncestorEvent;
+import javax.swing.event.AncestorListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
@@ -48,6 +50,8 @@ public final class TaskItemContent extends JPanel implements Refreshable
 
     private final GoalTrackerPlugin plugin;
     private ActionHistory actionHistory;
+    private final Runnable shiftStateListener = this::onShiftStateChanged;
+
 
     // Custom Trash Cursor Assets
     private static final Cursor DEFAULT_PANEL_CURSOR = Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR);
@@ -124,6 +128,21 @@ public final class TaskItemContent extends JPanel implements Refreshable
                 @Override public void focusLost(FocusEvent e) { exitEdit(true); }
             });
         }
+
+        this.addAncestorListener(new AncestorListener() {
+            @Override
+            public void ancestorAdded(AncestorEvent event) {
+                plugin.getKeyInputService().addListener(shiftStateListener);
+            }
+
+            @Override
+            public void ancestorRemoved(AncestorEvent event) {
+                plugin.getKeyInputService().removeListener(shiftStateListener);
+            }
+
+            @Override
+            public void ancestorMoved(AncestorEvent event) {}
+        });
 
         // Right-click to toggle completion with ActionHistory
         MouseAdapter contextMenuListener = new MouseAdapter()
@@ -223,6 +242,28 @@ public final class TaskItemContent extends JPanel implements Refreshable
         if (iconWrapper != null) {
             iconWrapper.addMouseListener(rowHoverCursorAdapter);
             iconWrapper.addMouseMotionListener(rowHoverCursorAdapter);
+        }
+    }
+
+    private void onShiftStateChanged()
+    {
+        PointerInfo pi = MouseInfo.getPointerInfo();
+        if (pi == null) return;
+
+        Point mousePos = pi.getLocation();
+        SwingUtilities.convertPointFromScreen(mousePos, this);
+        if (!this.contains(mousePos)) return; // mouse isn't over this row, nothing to refresh
+
+        boolean isShiftActive = plugin.getKeyInputService().isShiftDown();
+        updateCursorForModifiers(isShiftActive ? InputEvent.SHIFT_DOWN_MASK : 0);
+
+        Point labelPos = pi.getLocation();
+        SwingUtilities.convertPointFromScreen(labelPos, titleLabel);
+        if (titleLabel.contains(labelPos)) {
+            int modifiers = isShiftActive ? InputEvent.SHIFT_DOWN_MASK : 0;
+            MouseEvent moveEvent = new MouseEvent(titleLabel, MouseEvent.MOUSE_MOVED,
+                    System.currentTimeMillis(), modifiers, labelPos.x, labelPos.y, 0, false);
+            ToolTipManager.sharedInstance().mouseMoved(moveEvent);
         }
     }
 
