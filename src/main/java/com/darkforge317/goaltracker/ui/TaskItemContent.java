@@ -12,8 +12,6 @@ import com.darkforge317.goaltracker.ui.components.ListItemPanel;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.event.AncestorEvent;
-import javax.swing.event.AncestorListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
@@ -177,56 +175,23 @@ public final class TaskItemContent extends JPanel implements Refreshable
         titleEdit.addMouseListener(contextMenuListener);
         iconLabel.addMouseListener(contextMenuListener);
 
-        // Track the Shift key toggling entirely within the Swing thread context
-        KeyEventDispatcher shiftWatcher = new KeyEventDispatcher()
-        {
-            private boolean shiftWasDown = false;
-
-            @Override
-            public boolean dispatchKeyEvent(KeyEvent e)
-            {
-                if (e.getKeyCode() == KeyEvent.VK_SHIFT)
-                {
-                    boolean isShiftDown = e.isShiftDown();
-                    // Only fire an update when the state actually cuts over (press or release)
-                    if (isShiftDown != shiftWasDown)
-                    {
-                        shiftWasDown = isShiftDown;
-                        // Pass the exact shift state safely to the EDT loop
-                        SwingUtilities.invokeLater(() -> forceTooltipUpdate(isShiftDown));
-                    }
-                }
-                return false;
-            }
-        };
-
-
-        // Bind the listener when this component is physically displayed on screen, and unbind to prevent leaks
-        this.addAncestorListener(new AncestorListener() {
-            @Override
-            public void ancestorAdded(AncestorEvent event) {
-                KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(shiftWatcher);
-            }
-
-            @Override
-            public void ancestorRemoved(AncestorEvent event) {
-                KeyboardFocusManager.getCurrentKeyboardFocusManager().removeKeyEventDispatcher(shiftWatcher);
-            }
-
-            @Override
-            public void ancestorMoved(AncestorEvent event) {}
-        });
-
-        // Ensure that cursor styles actively adapt whenever the mouse slides onto or off a row layout
+        // Ensure cursor styles adapt on hover and on any real mouse movement while Shift is held.
+        // (No global KeyboardFocusManager hook - RuneLite plugin hub disallows JVM-wide key
+        // listeners, so Shift state is only checked from the MouseEvent itself.)
         MouseAdapter rowHoverCursorAdapter = new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
-                boolean isShiftCurrentlyDown = (e.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) != 0;
-                if (isShiftCurrentlyDown) {
-                    updateAllChildCursors(TRASH_CURSOR);
-                } else {
-                    updateAllChildCursors(DEFAULT_PANEL_CURSOR);
-                }
+                updateCursorForModifiers(e.getModifiersEx());
+            }
+
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                updateCursorForModifiers(e.getModifiersEx());
+            }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+                updateCursorForModifiers(e.getModifiersEx());
             }
 
             @Override
@@ -246,13 +211,24 @@ public final class TaskItemContent extends JPanel implements Refreshable
         };
 
         this.addMouseListener(rowHoverCursorAdapter);
+        this.addMouseMotionListener(rowHoverCursorAdapter);
         titleStack.addMouseListener(rowHoverCursorAdapter);
+        titleStack.addMouseMotionListener(rowHoverCursorAdapter);
         titleLabel.addMouseListener(rowHoverCursorAdapter);
+        titleLabel.addMouseMotionListener(rowHoverCursorAdapter);
         titleEdit.addMouseListener(rowHoverCursorAdapter);
+        titleEdit.addMouseMotionListener(rowHoverCursorAdapter);
         iconLabel.addMouseListener(rowHoverCursorAdapter);
+        iconLabel.addMouseMotionListener(rowHoverCursorAdapter);
         if (iconWrapper != null) {
             iconWrapper.addMouseListener(rowHoverCursorAdapter);
+            iconWrapper.addMouseMotionListener(rowHoverCursorAdapter);
         }
+    }
+
+    private void updateCursorForModifiers(int modifiersEx) {
+        boolean isShiftDown = (modifiersEx & InputEvent.SHIFT_DOWN_MASK) != 0;
+        updateAllChildCursors(isShiftDown ? TRASH_CURSOR : DEFAULT_PANEL_CURSOR);
     }
 
     private void updateAllChildCursors(Cursor cursor) {
@@ -263,32 +239,6 @@ public final class TaskItemContent extends JPanel implements Refreshable
         iconLabel.setCursor(cursor);
         if (iconWrapper != null) {
             iconWrapper.setCursor(cursor);
-        }
-    }
-
-    private void forceTooltipUpdate(boolean isShiftActive)
-    {
-        PointerInfo pointerInfo = MouseInfo.getPointerInfo();
-        if (pointerInfo == null) return;
-
-        Point mousePos = pointerInfo.getLocation();
-        SwingUtilities.convertPointFromScreen(mousePos, titleLabel);
-
-        // Only process if the cursor is resting inside our text label coordinates
-        if (titleLabel.contains(mousePos))
-        {
-            long now = System.currentTimeMillis();
-            int modifiers = isShiftActive ? InputEvent.SHIFT_DOWN_MASK : 0;
-            if (isShiftActive) {
-                titleLabel.setToolTipText("Shift-click to remove task and children");
-                updateAllChildCursors(TRASH_CURSOR);
-            } else {
-                String full = task.toString();
-                titleLabel.setToolTipText((full == null || full.isEmpty()) ? null : full);
-                updateAllChildCursors(DEFAULT_PANEL_CURSOR);
-            }
-            MouseEvent moveEvent = new MouseEvent(titleLabel, MouseEvent.MOUSE_MOVED, now, modifiers, mousePos.x, mousePos.y, 0, false);
-            ToolTipManager.sharedInstance().mouseMoved(moveEvent);
         }
     }
 
