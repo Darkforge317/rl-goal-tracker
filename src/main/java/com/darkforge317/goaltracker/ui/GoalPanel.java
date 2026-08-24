@@ -8,6 +8,7 @@ import com.darkforge317.goaltracker.models.enums.TaskType;
 import com.darkforge317.goaltracker.models.task.Task;
 import com.darkforge317.goaltracker.ui.components.*;
 import com.darkforge317.goaltracker.ui.components.*;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.ui.ColorScheme;
 
 import javax.swing.*;
@@ -19,6 +20,7 @@ import java.awt.event.KeyEvent;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+@Slf4j
 /**
  * Panel showing a single Goal: header, action bar (undo/redo, prereqs),
  * editable description, and the task list with add-new controls.
@@ -168,7 +170,7 @@ public final class GoalPanel extends JPanel implements Refreshable
 
                 return taskPanel;
             } catch (Throwable t) {
-                t.printStackTrace();
+                log.error("Failed to render task panel for task {}", task, t);
                 // Render a minimal, visible error row instead of breaking the entire list
                 ListTaskPanel fallback = new ListTaskPanel(goal.getTasks(), task, parent);
                 JPanel error = new JPanel(new BorderLayout());

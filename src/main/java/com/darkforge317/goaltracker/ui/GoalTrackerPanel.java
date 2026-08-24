@@ -12,9 +12,12 @@ import com.darkforge317.goaltracker.ui.components.ActionBarButton;
 import com.darkforge317.goaltracker.ui.components.ListItemPanel;
 import com.darkforge317.goaltracker.ui.components.ListPanel;
 import com.darkforge317.goaltracker.utils.ReorderableList;
+import lombok.extern.slf4j.Slf4j;
+import lombok.extern.slf4j.XSlf4j;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.PluginPanel;
+
 
 import javax.inject.Inject;
 import javax.swing.*;
@@ -25,6 +28,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.function.Consumer;
 
+@Slf4j
 /**
  * Main plugin panel for Goal Tracker.
  * Shows header (title, add/import/export controls), goal list with undo/redo,
@@ -189,8 +193,8 @@ public final class GoalTrackerPanel extends PluginPanel implements Refreshable
         }
         catch (Throwable t)
         {
-            // Log to console and show a user-visible error so the panel isn't left blank
-            t.printStackTrace();
+            log.error("Failed to open goal {}", goal, t);
+
             JOptionPane.showMessageDialog(this,
                 "Sorry, something went wrong opening that goal. Returning to Home.",
                 "Goal Open Error",
