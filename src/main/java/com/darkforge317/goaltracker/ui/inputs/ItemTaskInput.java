@@ -14,18 +14,14 @@ import net.runelite.client.ui.components.FlatTextField;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-import javax.swing.text.JTextComponent;
 import java.awt.*;
-import java.awt.event.ActionListener;
 import java.util.regex.Pattern;
 
 
 
 /**
  * Input panel for creating Item tasks.
- * Provides search with close overlay, quantity field with k/m suffix support,
+ * Provides search, quantity field with k/m suffix support,
  * and automatic task submission on selection.
  */
 public final class ItemTaskInput extends TaskInput
@@ -45,7 +41,6 @@ public final class ItemTaskInput extends TaskInput
 
     private String quantityFieldValue = "1";
     private ItemComposition selectedItem;
-    private String lastSearchText = "";
 
     public ItemTaskInput(GoalTrackerPlugin plugin, Goal goal)
     {
@@ -183,167 +178,6 @@ public final class ItemTaskInput extends TaskInput
         searchOpen = false;
     }
 
-    private boolean containsTextField(Container c)
-    {
-        if (c == null) return false;
-        for (Component comp : c.getComponents())
-        {
-            if (comp instanceof JTextComponent) return true;
-            if (comp instanceof Container && containsTextField((Container) comp)) return true;
-        }
-        return false;
-    }
-
-    private JTextComponent findTextField(Container c)
-    {
-        if (c == null) return null;
-        for (Component comp : c.getComponents())
-        {
-            if (comp instanceof JTextComponent) return (JTextComponent) comp;
-            if (comp instanceof Container)
-            {
-                JTextComponent tf = findTextField((Container) comp);
-                if (tf != null) return tf;
-            }
-        }
-        return null;
-    }
-
-    // Small floating red X button to close the item search popup
-    private void showCloseOverlay()
-    {
-        final int[] attempts = {0};
-        final int maxAttempts = 20;
-        final int delayMs = 150;
-
-        ActionListener tryShow = new ActionListener() {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent ev) {
-                Window target = findItemSearchWindow();
-                final JTextComponent searchField = (target instanceof Container) ? findTextField((Container) target) : null;
-
-                if (target == null || searchField == null)
-                {
-                    if (++attempts[0] < maxAttempts)
-                    {
-                        new Timer(delayMs, this) {{ setRepeats(false); }}.start();
-                    }
-                    return;
-                }
-
-                // Create overlay dialog owned by the search window so it closes with it
-                final JDialog overlay = new JDialog(target);
-                overlay.setUndecorated(true);
-                overlay.setAlwaysOnTop(true);
-                overlay.setFocusableWindowState(false);
-                overlay.setType(Window.Type.UTILITY);
-
-                JPanel header = new JPanel(new BorderLayout());
-                header.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-                JButton close = new JButton("X");
-                close.setForeground(Color.WHITE);
-                close.setBackground(ColorScheme.PROGRESS_ERROR_COLOR);
-                close.setBorder(new EmptyBorder(2, 6, 2, 6));
-                close.setFocusable(false);
-                close.addActionListener(e2 -> {
-                    overlay.dispose();
-                    lastSearchText = "";
-                    if (target instanceof JDialog) {
-                        ((JDialog) target).dispose();
-                    } else if (target instanceof JFrame) {
-                        ((JFrame) target).dispose();
-                    } else {
-                        target.dispose();
-                    }
-                });
-                header.add(close, BorderLayout.EAST);
-                overlay.getContentPane().add(header);
-                overlay.pack();
-
-                // Position at top-right of the search text field (anchor to the actual box)
-                Point tfLoc = searchField.getLocationOnScreen();
-                int tfRight = tfLoc.x + searchField.getWidth();
-                int x = tfRight - overlay.getWidth() - 4; // tuck inside right edge
-                int y = tfLoc.y + 2; // inside the box near the top
-                overlay.setLocation(x, y);
-                overlay.setVisible(true);
-                overlay.toFront();
-
-                // Restore and persist the user's query
-                if (lastSearchText != null && !lastSearchText.isEmpty())
-                {
-                    searchField.setText(lastSearchText);
-                    searchField.setCaretPosition(searchField.getText().length());
-                    searchField.requestFocusInWindow();
-                }
-                searchField.getDocument().addDocumentListener(new DocumentListener()
-                {
-                    @Override public void insertUpdate(DocumentEvent e) { lastSearchText = searchField.getText(); }
-                    @Override public void removeUpdate(DocumentEvent e) { lastSearchText = searchField.getText(); }
-                    @Override public void changedUpdate(DocumentEvent e) { lastSearchText = searchField.getText(); }
-                });
-
-                if (target instanceof Window) {
-                    ((Window) target).addWindowListener(new java.awt.event.WindowAdapter() {
-                        @Override
-                        public void windowClosed(java.awt.event.WindowEvent e) { overlay.dispose(); }
-                        @Override
-                        public void windowClosing(java.awt.event.WindowEvent e) { overlay.dispose(); }
-                    });
-
-                    target.addComponentListener(new java.awt.event.ComponentAdapter() {
-                        @Override
-                        public void componentMoved(java.awt.event.ComponentEvent e) {
-                            try {
-                                Point tfLoc2 = searchField.getLocationOnScreen();
-                                int tfRight2 = tfLoc2.x + searchField.getWidth();
-                                int x2 = tfRight2 - overlay.getWidth() - 4;
-                                int y2 = tfLoc2.y + 2;
-                                overlay.setLocation(x2, y2);
-                            } catch (IllegalComponentStateException ignored) { }
-                        }
-                        @Override
-                        public void componentResized(java.awt.event.ComponentEvent e) {
-                            try {
-                                Point tfLoc2 = searchField.getLocationOnScreen();
-                                int tfRight2 = tfLoc2.x + searchField.getWidth();
-                                int x2 = tfRight2 - overlay.getWidth() - 4;
-                                int y2 = tfLoc2.y + 2;
-                                overlay.setLocation(x2, y2);
-                            } catch (IllegalComponentStateException ignored) { }
-                        }
-                    });
-                }
-            }
-        };
-
-        // start first attempt slightly delayed to give the popup time to appear
-        new Timer(delayMs, tryShow) {{ setRepeats(false); }}.start();
-    }
-
-    // Try to locate the RuneLite Item Search popup window reliably
-    private Window findItemSearchWindow()
-    {
-        // Prefer visible JDialogs containing a text field (likely the chatbox item search)
-        for (Window w : Window.getWindows())
-        {
-            if (w != null && w.isShowing() && w instanceof JDialog)
-            {
-                if (w instanceof Container && containsTextField((Container) w))
-                {
-                    return w;
-                }
-            }
-        }
-        for (Window w : Window.getWindows())
-        {
-            if (w != null && w.isShowing() && w instanceof Container && containsTextField((Container) w))
-            {
-                return w;
-            }
-        }
-        return null;
-    }
     @Override
     protected boolean showAddButton()
     {
