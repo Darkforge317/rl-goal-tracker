@@ -76,8 +76,19 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             // Abort the entire cascade (not just the deepest item) if it would push any
             // affected task past the max - partially applying would break the strict
             // "child indent > parent indent" invariant the descendant-scan above relies on.
-            boolean wouldExceedMax = oldIndents.stream().anyMatch(lvl -> lvl + 1 > Task.MAX_INDENT_LEVEL);
-            if (wouldExceedMax) {
+            int violatingIndex = -1;
+            for (int i = 0; i < oldIndents.size(); i++) {
+                if (oldIndents.get(i) + 1 > Task.MAX_INDENT_LEVEL) {
+                    violatingIndex = i;
+                    break;
+                }
+            }
+            if (violatingIndex != -1) {
+                String culprit = (violatingIndex == 0) ? "This task" : "A task nested within this one";
+                JOptionPane.showMessageDialog(this,
+                        culprit + " would exceed the maximum indent level (" + Task.MAX_INDENT_LEVEL + ").",
+                        "Cannot indent",
+                        JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
