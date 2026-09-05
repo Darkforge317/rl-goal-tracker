@@ -19,6 +19,8 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseWheelEvent;
 
 @Slf4j
 /**
@@ -146,7 +148,7 @@ public final class GoalPanel extends JPanel implements Refreshable
                 taskPanel.setOpaque(true);
                 taskPanel.setBackground(ColorScheme.DARK_GRAY_COLOR);
                 taskPanel.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createMatteBorder(1, 6, 0, 6, ColorScheme.DARKER_GRAY_COLOR), // thinner divider
+                    BorderFactory.createMatteBorder(1, 0, 0, 0, ColorScheme.DARKER_GRAY_COLOR), // thinner divider
                     new EmptyBorder(2, 4, 2, 4)
                 ));
 
@@ -186,7 +188,61 @@ public final class GoalPanel extends JPanel implements Refreshable
         });
         taskListPanel.setGap(0);
         taskListPanel.setPlaceholder("No tasks added yet");
-        add(taskListPanel, BorderLayout.CENTER);
+        taskListPanel.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
+        taskListPanel.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        taskListPanel.setWheelScrollingEnabled(false);
+
+        // Use a custom layout panel wrapper that allows horizontal overflow
+        JPanel scrollableContainer = new JPanel(new BorderLayout()) {
+            @Override
+            public Dimension getPreferredSize() {
+                // Let the container stretch horizontally based on its actual padded contents
+                return taskListPanel.getPreferredSize();
+            }
+        };
+        scrollableContainer.add(taskListPanel, BorderLayout.CENTER);
+
+        JScrollPane taskListScrollPane = new JScrollPane(scrollableContainer) {
+            @Override
+            public Dimension getPreferredSize() {
+                Dimension preferred = super.getPreferredSize();
+                Container parent = getParent();
+                if (parent != null) {
+                    // Frame the visible box precisely to the width of the sidebar
+                    preferred.width = parent.getWidth();
+                }
+                return preferred;
+            }
+        };
+
+        // Keep vertical scrolling active; allow horizontal layout expansion
+        // This allows a larger amount of indentation levels without cramming
+        taskListScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        taskListScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+
+        // Remove the thick default border frames to preserve the native RuneLite styling
+        taskListScrollPane.setBorder(BorderFactory.createEmptyBorder());
+        taskListScrollPane.getViewport().setBackground(ColorScheme.DARKER_GRAY_COLOR);
+
+        taskListScrollPane.setBorder(BorderFactory.createEmptyBorder());
+        taskListScrollPane.getViewport().setBackground(ColorScheme.DARKER_GRAY_COLOR);
+
+        // setWheelScrollingEnabled(false) above stops the inner pane from acting on wheel
+        // events, but Swing still delivers them to it first since it has a registered
+        // listener - explicitly forward to the outer pane instead of leaving them stranded.
+        taskListPanel.addMouseWheelListener(e ->
+                taskListScrollPane.dispatchEvent(
+                        (MouseWheelEvent) SwingUtilities.convertMouseEvent(taskListPanel, e, taskListScrollPane)
+                )
+        );
+
+        // Increase default scroll speeds
+        // TODO: Add scroll sensitivity setting in plugin configuration UI.
+        taskListScrollPane.getHorizontalScrollBar().setUnitIncrement(12);
+        taskListScrollPane.getVerticalScrollBar().setUnitIncrement(12);
+
+        // Mount the scroll window to the center
+        add(taskListScrollPane, BorderLayout.CENTER);
 
         NewTaskPanel newTaskPanel = new NewTaskPanel(plugin, goal);
         newTaskPanel.onTaskAdded(this::updateFromNewTask);
