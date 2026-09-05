@@ -30,7 +30,7 @@ public abstract class Task
     private int indentLevel = 0;
 
     // The maximum indent we'll allow. Currently, 15 levels in total (0-14)
-    private static final int MAX_INDENT_LEVEL = 14;
+    public static final int MAX_INDENT_LEVEL = 14;
 
     public boolean isDone() {
         return Status.COMPLETED.equals(this.status);

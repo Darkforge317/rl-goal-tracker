@@ -19,6 +19,8 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseWheelEvent;
 
 @Slf4j
 /**
@@ -186,6 +188,9 @@ public final class GoalPanel extends JPanel implements Refreshable
         });
         taskListPanel.setGap(0);
         taskListPanel.setPlaceholder("No tasks added yet");
+        taskListPanel.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
+        taskListPanel.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        taskListPanel.setWheelScrollingEnabled(false);
 
         // Use a custom layout panel wrapper that allows horizontal overflow
         JPanel scrollableContainer = new JPanel(new BorderLayout()) {
@@ -218,6 +223,18 @@ public final class GoalPanel extends JPanel implements Refreshable
         // Remove the thick default border frames to preserve the native RuneLite styling
         taskListScrollPane.setBorder(BorderFactory.createEmptyBorder());
         taskListScrollPane.getViewport().setBackground(ColorScheme.DARKER_GRAY_COLOR);
+
+        taskListScrollPane.setBorder(BorderFactory.createEmptyBorder());
+        taskListScrollPane.getViewport().setBackground(ColorScheme.DARKER_GRAY_COLOR);
+
+        // setWheelScrollingEnabled(false) above stops the inner pane from acting on wheel
+        // events, but Swing still delivers them to it first since it has a registered
+        // listener - explicitly forward to the outer pane instead of leaving them stranded.
+        taskListPanel.addMouseWheelListener(e ->
+                taskListScrollPane.dispatchEvent(
+                        (MouseWheelEvent) SwingUtilities.convertMouseEvent(taskListPanel, e, taskListScrollPane)
+                )
+        );
 
         // Increase default scroll speeds
         // TODO: Add scroll sensitivity setting in plugin configuration UI.
