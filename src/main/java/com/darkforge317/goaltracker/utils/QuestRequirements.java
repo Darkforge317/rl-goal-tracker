@@ -8,6 +8,8 @@ import net.runelite.api.Skill;
 
 import java.util.*;
 
+import static com.darkforge317.goaltracker.models.task.Task.MAX_INDENT_LEVEL;
+
 /**
  * Static lookup of quest prerequisites (quests + skill levels) and a helper to
  * expand nested requirements with appropriate indent levels.
@@ -1303,8 +1305,8 @@ public final class QuestRequirements
     public static List<Task> getRequirements(Quest quest, int indentLevel)
     {
         List<Task> tasks = new ArrayList<>();
-        if (indentLevel >= 3) {
-            // Respect Task.java's max indent level of 3
+        if (indentLevel >= MAX_INDENT_LEVEL) {
+            // Respect Task.java's max indent level
             return tasks;
         }
 

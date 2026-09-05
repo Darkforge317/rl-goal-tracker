@@ -73,6 +73,25 @@ public final class ListTaskPanel extends ListItemPanel<Task>
                 oldIndents.add(child.getIndentLevel());
             }
 
+            // Abort the entire cascade (not just the deepest item) if it would push any
+            // affected task past the max - partially applying would break the strict
+            // "child indent > parent indent" invariant the descendant-scan above relies on.
+            int violatingIndex = -1;
+            for (int i = 0; i < oldIndents.size(); i++) {
+                if (oldIndents.get(i) + 1 > Task.MAX_INDENT_LEVEL) {
+                    violatingIndex = i;
+                    break;
+                }
+            }
+            if (violatingIndex != -1) {
+                String culprit = (violatingIndex == 0) ? "This task" : "A task nested within this one";
+                JOptionPane.showMessageDialog(this,
+                        culprit + " would exceed the maximum indent level (" + Task.MAX_INDENT_LEVEL + ").",
+                        "Cannot indent",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
             ActionHistory.Action act = new ActionHistory.Action() {
                 @Override public void undo() {
                     for (int i = 0; i < affected.size(); i++) {
@@ -295,7 +314,7 @@ public final class ListTaskPanel extends ListItemPanel<Task>
                 }
                 existingKeys.add(child.getClass().getName() + "|" + child.toString());
             }
-            var rawPrereqs = QuestRequirements.getRequirements(questTask.getQuest(), baseIndent + 1);
+            var rawPrereqs = QuestRequirements.getRequirements(questTask.getQuest(), baseIndent);
             java.util.List<Task> missingPrereqs = new java.util.ArrayList<>();
             if (rawPrereqs != null) {
                 for (Task p : rawPrereqs) {
@@ -309,7 +328,7 @@ public final class ListTaskPanel extends ListItemPanel<Task>
                 JMenuItem prereqItem = new JMenuItem("Add pre-reqs");
                 prereqItem.addActionListener(e -> {
                     // Recompute and filter again at click time
-                    var raw = QuestRequirements.getRequirements(questTask.getQuest(), baseIndent + 1);
+                    var raw = QuestRequirements.getRequirements(questTask.getQuest(), baseIndent);
                     if (raw != null) {
                         // Refresh existing keys in case the list changed since menu was built
                         java.util.Set<String> currentKeys = new java.util.HashSet<>();
@@ -499,7 +518,7 @@ public final class ListTaskPanel extends ListItemPanel<Task>
                 if (child.getIndentLevel() <= baseIndent) break;
                 existingKeys.add(child.getClass().getName() + "|" + child.toString());
             }
-            var rawPrereqs = QuestRequirements.getRequirements(questTask.getQuest(), baseIndent + 1);
+            var rawPrereqs = QuestRequirements.getRequirements(questTask.getQuest(), baseIndent);
             java.util.List<Task> missingPrereqs = new java.util.ArrayList<>();
             if (rawPrereqs != null) {
                 for (Task p : rawPrereqs) {
@@ -510,7 +529,7 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             if (!missingPrereqs.isEmpty()) {
                 JMenuItem prereqItem = new JMenuItem("Add pre-reqs");
                 prereqItem.addActionListener(e -> {
-                    var raw = QuestRequirements.getRequirements(questTask.getQuest(), baseIndent + 1);
+                    var raw = QuestRequirements.getRequirements(questTask.getQuest(), baseIndent);
                     if (raw != null) {
                         java.util.Set<String> currentKeys = new java.util.HashSet<>();
                         int pIndex = list.indexOf(item);
@@ -590,7 +609,7 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             existingKeys.add(child.getClass().getName() + "|" + child.toString());
         }
 
-        java.util.List<Task> raw = QuestRequirements.getRequirements(questTask.getQuest(), baseIndent + 1);
+        java.util.List<Task> raw = QuestRequirements.getRequirements(questTask.getQuest(), baseIndent);
         if (raw == null || raw.isEmpty()) {
             return;
         }
