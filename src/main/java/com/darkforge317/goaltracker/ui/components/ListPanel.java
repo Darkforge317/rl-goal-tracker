@@ -12,6 +12,7 @@ import java.util.*;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -33,10 +34,11 @@ public final class ListPanel<T> extends JScrollPane implements Refreshable
 
     private int rowLeftInset = 0;
     private int rowRightInset = 0;
+    private Predicate<T> rowVisibilityFilter = t -> true;
 
     public ListPanel(
-        ReorderableList<T> reorderableList,
-        BiFunction<JComponent, T, ListItemPanel<T>> renderItem
+            ReorderableList<T> reorderableList,
+            BiFunction<JComponent, T, ListItemPanel<T>> renderItem
     ) {
         super();
         this.reorderableList = reorderableList;
@@ -53,21 +55,44 @@ public final class ListPanel<T> extends JScrollPane implements Refreshable
             public void onDrag(Component component) {
                 T updatedItem = ((ListItemPanel<T>)component).item;
 
-                // Sort the list based on the new order of the components in listPanel
-                reorderableList.sort(Comparator.comparing(item ->
-                {
-                    Component[] components = listPanel.getComponents();
-                    for (int idx = 0; idx < components.length; ++idx)
-                    {
-                        ListItemPanel<T> itemPanel = (ListItemPanel<T>) components[idx];
-                        if (itemPanel.item == item)
-                        {
-                            return idx;
-                        }
+                // Capture, in the list's CURRENT order, the run of hidden items
+                // (filtered out due to a collapsed ancestor) that immediately
+                // follows each visible item - these must move as a block with
+                // whatever visible item they're already anchored under.
+                List<T> oldOrder = new ArrayList<>(reorderableList);
+                Map<T, List<T>> hiddenFollowersOf = new HashMap<>();
+                List<T> currentRun = null;
+                for (T t : oldOrder) {
+                    if (rowVisibilityFilter.test(t)) {
+                        currentRun = new ArrayList<>();
+                        hiddenFollowersOf.put(t, currentRun);
+                    } else if (currentRun != null) {
+                        currentRun.add(t);
                     }
+                }
 
-                    return -1;
-                }));
+                // New order of the visible items only, read from their current
+                // physical position in listPanel (this reflects the drag that
+                // just happened - DragAndDropReorderPane only moves the one
+                // dragged component, everything else keeps its relative order)
+                List<T> newVisibleOrder = new ArrayList<>();
+                for (Component c : listPanel.getComponents()) {
+                    newVisibleOrder.add(((ListItemPanel<T>) c).item);
+                }
+
+                // Rebuild the full list: each visible item immediately followed
+                // by whatever hidden items were already anchored under it
+                List<T> newFullOrder = new ArrayList<>();
+                for (T visible : newVisibleOrder) {
+                    newFullOrder.add(visible);
+                    List<T> followers = hiddenFollowersOf.get(visible);
+                    if (followers != null) {
+                        newFullOrder.addAll(followers);
+                    }
+                }
+
+                reorderableList.clear();
+                reorderableList.addAll(newFullOrder);
 
                 if (updatedListener != null) updatedListener.accept(updatedItem);
 
@@ -116,12 +141,19 @@ public final class ListPanel<T> extends JScrollPane implements Refreshable
         tryBuildList();
     }
 
+    public void setRowVisibilityFilter(Predicate<T> filter)
+    {
+        this.rowVisibilityFilter = filter != null ? filter : (t -> true);
+        tryBuildList();
+    }
+
     private List<ListItemPanel<T>> buildItemPanels()
     {
         return reorderableList
-            .stream()
-            .map(this::buildItemPanel)
-            .collect(Collectors.toList());
+                .stream()
+                .filter(rowVisibilityFilter)
+                .map(this::buildItemPanel)
+                .collect(Collectors.toList());
     }
 
     @Override

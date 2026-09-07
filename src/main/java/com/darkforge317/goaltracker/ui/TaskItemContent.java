@@ -9,6 +9,10 @@ import com.darkforge317.goaltracker.models.task.ManualTask;
 import com.darkforge317.goaltracker.models.task.Task;
 import com.darkforge317.goaltracker.services.TaskIconService;
 import com.darkforge317.goaltracker.ui.components.ListItemPanel;
+import com.darkforge317.goaltracker.ui.components.ListPanel;
+import com.darkforge317.goaltracker.utils.TaskHierarchyUtils;
+import lombok.Getter;
+import lombok.Setter;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -30,6 +34,7 @@ public final class TaskItemContent extends JPanel implements Refreshable
 {
     private static final int INDENT_PER_LEVEL = 12; // pixels per indent level
 
+    @Getter
     private final Task task;
     private final Goal goal;
     private final TaskIconService iconService;
@@ -45,10 +50,13 @@ public final class TaskItemContent extends JPanel implements Refreshable
     private final JTextField titleEdit = new JTextField();
     private final JPanel titleStack = new JPanel(new CardLayout());
     private final JLabel iconLabel = new JLabel();
+    private final JLabel collapseArrow = new JLabel();
     private JPanel iconWrapper;
+    private JPanel iconRow;
     private boolean titleEditable;
 
     private final GoalTrackerPlugin plugin;
+    @Setter
     private ActionHistory actionHistory;
     private final Runnable shiftStateListener = this::onShiftStateChanged;
 
@@ -87,6 +95,37 @@ public final class TaskItemContent extends JPanel implements Refreshable
         TRASH_CURSOR = tempCursor;
     }
 
+    private static final int ARROW_SIZE = 10; // px - tweak overall arrow size here
+    private static final ImageIcon COLLAPSED_ARROW_ICON;
+    private static final ImageIcon EXPANDED_ARROW_ICON;
+    private static final ImageIcon BLANK_ARROW_ICON;
+
+    static {
+        ImageIcon collapsedIcon = null;
+        ImageIcon expandedIcon = null;
+        try {
+            BufferedImage collapsedSrc = net.runelite.client.util.ImageUtil.loadImageResource(TaskItemContent.class, "/collapsed_task.png");
+            BufferedImage expandedSrc = net.runelite.client.util.ImageUtil.loadImageResource(TaskItemContent.class, "/expanded_task.png");
+            collapsedIcon = new ImageIcon(resizeImage(collapsedSrc, ARROW_SIZE, ARROW_SIZE));
+            expandedIcon = new ImageIcon(resizeImage(expandedSrc, ARROW_SIZE, ARROW_SIZE));
+        } catch (Exception e) {
+            // Leave both null; refresh() falls back to a blank icon either way
+        }
+        COLLAPSED_ARROW_ICON = collapsedIcon;
+        EXPANDED_ARROW_ICON = expandedIcon;
+        BLANK_ARROW_ICON = new ImageIcon(new BufferedImage(ARROW_SIZE, ARROW_SIZE, BufferedImage.TYPE_INT_ARGB));
+    }
+
+    private static BufferedImage resizeImage(BufferedImage src, int w, int h) {
+        BufferedImage resized = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = resized.createGraphics();
+        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2d.drawImage(src, 0, 0, w, h, null);
+        g2d.dispose();
+        return resized;
+    }
+
     TaskItemContent(GoalTrackerPlugin plugin, Goal goal, Task task)
     {
         super(new BorderLayout());
@@ -109,9 +148,32 @@ public final class TaskItemContent extends JPanel implements Refreshable
         add(titleStack, BorderLayout.CENTER);
 
         iconWrapper = new JPanel(new BorderLayout());
-        iconWrapper.setBorder(new EmptyBorder(4, 0, 0, 4));
+        iconWrapper.setBorder(new EmptyBorder(0, 0, 0, 0));
         iconWrapper.add(iconLabel, BorderLayout.NORTH);
-        add(iconWrapper, BorderLayout.WEST);
+
+        collapseArrow.setBorder(new EmptyBorder(0, 0, 0, 2));
+        collapseArrow.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                task.setCollapsed(!task.isCollapsed());
+                Container ancestor = SwingUtilities.getAncestorOfClass(ListPanel.class, TaskItemContent.this);
+                if (ancestor instanceof ListPanel) {
+                    ((ListPanel<?>) ancestor).tryBuildList();
+                    ((ListPanel<?>) ancestor).refresh();
+                }
+            }
+        });
+
+        // Pin the arrow to the top of its own slot, same as iconLabel above, so it
+        // aligns with the icon instead of stretching/centering in the full row height
+        JPanel arrowWrapper = new JPanel(new BorderLayout());
+        arrowWrapper.add(collapseArrow, BorderLayout.NORTH);
+
+        iconRow = new JPanel(new BorderLayout());
+        iconRow.setBorder(new EmptyBorder(4, 0, 0, 4));
+        iconRow.add(arrowWrapper, BorderLayout.WEST);
+        iconRow.add(iconWrapper, BorderLayout.CENTER);
+        add(iconRow, BorderLayout.WEST);
 
         plugin.getUiStatusManager().addRefresher(task, this::refresh);
 
@@ -284,11 +346,6 @@ public final class TaskItemContent extends JPanel implements Refreshable
         }
     }
 
-    public void setActionHistory(ActionHistory history)
-    {
-        this.actionHistory = history;
-    }
-
     @Override
     public void refresh()
     {
@@ -300,9 +357,18 @@ public final class TaskItemContent extends JPanel implements Refreshable
         int indent = level * INDENT_PER_LEVEL;
 
         iconLabel.setIcon(iconService.get(task));
-        // Apply indent to the wrapper instead of the label to avoid double padding
+        // Apply indent to the row instead of the label to avoid double padding
         iconLabel.setBorder(new EmptyBorder(0, 0, 0, 0));
-        iconWrapper.setBorder(new EmptyBorder(4, indent, 0, 4));
+        iconRow.setBorder(new EmptyBorder(4, indent, 0, 4));
+
+        boolean hasChildren = TaskHierarchyUtils.hasChildren(goal.getTasks(), task);
+        if (hasChildren && COLLAPSED_ARROW_ICON != null) {
+            collapseArrow.setIcon(task.isCollapsed() ? COLLAPSED_ARROW_ICON : EXPANDED_ARROW_ICON);
+            collapseArrow.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        } else {
+            collapseArrow.setIcon(BLANK_ARROW_ICON);
+            collapseArrow.setCursor(DEFAULT_PANEL_CURSOR);
+        }
 
         revalidate();
     }
@@ -356,11 +422,6 @@ public final class TaskItemContent extends JPanel implements Refreshable
         ((CardLayout) titleStack.getLayout()).show(titleStack, "label");
         updateTitleLabel();
         plugin.getUiStatusManager().refresh(goal);
-    }
-
-    public Task getTask()
-    {
-        return task;
     }
 
     /**
