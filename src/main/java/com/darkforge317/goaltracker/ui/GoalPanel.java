@@ -6,6 +6,7 @@ import com.darkforge317.goaltracker.models.Goal;
 import com.darkforge317.goaltracker.models.RemoveTaskAction;
 import com.darkforge317.goaltracker.models.enums.TaskType;
 import com.darkforge317.goaltracker.models.task.Task;
+import com.darkforge317.goaltracker.utils.TaskHierarchyUtils;
 import com.darkforge317.goaltracker.ui.components.*;
 import com.darkforge317.goaltracker.ui.components.*;
 import lombok.extern.slf4j.Slf4j;
@@ -86,14 +87,14 @@ public final class GoalPanel extends JPanel implements Refreshable
 
             Object[] options = {"Overwrite", "Merge", "Cancel"};
             int choice = javax.swing.JOptionPane.showOptionDialog(
-                GoalPanel.this,
-                "Importing will change your current goals.\nDo you want to overwrite existing goals or merge with them?",
-                "Import Goals",
-                javax.swing.JOptionPane.YES_NO_CANCEL_OPTION,
-                javax.swing.JOptionPane.QUESTION_MESSAGE,
-                null,
-                options,
-                options[2]
+                    GoalPanel.this,
+                    "Importing will change your current goals.\nDo you want to overwrite existing goals or merge with them?",
+                    "Import Goals",
+                    javax.swing.JOptionPane.YES_NO_CANCEL_OPTION,
+                    javax.swing.JOptionPane.QUESTION_MESSAGE,
+                    null,
+                    options,
+                    options[2]
             );
 
             if (choice == javax.swing.JOptionPane.YES_OPTION) {
@@ -148,8 +149,8 @@ public final class GoalPanel extends JPanel implements Refreshable
                 taskPanel.setOpaque(true);
                 taskPanel.setBackground(ColorScheme.DARK_GRAY_COLOR);
                 taskPanel.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createMatteBorder(1, 0, 0, 0, ColorScheme.DARKER_GRAY_COLOR), // thinner divider
-                    new EmptyBorder(2, 4, 2, 4)
+                        BorderFactory.createMatteBorder(1, 0, 0, 0, ColorScheme.DARKER_GRAY_COLOR), // thinner divider
+                        new EmptyBorder(2, 4, 2, 4)
                 ));
 
 
@@ -188,6 +189,7 @@ public final class GoalPanel extends JPanel implements Refreshable
         });
         taskListPanel.setGap(0);
         taskListPanel.setPlaceholder("No tasks added yet");
+        taskListPanel.setRowVisibilityFilter(task -> !TaskHierarchyUtils.hasCollapsedAncestor(goal.getTasks(), task));
         taskListPanel.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
         taskListPanel.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         taskListPanel.setWheelScrollingEnabled(false);
@@ -250,7 +252,7 @@ public final class GoalPanel extends JPanel implements Refreshable
 
         // Global ESC to go back
         getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT)
-            .put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0), "gt.back");
+                .put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ESCAPE, 0), "gt.back");
         getActionMap().put("gt.back", new javax.swing.AbstractAction() {
             @Override public void actionPerformed(java.awt.event.ActionEvent e) { closeListener.run(); }
         });

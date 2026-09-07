@@ -29,6 +29,10 @@ public abstract class Task
     @SerializedName("indent_level")
     private int indentLevel = 0;
 
+    @Builder.Default
+    @SerializedName("collapsed")
+    private boolean collapsed = false;
+
     // The maximum indent we'll allow. Currently, 15 levels in total (0-14)
     public static final int MAX_INDENT_LEVEL = 14;
 

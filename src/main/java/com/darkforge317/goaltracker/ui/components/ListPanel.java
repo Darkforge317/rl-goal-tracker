@@ -12,6 +12,7 @@ import java.util.*;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -33,10 +34,11 @@ public final class ListPanel<T> extends JScrollPane implements Refreshable
 
     private int rowLeftInset = 0;
     private int rowRightInset = 0;
+    private Predicate<T> rowVisibilityFilter = t -> true;
 
     public ListPanel(
-        ReorderableList<T> reorderableList,
-        BiFunction<JComponent, T, ListItemPanel<T>> renderItem
+            ReorderableList<T> reorderableList,
+            BiFunction<JComponent, T, ListItemPanel<T>> renderItem
     ) {
         super();
         this.reorderableList = reorderableList;
@@ -116,12 +118,19 @@ public final class ListPanel<T> extends JScrollPane implements Refreshable
         tryBuildList();
     }
 
+    public void setRowVisibilityFilter(Predicate<T> filter)
+    {
+        this.rowVisibilityFilter = filter != null ? filter : (t -> true);
+        tryBuildList();
+    }
+
     private List<ListItemPanel<T>> buildItemPanels()
     {
         return reorderableList
-            .stream()
-            .map(this::buildItemPanel)
-            .collect(Collectors.toList());
+                .stream()
+                .filter(rowVisibilityFilter)
+                .map(this::buildItemPanel)
+                .collect(Collectors.toList());
     }
 
     @Override
