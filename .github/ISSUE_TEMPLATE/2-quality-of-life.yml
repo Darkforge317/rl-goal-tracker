@@ -1,0 +1,48 @@
+name: ✨ Quality of Life Suggestion
+description: Suggest an improvement that would make the plugin easier or nicer to use!
+title: "[QoL]: "
+labels: ["QoL"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to submit a quality of life suggestion!
+
+  - type: checkboxes
+    id: duplicate-check
+    attributes:
+      label: Is there an existing request for this?
+      description: Please search before submitting. If you find an existing request, share your support within it instead of creating a duplicate.
+      options:
+        - label: I have searched the existing requests and there is no existing request for this.
+          required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the quality of life improvement you'd like to see.
+    validations:
+      required: true
+
+  - type: textarea
+    id: benefit
+    attributes:
+      label: How would this improve the experience?
+      description: What would this make easier, faster, clearer, or more convenient when using the plugin?
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Anything else that might help explain the suggestion (mockups, examples from other plugins, etc.)
+      placeholder: |
+        Examples from other plugins, mockups, screenshots, etc.
+    validations:
+      required: false
+
+  - type: markdown
+    attributes:
+      value: "Thanks for submitting a quality of life suggestion! You're helping make the plugin better for everyone."

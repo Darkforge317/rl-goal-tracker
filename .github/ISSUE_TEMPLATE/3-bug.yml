@@ -1,7 +1,7 @@
 name: 🐛 Bug Report
 description: Found a bug? Tell us about it!
 title: "[Bug]: "
-labels: ["bug", "triage"]
+labels: ["Bug"]
 body:
   - type: markdown
     attributes:
@@ -11,9 +11,9 @@ body:
     id: duplicate-check
     attributes:
       label: Is there an existing issue for this?
-      description: Please search to see if an issue already exists for the bug you encountered.
+      description: Please search before submitting. If you find an existing issue, add any relevant information to it instead of creating a duplicate.
       options:
-        - label: I have searched the existing issues and will write a comment on it to indicate my need for it to be addressed.
+        - label: I have searched the existing issues and there is no existing issue for this bug.
           required: true
   - type: textarea
     id: steps-to-reproduce
@@ -50,7 +50,7 @@ body:
   - type: textarea
     id: debugging
     attributes:
-      label: Debugging Attempts
+      label: Troubleshooting Attempts
       description: If applicable, describe things you've tried in order to resolve the issue locally. (e.g. restarting Runelite, reinstalling the plugin, etc...)
     validations:
       required: false
@@ -74,4 +74,4 @@ body:
       required: false
   - type: markdown
     attributes:
-      value: "Thanks for submitting this bug report! It not only helps us, but helps all people using the plugin as well."
+      value: "Thanks for submitting this bug report! It not only helps us, but also helps everyone using the plugin."
