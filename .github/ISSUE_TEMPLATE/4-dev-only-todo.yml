@@ -1,0 +1,42 @@
+name: ⚙️ Dev Todo List Item
+description: Non-bug items that are out of scope for your current PR, which should be addressed by someone in a separate PR.
+title: "[Dev]: "
+labels: ["Dev Todo List"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for sticking to your PR's scope! This template is intended for contributors working on the repository.
+  - type: checkboxes
+    id: duplicate-check
+    attributes:
+      label: Is there an existing issue for this?
+      description: Please search to see if a similar Dev Todo List issue already exists.
+      options:
+        - label: I have searched the existing issues and there is no existing issue for this.
+          required: true
+  - type: textarea
+    id: todo-description
+    attributes:
+      label: What needs to be done and why?
+    validations:
+      required: true
+  - type: textarea
+    id: code-location
+    attributes:
+      label: Location in Codebase
+      description: Where in the codebase did you find this?
+      placeholder: |
+        e.g. GoalManager.java, TaskUpdateService.java, or a specific method/class
+    validations:
+      required: true
+  - type: textarea
+    id: additional-notes
+    attributes:
+      label: Additional Notes
+      description: Anything else that might help the contributor addressing this?
+    validations:
+      required: false
+  - type: markdown
+    attributes:
+      value: "Thanks for submitting and sticking to your scope! This makes it easier to review your PR for what it provides."
