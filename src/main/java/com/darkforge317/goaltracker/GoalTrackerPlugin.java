@@ -1,6 +1,7 @@
 package com.darkforge317.goaltracker;
 
 
+import com.darkforge317.goaltracker.services.ChangelogService;
 import com.darkforge317.goaltracker.services.KeyInputService;
 import com.google.inject.Provides;
 import com.darkforge317.goaltracker.models.enums.TaskType;
@@ -47,21 +48,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-@Slf4j
-@PluginDescriptor(name = "Goal Tracker", description = "Keep track of your goals and complete them automatically")
 /**
  * Main entry point for the Goal Tracker plugin.
  * Handles lifecycle (startup/shutdown), UI registration, and listens for
  * RuneLite events to update tasks and goals automatically.
  */
+@Slf4j
+@PluginDescriptor(name = "Goal Tracker", description = "Keep track of your goals and complete them automatically")
 public final class GoalTrackerPlugin extends Plugin
 {
     public static final int[] PLAYER_INVENTORIES = {
-            InventoryID.INVENTORY.getId(),
-            InventoryID.EQUIPMENT.getId(),
-            InventoryID.BANK.getId(),
-            InventoryID.SEED_VAULT.getId(),
-            InventoryID.GROUP_STORAGE.getId()
+        InventoryID.INVENTORY.getId(),
+        InventoryID.EQUIPMENT.getId(),
+        InventoryID.BANK.getId(),
+        InventoryID.SEED_VAULT.getId(),
+        InventoryID.GROUP_STORAGE.getId()
     };
 
     @Getter
@@ -103,6 +104,9 @@ public final class GoalTrackerPlugin extends Plugin
     private GoalTrackerConfig config;
 
     @Getter
+    private final ChangelogService changelogService = new ChangelogService();
+
+    @Getter
     @Inject
     private TaskUpdateService taskUpdateService;
 
@@ -113,10 +117,9 @@ public final class GoalTrackerPlugin extends Plugin
     @Inject
     private KeyManager keyManager;
 
+    @Getter
     @Inject
     private KeyInputService keyInputService;
-
-    public KeyInputService getKeyInputService() { return keyInputService; }
 
     @Getter
     @Inject
@@ -140,11 +143,11 @@ public final class GoalTrackerPlugin extends Plugin
     private Timer uiRefreshTimer;
 
     private static final List<InventoryID> TRACKED_INVENTORIES = List.of(
-            InventoryID.INVENTORY,
-            InventoryID.EQUIPMENT,
-            InventoryID.BANK,
-            InventoryID.SEED_VAULT,
-            InventoryID.GROUP_STORAGE
+        InventoryID.INVENTORY,
+        InventoryID.EQUIPMENT,
+        InventoryID.BANK,
+        InventoryID.SEED_VAULT,
+        InventoryID.GROUP_STORAGE
     );
 
     // Per-container cached counts, keyed by normalized item name and by raw item ID.
@@ -245,6 +248,12 @@ public final class GoalTrackerPlugin extends Plugin
             itemCache.load();
         } catch (Exception ex) {
             log.error("GoalTrackerPlugin: failed to load persisted state", ex);
+        }
+
+        ChangelogService.ChangelogEntry latestChangelog = changelogService.getLatestEntry();
+        if (latestChangelog != null && !latestChangelog.getVersion().equals(config.lastSeenChangelogVersion()))
+        {
+            SwingUtilities.invokeLater(() -> goalTrackerPanel.showChangelog(latestChangelog, true));
         }
 
         // Populate initial container caches so item-task counts are accurate

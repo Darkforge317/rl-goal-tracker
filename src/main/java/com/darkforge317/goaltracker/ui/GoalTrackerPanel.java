@@ -7,13 +7,13 @@ import com.darkforge317.goaltracker.models.Goal;
 import com.darkforge317.goaltracker.models.UndoStack;
 import com.darkforge317.goaltracker.models.task.Task;
 import com.darkforge317.goaltracker.presets.GoalPresetRepository;
+import com.darkforge317.goaltracker.services.ChangelogService;
 import com.darkforge317.goaltracker.ui.components.ActionBar;
 import com.darkforge317.goaltracker.ui.components.ActionBarButton;
 import com.darkforge317.goaltracker.ui.components.ListItemPanel;
 import com.darkforge317.goaltracker.ui.components.ListPanel;
 import com.darkforge317.goaltracker.utils.ReorderableList;
 import lombok.extern.slf4j.Slf4j;
-import lombok.extern.slf4j.XSlf4j;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.PluginPanel;
@@ -24,16 +24,16 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
-import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 import java.util.function.Consumer;
 
-@Slf4j
 /**
  * Main plugin panel for Goal Tracker.
  * Shows header (title, add/import/export controls), goal list with undo/redo,
  * and switches between home view and individual goal panels.
  */
+@Slf4j
 public final class GoalTrackerPanel extends PluginPanel implements Refreshable
 {
     private final JPanel mainPanel = new JPanel(new BorderLayout());
@@ -41,8 +41,8 @@ public final class GoalTrackerPanel extends PluginPanel implements Refreshable
     private final GoalTrackerPlugin plugin;
     private final GoalManager goalManager;
     private final UndoStack<Goal> undoStack = new UndoStack<>();
-    private ActionBarButton undoButtonRef;
-    private ActionBarButton redoButtonRef;
+    private final ActionBarButton undoButtonRef;
+    private final ActionBarButton redoButtonRef;
     private GoalPanel goalPanel;
     private Consumer<Goal> goalAddedListener;
     private Consumer<Goal> goalUpdatedListener;
@@ -106,8 +106,10 @@ public final class GoalTrackerPanel extends PluginPanel implements Refreshable
 
         ActionBarButton exportButton = new ActionBarButton("Export", this::exportGoalsToFile);
         ActionBarButton importButton = new ActionBarButton("Import", this::importGoalsFromFile);
+        ActionBarButton changelogButton = new ActionBarButton("Changelogs", this::showAllChangelogs);
         actionBar.right().add(exportButton);
         actionBar.right().add(importButton);
+        actionBar.right().add(changelogButton);
 
         updateUndoRedoButtons();
 
@@ -229,6 +231,35 @@ public final class GoalTrackerPanel extends PluginPanel implements Refreshable
         this.goalPanel = null;
     }
 
+    public void showChangelog(ChangelogService.ChangelogEntry entry, boolean isNewUpdate)
+    {
+        removeAll();
+        ChangelogPanel changelogPanel = new ChangelogPanel(entry, isNewUpdate,
+                this::showAllChangelogs,
+                () -> {
+                    if (isNewUpdate)
+                    {
+                        plugin.getConfig().lastSeenChangelogVersion(entry.getVersion());
+                    }
+                    home();
+                });
+        add(changelogPanel, BorderLayout.CENTER);
+        revalidate();
+        repaint();
+    }
+
+    public void showAllChangelogs()
+    {
+        removeAll();
+        List<ChangelogService.ChangelogEntry> entries = plugin.getChangelogService().getAllEntries();
+        ChangelogListPanel listPanel = new ChangelogListPanel(entries,
+                entry -> showChangelog(entry, false),
+                this::home);
+        add(listPanel, BorderLayout.CENTER);
+        revalidate();
+        repaint();
+    }
+
 
     @Override
     public void refresh()
@@ -285,7 +316,7 @@ public final class GoalTrackerPanel extends PluginPanel implements Refreshable
         // Keep pinned goals first, but do NOT alphabetize within groups.
         // Collections.sort is stable (TimSort), so existing manual order is preserved within each group.
         java.util.List<Goal> goals = goalManager.getGoals();
-        Collections.sort(goals, Comparator.comparing(Goal::isPinned).reversed());
+        goals.sort(Comparator.comparing(Goal::isPinned).reversed());
     }
 
     private void doUndo()
