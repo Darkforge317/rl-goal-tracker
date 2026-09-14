@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static net.runelite.api.ItemID.*;
+import static net.runelite.api.gameval.ItemID.*;
 
 public class GoalPresetRepository {
 
@@ -94,12 +94,12 @@ public class GoalPresetRepository {
                         SkillLevelTask.builder().skill(Skill.AGILITY).targetSkillLevel(60).build(),
                         // Midgame Gear & Upgrades
                         ItemTask.builder().itemId(DRAGON_SCIMITAR).itemName("Dragon scimitar").quantity(1).build(),
-                        ItemTask.builder().itemId(DRAGON_DEFENDER).itemName("Dragon defender").quantity(1).build(),
-                        ItemTask.builder().itemId(FIGHTER_TORSO).itemName("Fighter torso").quantity(1).build(),
-                        ItemTask.builder().itemId(RUNE_CROSSBOW).itemName("Rune crossbow").quantity(1).build(),
-                        ItemTask.builder().itemId(IBANS_STAFF_U).itemName("Iban's staff (u)").quantity(1).build(),
-                        ItemTask.builder().itemId(BARROWS_GLOVES).itemName("Barrows gloves").quantity(1).build(),
-                        ItemTask.builder().itemId(AVAS_ACCUMULATOR).itemName("Ava's accumulator").quantity(1).build(),
+                        ItemTask.builder().itemId(DRAGON_PARRYINGDAGGER).itemName("Dragon defender").quantity(1).build(),
+                        ItemTask.builder().itemId(BARBASSAULT_PENANCE_FIGHTER_TORSO).itemName("Fighter torso").quantity(1).build(),
+                        ItemTask.builder().itemId(XBOWS_CROSSBOW_RUNITE).itemName("Rune crossbow").quantity(1).build(),
+                        ItemTask.builder().itemId(IBANSTAFF_UPGRADED).itemName("Iban's staff (u)").quantity(1).build(),
+                        ItemTask.builder().itemId(HUNDRED_GAUNTLETS_LEVEL_10).itemName("Barrows gloves").quantity(1).build(),
+                        ItemTask.builder().itemId(ANMA_50_REWARD).itemName("Ava's accumulator").quantity(1).build(),
                         // Midgame Quests / Unlocks
                         QuestTask.builder().quest(Quest.RECIPE_FOR_DISASTER).build(),
                         QuestTask.builder().quest(Quest.FAIRYTALE_II__CURE_A_QUEEN).build(), // Fairy rings access (partial)
@@ -125,14 +125,14 @@ public class GoalPresetRepository {
                         // Late Gear Goals
                         ItemTask.builder().itemId(ABYSSAL_TENTACLE).itemName("Abyssal tentacle").quantity(1).build(),
                         ItemTask.builder().itemId(TOXIC_BLOWPIPE).itemName("Toxic blowpipe").quantity(1).build(),
-                        ItemTask.builder().itemId(ARMADYL_CROSSBOW).itemName("Armadyl crossbow").quantity(1).build(),
+                        ItemTask.builder().itemId(ACB).itemName("Armadyl crossbow").quantity(1).build(),
                         ItemTask.builder().itemId(BOW_OF_FAERDHINEN).itemName("Bow of Faerdhinen").quantity(1).build(),
                         ItemTask.builder().itemId(BANDOS_CHESTPLATE).itemName("Bandos chestplate").quantity(1).build(),
-                        ItemTask.builder().itemId(BANDOS_TASSETS).itemName("Bandos tassets").quantity(1).build(),
-                        ItemTask.builder().itemId(TRIDENT_OF_THE_SEAS).itemName("Trident of the seas").quantity(1).build(),
-                        ItemTask.builder().itemId(RING_OF_SUFFERING).itemName("Ring of suffering").quantity(1).build(),
-                        ItemTask.builder().itemId(RING_OF_SUFFERING_I).itemName("Ring of suffering (i)").quantity(1).build(),
-                        ItemTask.builder().itemId(SALVE_AMULETEI).itemName("Salve amulet (ei)").quantity(1).build(),
+                        ItemTask.builder().itemId(BANDOS_SKIRT).itemName("Bandos tassets").quantity(1).build(),
+                        ItemTask.builder().itemId(TOTS_CHARGED).itemName("Trident of the seas").quantity(1).build(),
+                        ItemTask.builder().itemId(ZENYTE_RING_ENCHANTED).itemName("Ring of suffering").quantity(1).build(),
+                        ItemTask.builder().itemId(NZONE_ZENYTE_RING_ENCHANTED).itemName("Ring of suffering (i)").quantity(1).build(),
+                        ItemTask.builder().itemId(NZONE_SALVE_AMULET_E).itemName("Salve amulet (ei)").quantity(1).build(),
                         ItemTask.builder().itemId(INFERNAL_CAPE).itemName("Infernal cape").quantity(1).build(),
                         // Late Quests / Diaries
                         QuestTask.builder().quest(Quest.SONG_OF_THE_ELVES).build(),
@@ -147,12 +147,12 @@ public class GoalPresetRepository {
         Goal voidSet = Goal.builder()
                 .description("Full Void Armor Set")
                 .tasks(ReorderableList.from(
-                        ItemTask.builder().itemId(VOID_KNIGHT_TOP).itemName("Void knight top").quantity(1).build(),
-                        ItemTask.builder().itemId(VOID_KNIGHT_ROBE).itemName("Void knight robe").quantity(1).build(),
-                        ItemTask.builder().itemId(VOID_KNIGHT_GLOVES).itemName("Void knight gloves").quantity(1).build(),
-                        ItemTask.builder().itemId(VOID_MELEE_HELM).itemName("Void melee helm").quantity(1).build(),
-                        ItemTask.builder().itemId(VOID_RANGER_HELM).itemName("Void ranger helm").quantity(1).build(),
-                        ItemTask.builder().itemId(VOID_MAGE_HELM).itemName("Void mage helm").quantity(1).build()
+                        ItemTask.builder().itemId(PEST_VOID_KNIGHT_TOP).itemName("Void knight top").quantity(1).build(),
+                        ItemTask.builder().itemId(PEST_VOID_KNIGHT_ROBES).itemName("Void knight robe").quantity(1).build(),
+                        ItemTask.builder().itemId(PEST_VOID_KNIGHT_GLOVES).itemName("Void knight gloves").quantity(1).build(),
+                        ItemTask.builder().itemId(GAME_PEST_MELEE_HELM).itemName("Void melee helm").quantity(1).build(),
+                        ItemTask.builder().itemId(GAME_PEST_ARCHER_HELM).itemName("Void ranger helm").quantity(1).build(),
+                        ItemTask.builder().itemId(GAME_PEST_MAGE_HELM).itemName("Void mage helm").quantity(1).build()
                 ))
                 .build();
         return new Preset("Full Void Armor", "All base Void pieces: top, robe, gloves, and all three helms.", Arrays.asList(voidSet));
@@ -238,30 +238,30 @@ public class GoalPresetRepository {
         Goal barrows = Goal.builder()
                 .description("All Barrows Gear")
                 .tasks(ReorderableList.from(
-                        ItemTask.builder().itemId(AHRIMS_HOOD).itemName("Ahrim's hood").quantity(1).build(),
-                        ItemTask.builder().itemId(AHRIMS_ROBETOP).itemName("Ahrim's robetop").quantity(1).build(),
-                        ItemTask.builder().itemId(AHRIMS_ROBESKIRT).itemName("Ahrim's robeskirt").quantity(1).build(),
-                        ItemTask.builder().itemId(AHRIMS_STAFF).itemName("Ahrim's staff").quantity(1).build(),
-                        ItemTask.builder().itemId(DHAROKS_HELM).itemName("Dharok's helm").quantity(1).build(),
-                        ItemTask.builder().itemId(DHAROKS_PLATEBODY).itemName("Dharok's platebody").quantity(1).build(),
-                        ItemTask.builder().itemId(DHAROKS_PLATELEGS).itemName("Dharok's platelegs").quantity(1).build(),
-                        ItemTask.builder().itemId(DHAROKS_GREATAXE).itemName("Dharok's greataxe").quantity(1).build(),
-                        ItemTask.builder().itemId(GUTHANS_HELM).itemName("Guthan's helm").quantity(1).build(),
-                        ItemTask.builder().itemId(GUTHANS_PLATEBODY).itemName("Guthan's platebody").quantity(1).build(),
-                        ItemTask.builder().itemId(GUTHANS_CHAINSKIRT).itemName("Guthan's chainskirt").quantity(1).build(),
-                        ItemTask.builder().itemId(GUTHANS_WARSPEAR).itemName("Guthan's warspear").quantity(1).build(),
-                        ItemTask.builder().itemId(KARILS_COIF).itemName("Karil's coif").quantity(1).build(),
-                        ItemTask.builder().itemId(KARILS_LEATHERTOP).itemName("Karil's leathertop").quantity(1).build(),
-                        ItemTask.builder().itemId(KARILS_LEATHERSKIRT).itemName("Karil's leatherskirt").quantity(1).build(),
-                        ItemTask.builder().itemId(KARILS_CROSSBOW).itemName("Karil's crossbow").quantity(1).build(),
-                        ItemTask.builder().itemId(TORAGS_HELM).itemName("Torag's helm").quantity(1).build(),
-                        ItemTask.builder().itemId(TORAGS_PLATEBODY).itemName("Torag's platebody").quantity(1).build(),
-                        ItemTask.builder().itemId(TORAGS_PLATELEGS).itemName("Torag's platelegs").quantity(1).build(),
-                        ItemTask.builder().itemId(TORAGS_HAMMERS).itemName("Torag's hammers").quantity(1).build(),
-                        ItemTask.builder().itemId(VERACS_HELM).itemName("Verac's helm").quantity(1).build(),
-                        ItemTask.builder().itemId(VERACS_BRASSARD).itemName("Verac's brassard").quantity(1).build(),
-                        ItemTask.builder().itemId(VERACS_PLATESKIRT).itemName("Verac's plateskirt").quantity(1).build(),
-                        ItemTask.builder().itemId(VERACS_FLAIL).itemName("Verac's flail").quantity(1).build()
+                        ItemTask.builder().itemId(BARROWS_AHRIM_HEAD).itemName("Ahrim's hood").quantity(1).build(),
+                        ItemTask.builder().itemId(BARROWS_AHRIM_BODY).itemName("Ahrim's robetop").quantity(1).build(),
+                        ItemTask.builder().itemId(BARROWS_AHRIM_LEGS).itemName("Ahrim's robeskirt").quantity(1).build(),
+                        ItemTask.builder().itemId(BARROWS_AHRIM_WEAPON).itemName("Ahrim's staff").quantity(1).build(),
+                        ItemTask.builder().itemId(BARROWS_DHAROK_HEAD).itemName("Dharok's helm").quantity(1).build(),
+                        ItemTask.builder().itemId(BARROWS_DHAROK_BODY).itemName("Dharok's platebody").quantity(1).build(),
+                        ItemTask.builder().itemId(BARROWS_DHAROK_LEGS).itemName("Dharok's platelegs").quantity(1).build(),
+                        ItemTask.builder().itemId(BARROWS_DHAROK_WEAPON).itemName("Dharok's greataxe").quantity(1).build(),
+                        ItemTask.builder().itemId(BARROWS_GUTHAN_HEAD).itemName("Guthan's helm").quantity(1).build(),
+                        ItemTask.builder().itemId(BARROWS_GUTHAN_BODY).itemName("Guthan's platebody").quantity(1).build(),
+                        ItemTask.builder().itemId(BARROWS_GUTHAN_LEGS).itemName("Guthan's chainskirt").quantity(1).build(),
+                        ItemTask.builder().itemId(BARROWS_GUTHAN_WEAPON).itemName("Guthan's warspear").quantity(1).build(),
+                        ItemTask.builder().itemId(BARROWS_KARIL_HEAD).itemName("Karil's coif").quantity(1).build(),
+                        ItemTask.builder().itemId(BARROWS_KARIL_BODY).itemName("Karil's leathertop").quantity(1).build(),
+                        ItemTask.builder().itemId(BARROWS_KARIL_LEGS).itemName("Karil's leatherskirt").quantity(1).build(),
+                        ItemTask.builder().itemId(BARROWS_KARIL_WEAPON).itemName("Karil's crossbow").quantity(1).build(),
+                        ItemTask.builder().itemId(BARROWS_TORAG_HEAD).itemName("Torag's helm").quantity(1).build(),
+                        ItemTask.builder().itemId(BARROWS_TORAG_BODY).itemName("Torag's platebody").quantity(1).build(),
+                        ItemTask.builder().itemId(BARROWS_TORAG_LEGS).itemName("Torag's platelegs").quantity(1).build(),
+                        ItemTask.builder().itemId(BARROWS_TORAG_WEAPON).itemName("Torag's hammers").quantity(1).build(),
+                        ItemTask.builder().itemId(BARROWS_VERAC_HEAD).itemName("Verac's helm").quantity(1).build(),
+                        ItemTask.builder().itemId(BARROWS_VERAC_BODY).itemName("Verac's brassard").quantity(1).build(),
+                        ItemTask.builder().itemId(BARROWS_VERAC_LEGS).itemName("Verac's plateskirt").quantity(1).build(),
+                        ItemTask.builder().itemId(BARROWS_VERAC_WEAPON).itemName("Verac's flail").quantity(1).build()
                 ))
                 .build();
         return new Preset("All Barrows Gear", "Collect a full set of each Barrows brothers' equipment.", Arrays.asList(barrows));
