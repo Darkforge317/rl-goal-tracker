@@ -1,6 +1,7 @@
 package com.darkforge317.goaltracker;
 
 
+import com.darkforge317.goaltracker.services.ChangelogService;
 import com.darkforge317.goaltracker.services.KeyInputService;
 import com.google.inject.Provides;
 import com.darkforge317.goaltracker.models.enums.TaskType;
@@ -101,6 +102,9 @@ public final class GoalTrackerPlugin extends Plugin
     @Getter
     @Inject
     private GoalTrackerConfig config;
+
+    @Getter
+    private final ChangelogService changelogService = new ChangelogService();
 
     @Getter
     @Inject
