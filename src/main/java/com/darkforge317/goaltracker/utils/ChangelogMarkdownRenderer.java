@@ -1,36 +1,19 @@
 package com.darkforge317.goaltracker.utils;
 
-/**
- * Converts a deliberately narrow subset of markdown into the HTML 3.2-ish dialect
- * Swing's built-in JLabel/JEditorPane HTML rendering understands. Handles only what
- * changelog entries actually need: '#'/'##' headers, '**bold**', '- ' bullet lists,
- * and plain paragraphs. Not a general-purpose markdown parser - no tables, links,
- * nested lists, code blocks, etc. If richer formatting is ever needed, that's the
- * point to evaluate a real dependency rather than extend this by hand.
- */
 public final class ChangelogMarkdownRenderer
 {
     private ChangelogMarkdownRenderer() {}
 
     public static String toHtml(String markdown)
     {
-        return toHtml(markdown, -1);
-    }
-
-    /**
-     * Same as toHtml(String), but constrains the rendered content to widthPx pixels
-     * wide (pass -1 for no constraint). Swing's JLabel HTML renderer does not wrap
-     * text unless given an explicit pixel width via a body style - without this,
-     * content just runs off the edge of the panel instead of wrapping to new lines.
-     * margin/padding are explicitly zeroed since the default HTMLEditorKit stylesheet
-     * otherwise adds its own body margin, which would eat into the specified width.
-     */
-    public static String toHtml(String markdown, int widthPx)
-    {
-        String bodyTag = widthPx > 0
-                ? "<body style='width: " + widthPx + "px; margin: 0; padding: 0'>"
-                : "<body style='margin: 0; padding: 0'>";
-        StringBuilder html = new StringBuilder("<html>").append(bodyTag);
+        StringBuilder html = new StringBuilder(
+                "<html><head><style>"
+                        + "body { margin: 0; padding: 0; }"
+                        + "p { margin: 0 0 8px 0; }"
+                        + "h2, h3 { margin: 4px 0; }"
+                        + "ul { margin: 0 0 8px 0; padding-left: 16px; }"
+                        + "li { margin: 0; }"
+                        + "</style></head><body>");
         boolean inList = false;
 
         for (String rawLine : markdown.split("\n"))
@@ -70,11 +53,6 @@ public final class ChangelogMarkdownRenderer
         return html.toString();
     }
 
-    /**
-     * Escapes raw HTML special characters, then converts **bold** markers to <b> tags.
-     * Escaping happens first so changelog text containing a literal '<' or '&' can't
-     * corrupt the generated markup.
-     */
     private static String inlineFormat(String text)
     {
         String escaped = text
@@ -99,7 +77,7 @@ public final class ChangelogMarkdownRenderer
                 i++;
             }
         }
-        if (bold) result.append("</b>"); // unterminated ** in source; close gracefully
+        if (bold) result.append("</b>");
 
         return result.toString();
     }

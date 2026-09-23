@@ -7,6 +7,7 @@ import com.darkforge317.goaltracker.models.Goal;
 import com.darkforge317.goaltracker.models.UndoStack;
 import com.darkforge317.goaltracker.models.task.Task;
 import com.darkforge317.goaltracker.presets.GoalPresetRepository;
+import com.darkforge317.goaltracker.services.ChangelogService;
 import com.darkforge317.goaltracker.ui.components.ActionBar;
 import com.darkforge317.goaltracker.ui.components.ActionBarButton;
 import com.darkforge317.goaltracker.ui.components.ListItemPanel;
@@ -93,6 +94,13 @@ public final class GoalTrackerPanel extends PluginPanel implements Refreshable
         headerTop.add(Box.createVerticalStrut(4));
         headerTop.add(buttonsRow);
 
+        JPanel testRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        testRow.setBackground(ColorScheme.DARK_GRAY_COLOR);
+        ActionBarButton testChangelogBtn = new ActionBarButton("Test Changelog UI", this::showChangelogTest);
+        testRow.add(testChangelogBtn);
+        headerTop.add(Box.createVerticalStrut(4));
+        headerTop.add(testRow);
+
         titlePanel.add(headerTop, BorderLayout.CENTER);
 
         // Action bar
@@ -150,6 +158,52 @@ public final class GoalTrackerPanel extends PluginPanel implements Refreshable
         mainPanel.add(goalListPanel, BorderLayout.CENTER);
 
         home();
+    }
+
+    private void showChangelogTest()
+    {
+        removeAll();
+        ChangelogService.ChangelogEntry testEntry = new ChangelogService.ChangelogEntry("2.1.2",
+                "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua!\n\n" +
+                        "## 1. Primis In Faucibus\n\n" +
+                        "- **Vivamus elementum**: Integer nec odio. Praesent libero. Sed cursus ante dapibus diam. Sed nisi.\n    - Sed nisi. Nulla quis sem at nibh elementum imperdiet, auctore Pierre Gravelle.\n" +
+                        "- **Duis sagittis ipsum**: Praesent mauris. Fusce nec tellus sed augue semper porta. Mauris massa.\n" +
+                        "- **Aenean quam**: In scelerisque sem at dolor. Maecenas mattis. Sed convallis tristique sem.\n\n" +
+                        "## 2. Vestibulum Lacinia\n\n" +
+                        "- **Mauris massa**: Vestibulum lacinia arcu eget nulla. Class aptent taciti sociosqu ad litora torquent.\n    - Curabitur sodales ligula in libero. Sed dignissim lacinia nunc. Curabitur tortor.\n" +
+                        "- **Curabitur tortor**: Pellentesque nibh. Aenean quam. In scelerisque sem at dolor. Maecenas mattis.\n" +
+                        "- **Nulla facilisi**: Ut ultrices ultrices enim. Curabitur sit amet mauris. Morbi in sem quis dui placera.\n\n" +
+                        "## 3. Aliquam Tincidunt\n\n" +
+                        "- **Maecenas mattis**: Convallis massa. Quisque volutpat condimentum velit. Class aptent taciti sociosqu.\n    - Morbi lectus risus, porta vel, pharetra vitae, facilisis id, quam. Integer nec odio.\n" +
+                        "- **Fusce ac turpis**: Nulla facilisi. Ut ultrices ultrices enim. Curabitur sit amet mauris. Morbi in sem.\n" +
+                        "- **Proin pharetra**: Proin quam nisl, tincidunt et, mattis eget, convallis nec, purus. Cum sociis.\n\n" +
+                        "## 4. Integer Nec Odio\n\n" +
+                        "- **Nunc viverra**: Imperdiet enim. Fusce est. Vivamus a tellus. Pellentesque habitant morbi tristique.\n    - Morbi tristique senectus et netus et malesuada fames ac turpis egestas. Sed lectus.\n" +
+                        "- **Proin pharetra**: Proin quam nisl, tincidunt et, mattis eget, convallis nec, purus. Etiam ultrices.\n" +
+                        "- **Donec elit libero**: Sodales nec, volutpat a, suscipit non, turpis. Nullam sagittis suspendisse.\n\n" +
+                        "## 5. Quisque Volutpat\n\n" +
+                        "- **Cum sociis natoque**: Penatibus et magnis dis parturient montes, nascetur ridiculus mus. Etiam ultrices.\n    - Suspendisse in justo eu magna luctus suscipit. Sed lectus. Integer euismod lacus.\n" +
+                        "- **Sed lectus**: Integer euismod lacus luctus magna. Quisque cursus, metus vitae pharetra auctor.\n" +
+                        "- **Tristique senectus**: Netus et malesuada fames ac turpis egestas. Integer fringilla congue.\n\n" +
+                        "## 6. Suspendisse Potenti\n\n" +
+                        "- **Phasellus ultrices**: Nulla quis sem at nibh elementum imperdiet. Duis sagittis ipsum praesent.\n    - Vestibulum lacinia arcu eget nulla. Class aptent taciti sociosqu ad litora.\n" +
+                        "- **Mauris imperdiet**: Cras justo odio, dapibus ac facilisis in, egestas eget quam.\n" +
+                        "- **Nullam id dolor**: Id nibh ultricies vehicula ut id elit. Morbi leo risus, porta ac consectetur.\n\n" +
+                        "## 7. Curabitur Blandit\n\n" +
+                        "- **Donec id elit non**: Mi porta gravida at eget metus. Fusce dapibus, tellus ac cursus commodo.\n    - Tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.\n" +
+                        "- **Etiam porta sem**: Malesuada magna mollis euismod. Cras mattis consectetur purus sit amet fermentum.\n" +
+                        "- **Aenean lacinia**: Bibendum nulla sed consectetur. Praesent commodo cursus magna, vel scelerisque nisl.\n\n" +
+                        "## 8. Elementum Tellus\n\n" +
+                        "- **Sed posuere consectetur**: Est at lobortis. Aenean eu leo quam. Pellentesque ornare sem lacinia quam.\n    - Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.\n" +
+                        "- **Cras mattis consectetur**: Purus sit amet fermentum. Donec sed odio dui. Cras justo odio.\n" +
+                        "- **Vivamus sagittis lacus**: Vel augue laoreet rutrum faucibus dolor auctor. Nullam quis risus eget urna.\n");
+        ChangelogPanel panel = new ChangelogPanel(testEntry, true,
+                () -> System.out.println("See All clicked"),
+                this::home
+        );
+        add(panel, BorderLayout.CENTER);
+        revalidate();
+        repaint();
     }
 
     private void refreshHomeListIfVisible()
