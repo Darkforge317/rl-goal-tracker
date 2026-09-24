@@ -48,9 +48,9 @@ public final class ChangelogService
     {
         List<ChangelogEntry> entries = new ArrayList<>();
         List<String> versions = new ArrayList<>(getAllVersions());
-        versions.sort(ChangelogService::compareVersions); // ascending: oldest first
+        versions.sort(ChangelogService::compareVersionNumbers);
 
-        for (int i = versions.size() - 1; i >= 0; i--) // newest first for display
+        for (int i = versions.size() - 1; i >= 0; i--)
         {
             String version = versions.get(i);
             String markdown = getChangelogMarkdown(version);
@@ -129,22 +129,47 @@ public final class ChangelogService
      * (e.g. "2.1.10" > "2.1.9", unlike a plain string comparison). A missing or
      * non-numeric component is treated as 0.
      */
-    private static int compareVersions(String a, String b)
+    private static int compareVersionNumbers(String a, String b)
     {
+        // Split the version numbers apart. (e.g. "10.2.4" -> ["10","2","4"])
         String[] partsA = a.split("\\.");
         String[] partsB = b.split("\\.");
         int len = Math.max(partsA.length, partsB.length);
+
+        // For each segment in the version string, left to right
         for (int i = 0; i < len; i++)
         {
+            // Is there a number in this segment? What is it?
             int numA = i < partsA.length ? parseIntSafe(partsA[i]) : 0;
             int numB = i < partsB.length ? parseIntSafe(partsB[i]) : 0;
-            if (numA != numB) return Integer.compare(numA, numB);
+
+            // If one number is larger than the other
+            if (numA != numB) {
+                // Return whether numA is larger (>0) or smaller (<0)
+                return Integer.compare(numA, numB);
+            }
         }
         return 0;
     }
 
+    /**
+     * Compares two dotted version strings.
+     * Returns the newer of the two version strings.
+     * (e.g. "2.1.10" > "2.1.9", so "2.1.10" would be returned)
+     */
+    private static String getNewerVersion(String a, String b)
+    {
+        // Exit if we don't have two strings
+        if (a == null) return b;
+        if (b == null) return a;
+
+        // Return the newer of the two version strings
+        return compareVersionNumbers(a, b) >= 0 ? a : b;
+    }
+
     private static int parseIntSafe(String s)
     {
+        if (s == null) return 0;
         try { return Integer.parseInt(s.trim()); }
         catch (NumberFormatException e) { return 0; }
     }
