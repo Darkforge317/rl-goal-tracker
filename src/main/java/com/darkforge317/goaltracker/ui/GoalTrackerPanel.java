@@ -163,11 +163,7 @@ public final class GoalTrackerPanel extends PluginPanel implements Refreshable
     private void showChangelogList()
     {
         removeAll();
-        ChangelogService.ChangelogEntry testEntry = new ChangelogService().getLatestEntry();
-        ChangelogPanel panel = new ChangelogPanel(testEntry, true,
-                () -> System.out.println("See All clicked"),
-                this::home
-        );
+        ChangelogListPanel panel = new ChangelogListPanel(this::home);
         add(panel, BorderLayout.CENTER);
         revalidate();
         repaint();

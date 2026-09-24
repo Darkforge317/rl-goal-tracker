@@ -63,10 +63,18 @@ public final class ChangelogService
     }
 
     /** The numerically highest version among those declared in versions.txt, or null if none. */
-    public ChangelogEntry getLatestEntry()
+    public ChangelogEntry getNewestEntry()
     {
         List<ChangelogEntry> entries = getAllEntries();
         return entries.isEmpty() ? null : entries.get(0);
+    }
+
+    public Boolean isNewestEntry(ChangelogEntry entry)
+    {
+        ChangelogEntry newestEntry = getNewestEntry();
+        if (newestEntry == null) return false;
+
+        return newestEntry.equals(entry);
     }
 
     /**
