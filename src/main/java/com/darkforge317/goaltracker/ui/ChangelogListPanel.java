@@ -3,6 +3,7 @@ package com.darkforge317.goaltracker.ui;
 import com.darkforge317.goaltracker.GoalTrackerPlugin;
 import com.darkforge317.goaltracker.services.ChangelogService;
 import com.darkforge317.goaltracker.services.ChangelogService.ChangelogEntry;
+import com.darkforge317.goaltracker.services.PanelService;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 
@@ -13,22 +14,22 @@ import java.util.List;
 
 public class ChangelogListPanel extends JPanel
 {
-    private final GoalTrackerPlugin plugin;
+    private final PanelService panelService;
     private static final int CONTENT_PADDING = 8;
     private ChangelogService changelogService = new ChangelogService();
     private List<ChangelogService.ChangelogEntry> changelogEntries = changelogService.getAllEntries();
 
-    public ChangelogListPanel(GoalTrackerPlugin plugin, Runnable onClose)
+    public ChangelogListPanel(PanelService panelService)
     {
         super(new BorderLayout());
-        this.plugin = plugin;
+        this.panelService = panelService;
         setBackground(ColorScheme.DARK_GRAY_COLOR);
 
         JPanel headerBar = new JPanel(new GridLayout(1, 2, 4, 0));
         headerBar.setBorder(new EmptyBorder(4, 4, 4, 4));
-        JButton closeButton = new JButton("Close");
-        closeButton.addActionListener(e -> onClose.run());
-        headerBar.add(closeButton);
+        JButton backButton = new JButton("Back");
+        backButton.addActionListener(e -> onBackButtonClicked());
+        headerBar.add(backButton);
 
         JLabel titleLabel = new JLabel("All Changelogs");
         titleLabel.setFont(FontManager.getRunescapeBoldFont());
@@ -69,7 +70,7 @@ public class ChangelogListPanel extends JPanel
             JButton changelogEntryButton = new JButton("Release " + entry.getVersion());
             changelogEntryButton.setBackground(ColorScheme.DARK_GRAY_COLOR);
             changelogEntryButton.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
-            changelogEntryButton.addActionListener( e -> onChangelogClicked(entry));
+            changelogEntryButton.addActionListener( e -> onChangelogEntryClicked(entry));
             contentPane.add(changelogEntryButton, BorderLayout.NORTH);
         }
 
@@ -84,14 +85,14 @@ public class ChangelogListPanel extends JPanel
     }
 
 
-    private void onChangelogClicked(ChangelogEntry entry)
+    private void onChangelogEntryClicked(ChangelogEntry entry)
     {
         Boolean isNewestEntry = changelogService.isNewestEntry(entry);
 
-        removeAll();
-        ChangelogListPanel panel = new ChangelogPanel(plugin, entry, isNewestEntry);
-        add(panel, BorderLayout.CENTER);
-        revalidate();
-        repaint();
+        panelService.showChangelogPanel(entry, isNewestEntry, true);
+    }
+
+    private void onBackButtonClicked(){
+        panelService.showHome();
     }
 }

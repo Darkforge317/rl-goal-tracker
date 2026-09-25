@@ -2,6 +2,7 @@ package com.darkforge317.goaltracker.ui;
 
 import com.darkforge317.goaltracker.GoalTrackerPlugin;
 import com.darkforge317.goaltracker.services.ChangelogService;
+import com.darkforge317.goaltracker.services.PanelService;
 import com.darkforge317.goaltracker.utils.ChangelogMarkdownRenderer;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
@@ -22,13 +23,16 @@ import java.awt.GridLayout;
 
 public class ChangelogPanel extends JPanel
 {
-    private final GoalTrackerPlugin plugin;
+    private final PanelService panelService;
+    private final boolean createdByChangelogListPanel;
     private static final int CONTENT_PADDING = 8;
 
-    public ChangelogPanel(GoalTrackerPlugin plugin, ChangelogService.ChangelogEntry entry, boolean isNewUpdate)
+    public ChangelogPanel(PanelService panelService, ChangelogService.ChangelogEntry entry, boolean isNewUpdate, boolean createdByChangelogListPanel)
     {
         super(new BorderLayout());
-        this.plugin = plugin;
+        this.panelService = panelService;
+        this.createdByChangelogListPanel = createdByChangelogListPanel;
+
         setBackground(ColorScheme.DARK_GRAY_COLOR);
 
         JPanel headerBar = new JPanel(new GridLayout(1, 2, 4, 0));
@@ -93,9 +97,10 @@ public class ChangelogPanel extends JPanel
     }
 
     private void onClose() {
-        plugin. .home();
+        panelService.showHome();
     }
 
     private void onSeeAll() {
+        panelService.showChangelogListPanel();
     }
 }

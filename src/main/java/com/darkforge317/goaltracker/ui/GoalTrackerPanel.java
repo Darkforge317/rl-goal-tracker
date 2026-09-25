@@ -7,7 +7,7 @@ import com.darkforge317.goaltracker.models.Goal;
 import com.darkforge317.goaltracker.models.UndoStack;
 import com.darkforge317.goaltracker.models.task.Task;
 import com.darkforge317.goaltracker.presets.GoalPresetRepository;
-import com.darkforge317.goaltracker.services.ChangelogService;
+import com.darkforge317.goaltracker.services.PanelService;
 import com.darkforge317.goaltracker.ui.components.ActionBar;
 import com.darkforge317.goaltracker.ui.components.ActionBarButton;
 import com.darkforge317.goaltracker.ui.components.ListItemPanel;
@@ -41,6 +41,7 @@ public final class GoalTrackerPanel extends PluginPanel implements Refreshable
     private final ListPanel<Goal> goalListPanel;
     private final GoalTrackerPlugin plugin;
     private final GoalManager goalManager;
+    private final PanelService panelService;
     private final UndoStack<Goal> undoStack = new UndoStack<>();
     private ActionBarButton undoButtonRef;
     private ActionBarButton redoButtonRef;
@@ -52,9 +53,10 @@ public final class GoalTrackerPanel extends PluginPanel implements Refreshable
     private Goal pendingNewGoal;
 
     @Inject
-    public GoalTrackerPanel(GoalTrackerPlugin plugin, GoalManager goalManager)
+    public GoalTrackerPanel(PanelService panelService, GoalTrackerPlugin plugin, GoalManager goalManager)
     {
         super(false);
+        this.panelService = panelService;
         this.plugin = plugin;
         this.goalManager = goalManager;
         this.goalManager.addGoalsChangedListener(() -> SwingUtilities.invokeLater(this::refreshHomeListIfVisible));
@@ -94,12 +96,12 @@ public final class GoalTrackerPanel extends PluginPanel implements Refreshable
         headerTop.add(Box.createVerticalStrut(4));
         headerTop.add(buttonsRow);
 
-        JPanel testRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
-        testRow.setBackground(ColorScheme.DARK_GRAY_COLOR);
-        ActionBarButton testChangelogBtn = new ActionBarButton("Changelogs", this::showChangelogList);
-        testRow.add(testChangelogBtn);
+        JPanel subHeaderRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        subHeaderRow.setBackground(ColorScheme.DARK_GRAY_COLOR);
+        ActionBarButton changelogsButton = new ActionBarButton("Changelogs", this::showChangelogList);
+        subHeaderRow.add(changelogsButton);
         headerTop.add(Box.createVerticalStrut(4));
-        headerTop.add(testRow);
+        headerTop.add(subHeaderRow);
 
         titlePanel.add(headerTop, BorderLayout.CENTER);
 
@@ -162,11 +164,9 @@ public final class GoalTrackerPanel extends PluginPanel implements Refreshable
 
     private void showChangelogList()
     {
-        removeAll();
-        ChangelogListPanel panel = new ChangelogListPanel(this::home);
-        add(panel, BorderLayout.CENTER);
-        revalidate();
-        repaint();
+        // This function still exists, otherwise we'd need to redesign
+        // ActionBarButton to not require a runnable. Not in-scope yet.
+        panelService.showChangelogListPanel();
     }
 
     private void refreshHomeListIfVisible()

@@ -1,8 +1,7 @@
 package com.darkforge317.goaltracker;
 
 
-import com.darkforge317.goaltracker.services.ChangelogService;
-import com.darkforge317.goaltracker.services.KeyInputService;
+import com.darkforge317.goaltracker.services.*;
 import com.google.inject.Provides;
 import com.darkforge317.goaltracker.models.enums.TaskType;
 import com.darkforge317.goaltracker.models.task.ItemTask;
@@ -10,8 +9,6 @@ import com.darkforge317.goaltracker.models.task.QuestTask;
 import com.darkforge317.goaltracker.models.task.SkillLevelTask;
 import com.darkforge317.goaltracker.models.task.SkillXpTask;
 import com.darkforge317.goaltracker.models.task.Task;
-import com.darkforge317.goaltracker.services.TaskIconService;
-import com.darkforge317.goaltracker.services.TaskUpdateService;
 import com.darkforge317.goaltracker.ui.GoalTrackerPanel;
 import lombok.Getter;
 import lombok.Setter;
@@ -105,6 +102,8 @@ public final class GoalTrackerPlugin extends Plugin
 
     @Getter
     private final ChangelogService changelogService = new ChangelogService();
+
+    @Getter final PanelService panelService = new PanelService(this);
 
     @Getter
     @Inject
