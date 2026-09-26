@@ -3,6 +3,7 @@ package com.darkforge317.goaltracker.services;
 import com.darkforge317.goaltracker.GoalTrackerPlugin;
 import com.darkforge317.goaltracker.ui.ChangelogListPanel;
 import com.darkforge317.goaltracker.ui.ChangelogPanel;
+import com.google.inject.Inject;
 
 import javax.swing.*;
 import java.awt.*;
@@ -10,6 +11,7 @@ import java.awt.*;
 public class PanelService extends JPanel{
     private final GoalTrackerPlugin plugin;
 
+    @Inject
     public PanelService(GoalTrackerPlugin plugin)
     {
         super(new BorderLayout());
@@ -39,7 +41,7 @@ public class PanelService extends JPanel{
     public void showChangelogPanel(ChangelogService.ChangelogEntry entry, boolean isNewUpdate, boolean createdByChangelogListPanel)
     {
         removeAll();
-        ChangelogPanel panel = new ChangelogPanel(this, entry, isNewUpdate, true);
+        ChangelogPanel panel = new ChangelogPanel(this, entry, isNewUpdate, createdByChangelogListPanel);
         add(panel, BorderLayout.CENTER);
         revalidate();
         repaint();
