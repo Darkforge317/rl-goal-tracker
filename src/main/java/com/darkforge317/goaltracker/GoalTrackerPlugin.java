@@ -260,7 +260,7 @@ public final class GoalTrackerPlugin extends Plugin
             }
         });
 
-        goalTrackerPanel.home();
+        panelService.showHome();
 
         final AsyncBufferedImage icon = itemManager.getImage(ItemID.TODO_LIST);
         if (icon == null)
@@ -274,7 +274,7 @@ public final class GoalTrackerPlugin extends Plugin
                         .tooltip("Goal Tracker")
                         .icon(icon)
                         .priority(7)
-                        .panel(goalTrackerPanel)
+                        .panel(panelService)
                         .build();
 
                 clientToolbar.addNavigation(uiNavigationButton);

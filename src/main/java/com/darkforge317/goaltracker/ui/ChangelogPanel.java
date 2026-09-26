@@ -37,12 +37,36 @@ public class ChangelogPanel extends JPanel
 
         JPanel headerBar = new JPanel(new GridLayout(1, 2, 4, 0));
         headerBar.setBorder(new EmptyBorder(4, 4, 4, 4));
-        JButton seeAllButton = new JButton("See All");
-        seeAllButton.addActionListener(e -> onSeeAll());
-        JButton closeButton = new JButton("Close");
-        closeButton.addActionListener(e -> onClose());
-        headerBar.add(seeAllButton);
-        headerBar.add(closeButton);
+
+        // If the ChangelogListPanel opened this changelog
+        if(createdByChangelogListPanel){
+            // Show a Back and Home button
+            JButton backButton = new JButton();
+            JButton homeButton = new JButton();
+
+            backButton.setText("Back");
+            backButton.addActionListener(e -> onBackButtonClicked());
+            homeButton.setText("Home");
+            homeButton.addActionListener(e -> onHomeButtonClicked());
+
+            headerBar.add(backButton);
+            headerBar.add(homeButton);
+        }
+        // If something else opened this changelog, like a new update
+        else {
+            // Show the Close and All Changelogs buttons
+            JButton closeButton = new JButton();
+            JButton seeAllButton = new JButton();
+
+            closeButton.setText("Close");
+            closeButton.addActionListener(e -> onCloseButtonClicked());
+
+            seeAllButton.setText("All Changelogs");
+            seeAllButton.addActionListener(e -> onSeeAllButtonClicked());
+
+            headerBar.add(closeButton);
+            headerBar.add(seeAllButton);
+        }
 
         JLabel titleLabel = new JLabel(isNewUpdate ? "New Update!" : "Goal Tracker Changelog");
         titleLabel.setFont(FontManager.getRunescapeBoldFont());
@@ -96,11 +120,19 @@ public class ChangelogPanel extends JPanel
         add(scrollPane, BorderLayout.CENTER);
     }
 
-    private void onClose() {
+    private void onCloseButtonClicked() {
         panelService.showHome();
     }
 
-    private void onSeeAll() {
+    private void onSeeAllButtonClicked() {
         panelService.showChangelogListPanel();
+    }
+
+    private void onBackButtonClicked() {
+        panelService.showChangelogListPanel();
+    }
+
+    private void onHomeButtonClicked() {
+        panelService.showHome();
     }
 }

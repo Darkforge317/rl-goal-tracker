@@ -3,25 +3,30 @@ package com.darkforge317.goaltracker.services;
 import com.darkforge317.goaltracker.GoalTrackerPlugin;
 import com.darkforge317.goaltracker.ui.ChangelogListPanel;
 import com.darkforge317.goaltracker.ui.ChangelogPanel;
+import com.darkforge317.goaltracker.ui.GoalTrackerPanel;
 import com.google.inject.Inject;
+import net.runelite.client.ui.PluginPanel;
 
 import javax.swing.*;
 import java.awt.*;
 
-public class PanelService extends JPanel{
+public class PanelService extends PluginPanel {
     private final GoalTrackerPlugin plugin;
 
     @Inject
     public PanelService(GoalTrackerPlugin plugin)
     {
-        super(new BorderLayout());
+        super();
 
         this.plugin = plugin;
     }
 
     public void showHome()
     {
-
+        removeAll();
+        add(new GoalTrackerPanel(this, plugin, plugin.getGoalManager()), BorderLayout.CENTER);
+        revalidate();
+        repaint();
     }
 
     public void showGoalPanel()
