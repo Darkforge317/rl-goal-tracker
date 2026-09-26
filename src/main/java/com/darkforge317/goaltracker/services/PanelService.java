@@ -13,13 +13,18 @@ import java.awt.*;
 public class PanelService extends PluginPanel {
     private final GoalTrackerPlugin plugin;
 
+    // In PanelService.java
     @Inject
     public PanelService(GoalTrackerPlugin plugin)
     {
-        super();
-
+        super(false); // Explicitly required for custom layouts
         this.plugin = plugin;
+
+        setLayout(new BorderLayout()); // Anchors layout components precisely
+        setBorder(null);
+        // putClientProperty("FlatLaf.style", "border: 0; focusWidth: 0; innerFocusWidth: 0;");
     }
+
 
     public void showHome()
     {

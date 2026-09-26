@@ -35,7 +35,7 @@ import java.util.function.Consumer;
  * Shows header (title, add/import/export controls), goal list with undo/redo,
  * and switches between home view and individual goal panels.
  */
-public final class GoalTrackerPanel extends PluginPanel implements Refreshable
+public final class GoalTrackerPanel extends JPanel implements Refreshable
 {
     private final JPanel mainPanel = new JPanel(new BorderLayout());
     private final ListPanel<Goal> goalListPanel;
@@ -55,14 +55,13 @@ public final class GoalTrackerPanel extends PluginPanel implements Refreshable
     @Inject
     public GoalTrackerPanel(PanelService panelService, GoalTrackerPlugin plugin, GoalManager goalManager)
     {
-        super(false);
+        super(new BorderLayout());
         this.panelService = panelService;
         this.plugin = plugin;
         this.goalManager = goalManager;
         this.goalManager.addGoalsChangedListener(() -> SwingUtilities.invokeLater(this::refreshHomeListIfVisible));
 
         setBackground(ColorScheme.DARK_GRAY_COLOR);
-        setLayout(new BorderLayout());
         setBorder(new EmptyBorder(8, 8, 8, 8));
 
         // Header with title and + Add goal on right
