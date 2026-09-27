@@ -59,7 +59,7 @@ public final class GoalTrackerPanel extends JPanel implements Refreshable
         this.panelService = panelService;
         this.plugin = plugin;
         this.goalManager = goalManager;
-        this.goalManager.addGoalsChangedListener(() -> SwingUtilities.invokeLater(this::refreshHomeListIfVisible));
+
 
         setBackground(ColorScheme.DARK_GRAY_COLOR);
         setBorder(new EmptyBorder(8, 8, 8, 8));
@@ -249,12 +249,14 @@ public final class GoalTrackerPanel extends JPanel implements Refreshable
     @Override
     public void refresh()
     {
-        for (Component component : getComponents()) {
-            if (component instanceof Refreshable) {
-                ((Refreshable) component).refresh();
-            }
+        if (goalPanel == null)
+        {
+            refreshHomeListIfVisible();
         }
-        goalListPanel.refresh();
+        else
+        {
+            goalPanel.refresh();
+        }
     }
 
     public void onGoalUpdated(Consumer<Goal> listener)

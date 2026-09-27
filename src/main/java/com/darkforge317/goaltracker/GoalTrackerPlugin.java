@@ -4,6 +4,7 @@ package com.darkforge317.goaltracker;
 import com.darkforge317.goaltracker.services.*;
 import com.google.inject.Provides;
 import com.darkforge317.goaltracker.models.enums.TaskType;
+import com.darkforge317.goaltracker.models.Goal;
 import com.darkforge317.goaltracker.models.task.ItemTask;
 import com.darkforge317.goaltracker.models.task.QuestTask;
 import com.darkforge317.goaltracker.models.task.SkillLevelTask;
@@ -129,9 +130,6 @@ public final class GoalTrackerPlugin extends Plugin
     @Inject
     private GoalManager goalManager;
 
-    @Inject
-    private GoalTrackerPanel goalTrackerPanel;
-
     private NavigationButton uiNavigationButton;
 
     @Setter
@@ -193,15 +191,11 @@ public final class GoalTrackerPlugin extends Plugin
      */
     private void schedulePanelRefresh(final int delayMs)
     {
-        if (goalTrackerPanel == null)
-        {
-            return;
-        }
         if (uiRefreshTimer != null && uiRefreshTimer.isRunning())
         {
             uiRefreshTimer.stop();
         }
-        uiRefreshTimer = new Timer(delayMs, e -> SwingUtilities.invokeLater(goalTrackerPanel::refresh));
+        uiRefreshTimer = new Timer(delayMs, e -> SwingUtilities.invokeLater(panelService::refreshCurrent));
         uiRefreshTimer.setRepeats(false);
         uiRefreshTimer.start();
     }
@@ -236,10 +230,10 @@ public final class GoalTrackerPlugin extends Plugin
         keyManager.registerKeyListener(keyInputService);
 
         // Defensive guards to avoid NPEs during test bootstrap if DI bindings are missing
-        if (goalManager == null || itemCache == null || goalTrackerPanel == null || itemManager == null || clientToolbar == null)
+        if (goalManager == null || itemCache == null || itemManager == null || clientToolbar == null)
         {
-            log.warn("GoalTrackerPlugin: skipping full startup because a dependency was null. goalManager={}, itemCache={}, panel={}, itemManager={}, toolbar={}",
-                    goalManager != null, itemCache != null, goalTrackerPanel != null, itemManager != null, clientToolbar != null);
+            log.warn("GoalTrackerPlugin: skipping full startup because a dependency was null. goalManager={}, itemCache={}, itemManager={}, toolbar={}",
+                    goalManager != null, itemCache != null, itemManager != null, clientToolbar != null);
             return;
         }
 
@@ -260,6 +254,7 @@ public final class GoalTrackerPlugin extends Plugin
             }
         });
 
+        panelService.registerGoalsChangedListener();
         panelService.showHome();
 
         final AsyncBufferedImage icon = itemManager.getImage(ItemID.TODO_LIST);
@@ -280,31 +275,6 @@ public final class GoalTrackerPlugin extends Plugin
                 clientToolbar.addNavigation(uiNavigationButton);
             });
         }
-
-        goalTrackerPanel.onGoalUpdated((goal) -> goalManager.save());
-
-        goalTrackerPanel.onTaskAdded((task) -> {
-            // Send directly to the client thread to fetch live player stats
-            clientThread.invokeLater(() -> {
-                // Populate the live metrics into memory instantly upon creation
-                taskUpdateService.update(task);
-
-                // Perform the disk write safely on the background game thread
-                goalManager.save();
-
-                // If the task is instantly completed, notify the player
-                if (task.getStatus().isCompleted()) {
-                    notifyTask(task);
-                }
-
-                // Send to the UI thread to handle screen graphics
-                SwingUtilities.invokeLater(() -> {
-                    uiStatusManager.refresh(task);
-                });
-            });
-        });
-
-        goalTrackerPanel.onTaskUpdated((task) -> goalManager.save());
 
         // Preload item icons at plugin startup so they are visible immediately
         warmItemIcons();
@@ -330,9 +300,7 @@ public final class GoalTrackerPlugin extends Plugin
         if (goalManager != null) {
             try { goalManager.load(); } catch (Exception ex) { log.error("Failed to load goals on session open", ex); }
         }
-        if (goalTrackerPanel != null) {
-            goalTrackerPanel.refresh();
-        }
+        panelService.refreshCurrent();
     }
 
     @Subscribe
@@ -439,6 +407,28 @@ public final class GoalTrackerPlugin extends Plugin
 
         // Debounce UI refresh during rapid quest varbit updates
         schedulePanelRefresh(750);
+    }
+
+    public void onGoalUpdatedCallback(Goal goal)
+    {
+        goalManager.save();
+    }
+
+    public void onTaskAddedCallback(Task task)
+    {
+        clientThread.invokeLater(() -> {
+            taskUpdateService.update(task);
+            goalManager.save();
+            if (task.getStatus().isCompleted()) {
+                notifyTask(task);
+            }
+            SwingUtilities.invokeLater(() -> uiStatusManager.refresh(task));
+        });
+    }
+
+    public void onTaskUpdatedCallback(Task task)
+    {
+        goalManager.save();
     }
 
     /**
