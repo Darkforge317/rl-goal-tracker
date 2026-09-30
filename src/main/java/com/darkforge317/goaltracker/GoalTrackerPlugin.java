@@ -10,7 +10,6 @@ import com.darkforge317.goaltracker.models.task.QuestTask;
 import com.darkforge317.goaltracker.models.task.SkillLevelTask;
 import com.darkforge317.goaltracker.models.task.SkillXpTask;
 import com.darkforge317.goaltracker.models.task.Task;
-import com.darkforge317.goaltracker.ui.GoalTrackerPanel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -255,7 +254,20 @@ public final class GoalTrackerPlugin extends Plugin
         });
 
         panelService.registerGoalsChangedListener();
-        panelService.showHome();
+
+        ChangelogService.ChangelogEntry newestEntry = changelogService.getNewestEntry();
+
+        // If the newest changelog hasn't been seen by the player yet
+        if (newestEntry != null && !newestEntry.getVersion().equals(config.highestChangelogVersionSeen()))
+        {
+            // Show them the newest changelog
+            panelService.showChangelogPanel(newestEntry, true, false);
+        }
+        else
+        {
+            // Otherwise, show them the home panel
+            panelService.showHome();
+        }
 
         final AsyncBufferedImage icon = itemManager.getImage(ItemID.TODO_LIST);
         if (icon == null)

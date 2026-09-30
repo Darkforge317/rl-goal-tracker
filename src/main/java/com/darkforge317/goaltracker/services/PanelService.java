@@ -8,8 +8,10 @@ import com.darkforge317.goaltracker.ui.Refreshable;
 import com.google.inject.Inject;
 import net.runelite.client.ui.PluginPanel;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.SwingUtilities;
+import java.awt.BorderLayout;
+import java.awt.Component;
+
 
 public class PanelService extends PluginPanel {
     private final GoalTrackerPlugin plugin;
@@ -56,7 +58,7 @@ public class PanelService extends PluginPanel {
     public void showChangelogPanel(ChangelogService.ChangelogEntry entry, boolean isNewUpdate, boolean createdByChangelogListPanel)
     {
         removeAll();
-        ChangelogPanel panel = new ChangelogPanel(this, entry, isNewUpdate, createdByChangelogListPanel);
+        ChangelogPanel panel = new ChangelogPanel(this, plugin, entry, isNewUpdate, createdByChangelogListPanel);
         add(panel, BorderLayout.CENTER);
         revalidate();
         repaint();

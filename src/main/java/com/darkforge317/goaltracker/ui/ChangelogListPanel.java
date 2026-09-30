@@ -7,10 +7,36 @@ import com.darkforge317.goaltracker.services.PanelService;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 
-import javax.swing.*;
+import javax.swing.JTextPane;
 import javax.swing.border.EmptyBorder;
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
+import javax.swing.JEditorPane;
+import javax.swing.JPanel;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JScrollPane;
+import javax.swing.ScrollPaneConstants;
 import java.awt.*;
 import java.util.List;
+
+//region LAYOUT HIERARCHY
+/*   ChangelogListPanel (JPanel, BorderLayout)
+     │
+     ├── topSection (JPanel, BorderLayout)
+     │   ├── headerBar (JPanel, GridLayout)
+     │   │   └── backButton (JButton)
+     │   └── titleSection (JPanel, Vertical BoxLayout)
+     │       └── titleLabel (JLabel)
+     └── scrollPane (JScrollPane)
+         └── JViewport (Internal Viewport Area)
+             └── contentPane (JTextPane)
+                 │<──<──<──<──<──<──<──<──<──<──<──<──<──<──<──<──<──<──<──<──<──<──┐
+                 │── [Element N] ComponentView ── changelogEntryButton (JButton)    │
+                 │── [Text Context] "\n" (Line Break)                               │
+                 └──>──>─ LOOP THROUGH ALL CHANGELOG ENTRIES ─>──>──>──>──>──>──>──>┘
+*/
+//endregion
 
 public class ChangelogListPanel extends JPanel
 {
@@ -47,11 +73,7 @@ public class ChangelogListPanel extends JPanel
         topSection.add(headerBar, BorderLayout.NORTH);
         topSection.add(titleSection, BorderLayout.CENTER);
 
-        // JEditorPane as the scroll pane's DIRECT child - getScrollableTracksViewportWidth()
-        // only takes effect when checked against the viewport's immediate view, so this
-        // can't be nested inside another panel. This forces wrapping against the real
-        // viewport width, no pixel-guessing needed.
-        JEditorPane contentPane = new JEditorPane()
+        JTextPane contentPane = new JTextPane()
         {
             @Override
             public boolean getScrollableTracksViewportWidth()
@@ -67,11 +89,25 @@ public class ChangelogListPanel extends JPanel
         contentPane.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
 
         for (ChangelogService.ChangelogEntry entry : changelogEntries) {
-            JButton changelogEntryButton = new JButton("Release " + entry.getVersion());
+            JButton changelogEntryButton = new JButton("Version " + entry.getVersion());
             changelogEntryButton.setBackground(ColorScheme.DARK_GRAY_COLOR);
             changelogEntryButton.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
             changelogEntryButton.addActionListener( e -> onChangelogEntryClicked(entry));
-            contentPane.add(changelogEntryButton, BorderLayout.NORTH);
+
+            // Explicitly clamp the size so the HTML layout engine respects it
+            changelogEntryButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+            changelogEntryButton.setMaximumSize(new java.awt.Dimension(Integer.MAX_VALUE, 30));
+
+            // Force insert directly into the text layout flow
+            contentPane.setCaretPosition(contentPane.getDocument().getLength());
+            contentPane.insertComponent(changelogEntryButton);
+
+            // Insert a native HTML line break so the buttons stack vertically
+            try {
+                contentPane.getDocument().insertString(contentPane.getDocument().getLength(), "\n", null);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
         JScrollPane scrollPane = new JScrollPane(contentPane);

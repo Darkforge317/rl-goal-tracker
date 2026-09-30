@@ -24,14 +24,18 @@ import java.awt.GridLayout;
 public class ChangelogPanel extends JPanel
 {
     private final PanelService panelService;
+    private final GoalTrackerPlugin plugin;
     private final boolean createdByChangelogListPanel;
     private static final int CONTENT_PADDING = 8;
+    private final ChangelogService.ChangelogEntry entry;
 
-    public ChangelogPanel(PanelService panelService, ChangelogService.ChangelogEntry entry, boolean isNewUpdate, boolean createdByChangelogListPanel)
+    public ChangelogPanel(PanelService panelService, GoalTrackerPlugin plugin, ChangelogService.ChangelogEntry entry, boolean isNewUpdate, boolean createdByChangelogListPanel)
     {
         super(new BorderLayout());
-        this.panelService = panelService;
         this.createdByChangelogListPanel = createdByChangelogListPanel;
+        this.entry = entry;
+        this.panelService = panelService;
+        this.plugin = plugin;
 
         setBackground(ColorScheme.DARK_GRAY_COLOR);
 
@@ -121,6 +125,7 @@ public class ChangelogPanel extends JPanel
     }
 
     private void onCloseButtonClicked() {
+        plugin.getConfig().highestChangelogVersionSeen(entry.getVersion());
         panelService.showHome();
     }
 
