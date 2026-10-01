@@ -99,6 +99,21 @@ public final class GoalTrackerPanel extends JPanel implements Refreshable
         subHeaderRow.setBackground(ColorScheme.DARK_GRAY_COLOR);
         ActionBarButton changelogsButton = new ActionBarButton("Changelogs", this::showChangelogList);
         subHeaderRow.add(changelogsButton);
+
+        // Equalize widths across both rows so buttons line up consistently.
+        // First, find the max button width we need.
+        int maxButtonWidth = Math.max(addGoalBtn.getPreferredSize().width,
+                Math.max(addFromPresetBtn.getPreferredSize().width, changelogsButton.getPreferredSize().width));
+
+        // Then define the dimensions the buttons should have.
+        // Largest width we need, and Add Goal button's height
+        Dimension uniformSize = new Dimension(maxButtonWidth, addGoalBtn.getPreferredSize().height);
+
+        // Set the button sizes to this new uniform size
+        addGoalBtn.setPreferredSize(uniformSize);
+        addFromPresetBtn.setPreferredSize(uniformSize);
+        changelogsButton.setPreferredSize(uniformSize);
+
         headerTop.add(Box.createVerticalStrut(4));
         headerTop.add(subHeaderRow);
 

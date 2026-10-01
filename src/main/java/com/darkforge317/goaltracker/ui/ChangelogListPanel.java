@@ -4,6 +4,7 @@ import com.darkforge317.goaltracker.GoalTrackerPlugin;
 import com.darkforge317.goaltracker.services.ChangelogService;
 import com.darkforge317.goaltracker.services.ChangelogService.ChangelogEntry;
 import com.darkforge317.goaltracker.services.PanelService;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 
@@ -37,7 +38,7 @@ import java.util.List;
                  └──>──>─ LOOP THROUGH ALL CHANGELOG ENTRIES ─>──>──>──>──>──>──>──>┘
 */
 //endregion
-
+@Slf4j
 public class ChangelogListPanel extends JPanel
 {
     private final PanelService panelService;
@@ -106,7 +107,7 @@ public class ChangelogListPanel extends JPanel
             try {
                 contentPane.getDocument().insertString(contentPane.getDocument().getLength(), "\n", null);
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("Failed to insert line break after changelog entry button", e);
             }
         }
 
