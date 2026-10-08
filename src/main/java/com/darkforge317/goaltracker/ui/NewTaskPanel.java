@@ -5,7 +5,6 @@ import com.darkforge317.goaltracker.models.Goal;
 import com.darkforge317.goaltracker.models.task.Task;
 import com.darkforge317.goaltracker.ui.components.TextButton;
 import com.darkforge317.goaltracker.ui.inputs.*;
-import com.darkforge317.goaltracker.ui.inputs.*;
 import net.runelite.client.ui.ColorScheme;
 
 import javax.swing.*;
@@ -94,10 +93,7 @@ public final class NewTaskPanel extends JPanel
         moreOptionsPanel.setVisible(false);
         moreOptionsPanel.setBackground(ColorScheme.DARK_GRAY_COLOR);
 
-        moreOptionsPanel.add(new SkillLevelTaskInput(plugin, goal).onSubmit((task) -> this.listener.accept(task)), constraints);
-        constraints.gridy++;
-
-        moreOptionsPanel.add(new SkillXpTaskInput(plugin, goal).onSubmit((task) -> this.listener.accept(task)), constraints);
+        moreOptionsPanel.add(new SkillTaskInput(plugin, goal).onSubmit((task) -> this.listener.accept(task)), constraints);
         constraints.gridy++;
 
         moreOptionsPanel.add(new QuestTaskInput(plugin, goal).onSubmit((task) -> this.listener.accept(task)), constraints);
