@@ -644,6 +644,28 @@ public final class GoalTrackerPlugin extends Plugin
         return s;
     }
 
+    /** Recheck an edited target, including targets that were previously completed. */
+    public void refreshEditedTask(Task task, com.darkforge317.goaltracker.models.Goal goal)
+    {
+        clientThread.invokeLater(() -> {
+            if (client.getGameState() == GameState.LOGGED_IN)
+            {
+                if (task instanceof SkillLevelTask) ((SkillLevelTask) task).refreshStatus(client);
+                else if (task instanceof SkillXpTask) ((SkillXpTask) task).refreshStatus(client);
+                else if (task instanceof ItemTask)
+                {
+                    ItemTask item = (ItemTask) task;
+                    item.recomputeFromCount(countHeldEquivalent(item.getItemId(), item.getItemName()));
+                }
+            }
+            SwingUtilities.invokeLater(() -> {
+                goalManager.save();
+                uiStatusManager.refresh(task);
+                uiStatusManager.refresh(goal);
+            });
+        });
+    }
+
     /**
      * Safe, multithreaded entry point to force a full data validation sweep across all task types.
      * Typically used after batch mutations like adding the quest prerequisites.
