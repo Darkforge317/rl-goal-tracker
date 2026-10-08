@@ -356,7 +356,7 @@ public final class TaskItemContent extends JPanel implements Refreshable
         // Indent level scales linearly: 0 = 0px, 1 = 12px, 2 = 24px, 3 = 36px, etc.
         int indent = level * INDENT_PER_LEVEL;
 
-        iconLabel.setIcon(iconService.get(task));
+        iconService.updateIcon(task, iconLabel);
         // Apply indent to the row instead of the label to avoid double padding
         iconLabel.setBorder(new EmptyBorder(0, 0, 0, 0));
         iconRow.setBorder(new EmptyBorder(4, indent, 0, 4));

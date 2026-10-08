@@ -8,7 +8,6 @@ import com.darkforge317.goaltracker.models.task.SkillXpTask;
 import com.darkforge317.goaltracker.models.task.ItemTask;
 
 import com.darkforge317.goaltracker.models.enums.Status;
-import net.runelite.api.Client;
 import net.runelite.api.Skill;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.SkillIconManager;
@@ -36,9 +35,6 @@ class TaskIconServiceTest {
 
     @Mock
     private SkillIconManager skillIconManager;
-
-    @Mock
-    private Client client;
 
     @InjectMocks
     TaskIconService service;
@@ -101,7 +97,6 @@ class TaskIconServiceTest {
 
     @Test
     void get_shouldSupportItemTasks() {
-        when(client.isClientThread()).thenReturn(true);
         when(itemManager.getImage(314)).thenReturn(image);
 
         Task task = ItemTask.builder().itemId(314).build();
@@ -111,13 +106,39 @@ class TaskIconServiceTest {
     }
 
     @Test
-    void get_shouldSupportItemTasksNotBeingReady() {
-        when(client.isClientThread()).thenReturn(false);
+    void get_shouldRequestItemIconsFromSidebarThread() {
         when(itemManager.getImage(314)).thenReturn(image);
 
         Task task = ItemTask.builder().itemId(314).build();
 
         assertEquals(ImageIcon.class, service.get(task).getClass());
-        verify(itemManager, never()).getImage(314);
+        verify(itemManager).getImage(314);
+        org.junit.jupiter.api.Assertions.assertNotSame(TaskIconService.UNKNOWN_ICON, service.get(task));
+    }
+    @Test
+    void updateIcon_shouldRefreshAfterLoadingWithoutOverwritingNewerTask() throws Exception {
+        AsyncBufferedImage pending = new AsyncBufferedImage(null, 32, 32, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        when(itemManager.getImage(314)).thenReturn(pending);
+        Task task = ItemTask.builder().itemId(314).build();
+        JLabel label = new JLabel();
+        Icon[] initial = new Icon[1];
+        SwingUtilities.invokeAndWait(() -> {
+            service.updateIcon(task, label);
+            initial[0] = label.getIcon();
+        });
+        pending.loaded();
+        SwingUtilities.invokeAndWait(() -> {
+            org.junit.jupiter.api.Assertions.assertNotSame(initial[0], label.getIcon());
+            assertEquals(16, label.getIcon().getIconWidth());
+        });
+
+        AsyncBufferedImage second = new AsyncBufferedImage(null, 32, 32, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        when(itemManager.getImage(315)).thenReturn(second);
+        SwingUtilities.invokeAndWait(() -> {
+            service.updateIcon(ItemTask.builder().itemId(315).build(), label);
+            service.updateIcon(ManualTask.builder().status(Status.NOT_STARTED).build(), label);
+        });
+        second.loaded();
+        SwingUtilities.invokeAndWait(() -> assertEquals(TaskIconService.CROSS_MARK_ICON, label.getIcon()));
     }
 }

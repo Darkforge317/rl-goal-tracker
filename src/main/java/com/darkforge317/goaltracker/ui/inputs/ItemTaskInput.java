@@ -3,156 +3,146 @@ package com.darkforge317.goaltracker.ui.inputs;
 import com.darkforge317.goaltracker.GoalTrackerPlugin;
 import com.darkforge317.goaltracker.models.Goal;
 import com.darkforge317.goaltracker.models.task.ItemTask;
-import com.darkforge317.goaltracker.ui.SimpleDocumentListener;
 import com.darkforge317.goaltracker.ui.components.TextButton;
 import net.runelite.api.GameState;
 import net.runelite.api.ItemComposition;
-import net.runelite.client.callback.ClientThread;
-import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
-import net.runelite.client.ui.components.FlatTextField;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.util.regex.Pattern;
+import java.text.ParseException;
+import java.util.Locale;
 
-
-
-/**
- * Input panel for creating Item tasks.
- * Provides search, quantity field with k/m suffix support,
- * and automatic task submission on selection.
- */
+/** Item selection and quantity preview, submitted explicitly with Add. */
 public final class ItemTaskInput extends TaskInput
 {
-    private final ItemManager itemManager;
-    private final ClientThread clientThread;
-
-    private final FlatTextField quantityField = new FlatTextField();
+    private final JSpinner quantityField = new JSpinner(new SpinnerNumberModel(1, 1, Integer.MAX_VALUE, 1));
     private final TextButton searchItemButton = new TextButton("Search...");
-    private boolean searchOpen = false;
     private final JLabel selectedItemLabel = new JLabel();
     private final JPanel selectedItemPanel = new JPanel(new BorderLayout());
-
-    private final Pattern numberPattern = Pattern.compile("^(?:\\d+)?$");
-    private final Pattern mPattern = Pattern.compile("^(?:\\d+m)?$", Pattern.CASE_INSENSITIVE);
-    private final Pattern kPattern = Pattern.compile("^(?:\\d+k)?$", Pattern.CASE_INSENSITIVE);
-
-    private String quantityFieldValue = "1";
+    private boolean searchOpen;
     private ItemComposition selectedItem;
 
     public ItemTaskInput(GoalTrackerPlugin plugin, Goal goal)
     {
         super(plugin, goal, "Item");
-        this.itemManager = plugin.getItemManager();
-        this.clientThread = plugin.getClientThread();
-
         searchItemButton.onClick(e -> {
-            if (!searchOpen) {
-                if (plugin.getClient().getGameState() != GameState.LOGGED_IN) {
-                    JOptionPane.showMessageDialog(this,
-                        "You must be logged in to choose items",
-                        "UwU",
-                        JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-
-                plugin.getItemSearch()
-                    .tooltipText("Choose an item")
-                    .onItemSelected(this::setSelectedItem)
-                    .build();
-                searchItemButton.setText("Close");
-                searchOpen = true;
+            if (searchOpen) {
+                plugin.getChatboxPanelManager().close();
+                searchClosed();
+                return;
             }
-            else {
-                try {
-                    plugin.getChatboxPanelManager().close();
-                } catch (Exception ignored) {}
-                searchItemButton.setText("Search...");
-                searchOpen = false;
+            if (plugin.getClient().getGameState() != GameState.LOGGED_IN) {
+                JOptionPane.showMessageDialog(this, "You must be logged in to choose items",
+                    "Item search", JOptionPane.ERROR_MESSAGE);
+                return;
             }
+            searchOpen = true;
+            searchItemButton.setText("Close");
+            plugin.getItemSearch()
+                .tooltipText("Choose an item")
+                .onItemSelected(this::setSelectedItem)
+                .onClose(() -> SwingUtilities.invokeLater(this::searchClosed))
+                .build();
+            // Chatbox input receives keys from the game canvas, not the sidebar.
+            plugin.getClient().getCanvas().requestFocusInWindow();
         });
         getInputRow().add(searchItemButton, BorderLayout.WEST);
 
-        quantityField.setBorder(new EmptyBorder(0, 8, 0, 8));
-        quantityField.getTextField().setHorizontalAlignment(SwingConstants.RIGHT);
-        quantityField.setText(quantityFieldValue);
-        quantityField.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-        quantityField.getDocument().addDocumentListener(
-            (SimpleDocumentListener) e -> SwingUtilities.invokeLater(() -> {
-                String value = quantityField.getText();
-
-                if (mPattern.matcher(value).find()) {
-                    value = value.replace("m", "000000");
-                    quantityFieldValue = value;
-                    quantityField.setText(quantityFieldValue);
+        JSpinner.NumberEditor editor = new JSpinner.NumberEditor(quantityField, "0");
+        quantityField.setEditor(editor);
+        editor.getTextField().setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(
+            new JFormattedTextField.AbstractFormatter() {
+                @Override
+                public Object stringToValue(String text) throws ParseException
+                {
+                    return parseQuantity(text);
                 }
 
-                if (kPattern.matcher(value).find()) {
-                    value = value.replace("k", "000");
-                    quantityFieldValue = value;
-                    quantityField.setText(quantityFieldValue);
+                @Override
+                public String valueToString(Object value)
+                {
+                    return value.toString();
                 }
-
-                if (!numberPattern.matcher(value).find()) {
-                    quantityField.setText(quantityFieldValue);
-                    return;
-                }
-
-                quantityFieldValue = value;
             }));
-        quantityField.setPreferredSize(new Dimension(92, PREFERRED_INPUT_HEIGHT));
-
+        editor.getTextField().setHorizontalAlignment(SwingConstants.RIGHT);
+        quantityField.setToolTipText("Quantity (supports k and m)");
+        quantityField.setPreferredSize(new Dimension(80, 24));
         getInputRow().add(quantityField, BorderLayout.CENTER);
 
         selectedItemPanel.setBorder(new EmptyBorder(0, 8, 0, 8));
         selectedItemPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
         selectedItemPanel.add(selectedItemLabel, BorderLayout.CENTER);
-        TextButton clearItemButton = new TextButton("X")
-                .setMainColor(ColorScheme.PROGRESS_ERROR_COLOR)
-                .onClick((e) -> clearSelectedItem());
-        selectedItemPanel.add(clearItemButton, BorderLayout.EAST);
+        selectedItemPanel.add(new TextButton("X")
+            .setMainColor(ColorScheme.PROGRESS_ERROR_COLOR)
+            .onClick(e -> clearSelectedItem()), BorderLayout.EAST);
+        // Keep long item names from crowding the quantity and Add controls.
+        selectedItemPanel.setPreferredSize(new Dimension(110, 24));
+    }
+
+    static int parseQuantity(String text) throws ParseException
+    {
+        String value = text.trim().toLowerCase(Locale.ROOT);
+        if (!value.matches("[0-9]+[km]?")) {
+            throw new ParseException("Enter a positive quantity", 0);
+        }
+        long multiplier = value.endsWith("k") ? 1000 : value.endsWith("m") ? 1000000 : 1;
+        if (multiplier != 1) {
+            value = value.substring(0, value.length() - 1);
+        }
+        try {
+            long number = Long.parseLong(value);
+            if (number < 1 || number > Integer.MAX_VALUE / multiplier) {
+                throw new NumberFormatException();
+            }
+            return (int) (number * multiplier);
+        } catch (NumberFormatException e) {
+            throw new ParseException("Quantity must be between 1 and " + Integer.MAX_VALUE, 0);
+        }
+    }
+
+    private void searchClosed()
+    {
+        searchOpen = false;
+        searchItemButton.setText("Search...");
     }
 
     private void setSelectedItem(Integer rawId)
     {
-        clientThread.invokeLater(() -> {
-            int id = itemManager.canonicalize(rawId);
-            selectedItem = itemManager.getItemComposition(id);
-            selectedItemLabel.setText(selectedItem.getName());
-
-            getInputRow().remove(searchItemButton);
-            getInputRow().add(selectedItemPanel, BorderLayout.WEST);
-
-            revalidate();
-            repaint();
-
-            // Immediately add the item task
-            submit();
-
-            // Reopen search so user can add multiple items
-            plugin.getItemSearch()
-                .tooltipText("Choose an item")
-                .onItemSelected(this::setSelectedItem)
-                .build();
-
-            searchItemButton.setText("Close");
-            searchOpen = true;
+        plugin.getClientThread().invokeLater(() -> {
+            ItemComposition item = plugin.getItemManager().getItemComposition(
+                plugin.getItemManager().canonicalize(rawId));
+            SwingUtilities.invokeLater(() -> {
+                selectedItem = item;
+                selectedItemLabel.setText(item.getName());
+                selectedItemLabel.setToolTipText(item.getName());
+                searchClosed();
+                getInputRow().remove(searchItemButton);
+                getInputRow().add(selectedItemPanel, BorderLayout.WEST);
+                revalidate();
+                repaint();
+                ((JSpinner.DefaultEditor) quantityField.getEditor()).getTextField().requestFocusInWindow();
+            });
         });
     }
 
     @Override
     protected void submit()
     {
-        if (selectedItem == null || quantityField.getText().isEmpty()) {
+        if (selectedItem == null) {
             return;
         }
-
-        this.addTask(ItemTask.builder()
+        try {
+            quantityField.commitEdit();
+        } catch (ParseException e) {
+            ((JSpinner.DefaultEditor) quantityField.getEditor()).getTextField().requestFocusInWindow();
+            return;
+        }
+        addTask(ItemTask.builder()
             .itemId(selectedItem.getId())
             .itemName(selectedItem.getName())
-            .quantity(Integer.parseInt(quantityField.getText()))
+            .quantity((Integer) quantityField.getValue())
             .build());
     }
 
@@ -160,27 +150,16 @@ public final class ItemTaskInput extends TaskInput
     protected void reset()
     {
         clearSelectedItem();
-        quantityFieldValue = "1";
-        quantityField.setText(quantityFieldValue);
+        quantityField.setValue(1);
     }
 
     private void clearSelectedItem()
     {
         selectedItem = null;
-
         getInputRow().remove(selectedItemPanel);
         getInputRow().add(searchItemButton, BorderLayout.WEST);
-
+        searchClosed();
         revalidate();
         repaint();
-
-        searchItemButton.setText("Search...");
-        searchOpen = false;
-    }
-
-    @Override
-    protected boolean showAddButton()
-    {
-        return false;
     }
 }
