@@ -608,8 +608,12 @@ public final class GoalTrackerPlugin extends Plugin
             }
         }
 
-        // Include the exact base ID too, in case some pieces don't use numeric suffixes
-        total += countHeld(targetItemId);
+        // Name counts already include the exact ID when its name matches. Only
+        // fall back to the ID when that item was not included in the name total.
+        if (!baseName.equals(normalizedNameFor(targetItemId)))
+        {
+            total += countHeld(targetItemId);
+        }
         return total;
     }
 
