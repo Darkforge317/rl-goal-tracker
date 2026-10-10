@@ -2,11 +2,10 @@ package com.darkforge317.goaltracker.services;
 
 import com.darkforge317.goaltracker.GoalTrackerPlugin;
 import com.darkforge317.goaltracker.models.task.*;
-import com.darkforge317.goaltracker.models.task.*;
-import net.runelite.api.Client;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.SkillIconManager;
 import net.runelite.client.util.ImageUtil;
+import net.runelite.client.util.AsyncBufferedImage;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -49,7 +48,6 @@ public final class TaskIconService
 
     @Inject private ItemManager itemManager;
     @Inject private SkillIconManager skillIconManager;
-    @Inject private Client client;
 
     public ImageIcon get(Task task)
     {
@@ -106,11 +104,32 @@ public final class TaskIconService
 
     public BufferedImage get(ItemTask task)
     {
-        if (task.getCachedIcon() == null && client.isClientThread())
+        if (task.getCachedIcon() == null)
         {
             task.setCachedIcon(itemManager.getImage(task.getItemId()));
         }
         return task.getCachedIcon();
+    }
+
+    /** Bind the label to an image that may still be loading on the game thread. */
+    public void updateIcon(Task task, JLabel label)
+    {
+        Object request = new Object();
+        label.putClientProperty(TaskIconService.class, request);
+        label.setIcon(get(task));
+        if (task instanceof ItemTask)
+        {
+            BufferedImage image = ((ItemTask) task).getCachedIcon();
+            if (image instanceof AsyncBufferedImage)
+            {
+                ((AsyncBufferedImage) image).onLoaded(() -> SwingUtilities.invokeLater(() -> {
+                    if (label.getClientProperty(TaskIconService.class) == request)
+                    {
+                        label.setIcon(iconify(image));
+                    }
+                }));
+            }
+        }
     }
 
     private ImageIcon iconify(BufferedImage img)
