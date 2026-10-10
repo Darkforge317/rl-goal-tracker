@@ -3,15 +3,22 @@ package com.darkforge317.goaltracker.ui.inputs;
 import com.darkforge317.goaltracker.GoalTrackerPlugin;
 import com.darkforge317.goaltracker.models.Goal;
 import com.darkforge317.goaltracker.models.task.ItemTask;
+import com.darkforge317.goaltracker.ui.components.TextButton;
+import net.runelite.api.Client;
+import net.runelite.api.GameState;
 import net.runelite.api.ItemComposition;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.game.ItemManager;
+import net.runelite.client.game.chatbox.ChatboxItemSearch;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import javax.swing.*;
 import java.awt.Component;
-import java.lang.reflect.Method;
+import java.awt.Canvas;
+import java.awt.event.MouseEvent;
 import java.text.ParseException;
+import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -36,6 +43,12 @@ class ItemTaskInputTest
         ItemManager manager = mock(ItemManager.class);
         ClientThread thread = mock(ClientThread.class);
         ItemComposition item = mock(ItemComposition.class);
+        Client client = mock(Client.class);
+        ChatboxItemSearch search = mock(ChatboxItemSearch.class, RETURNS_SELF);
+        when(plugin.getClient()).thenReturn(client);
+        when(plugin.getItemSearch()).thenReturn(search);
+        when(client.getGameState()).thenReturn(GameState.LOGGED_IN);
+        when(client.getCanvas()).thenReturn(new Canvas());
         when(plugin.getItemManager()).thenReturn(manager);
         when(plugin.getClientThread()).thenReturn(thread);
         when(manager.canonicalize(101)).thenReturn(100);
@@ -48,10 +61,24 @@ class ItemTaskInputTest
         }).when(thread).invokeLater(any(Runnable.class));
         Goal goal = Goal.builder().build();
         ItemTaskInput[] input = new ItemTaskInput[1];
-        SwingUtilities.invokeAndWait(() -> input[0] = new ItemTaskInput(plugin, goal));
-        Method select = ItemTaskInput.class.getDeclaredMethod("setSelectedItem", Integer.class);
-        select.setAccessible(true);
-        select.invoke(input[0], 101);
+        SwingUtilities.invokeAndWait(() -> {
+            input[0] = new ItemTaskInput(plugin, goal);
+            TextButton searchButton = null;
+            for (Component component : input[0].getInputRow().getComponents()) {
+                if (component instanceof TextButton && "Search...".equals(((TextButton) component).getText())) {
+                    searchButton = (TextButton) component;
+                }
+            }
+            assertNotNull(searchButton);
+            searchButton.dispatchEvent(new MouseEvent(searchButton, MouseEvent.MOUSE_PRESSED,
+                0, 0, 1, 1, 1, false, MouseEvent.BUTTON1));
+            assertEquals("Close", searchButton.getText());
+            assertTrue(goal.getTasks().isEmpty());
+        });
+        ArgumentCaptor<Consumer<Integer>> selection = ArgumentCaptor.forClass(Consumer.class);
+        verify(search).onItemSelected(selection.capture());
+        verify(search).build();
+        selection.getValue().accept(101);
         SwingUtilities.invokeAndWait(() -> {
             assertTrue(goal.getTasks().isEmpty());
             JSpinner quantity = null;
@@ -71,5 +98,7 @@ class ItemTaskInputTest
             input[0].submit();
             assertEquals(1, goal.getTasks().size());
         });
+        verify(manager).canonicalize(101);
+        verify(manager).getItemComposition(100);
     }
 }
