@@ -62,6 +62,17 @@ import java.util.regex.Pattern;
  */
 public final class GoalTrackerPlugin extends Plugin
 {
+    public GoalTrackerPlugin()
+    {
+        // RuneLite requires this no-argument constructor; tests use the overload below to inject mocks without reflection.
+    }
+
+    GoalTrackerPlugin(Client client, ItemManager itemManager)
+    {
+        this.client = client;
+        this.itemManager = itemManager;
+    }
+
     public static final int[] PLAYER_INVENTORIES = {
             InventoryID.INV,
             InventoryID.WORN,
@@ -513,7 +524,7 @@ public final class GoalTrackerPlugin extends Plugin
      * Called only when that specific container reports a change, instead of rescanning
      * all 5 tracked containers on every ItemContainerChanged event.
      */
-    private void refreshContainerCache(final int inventoryId)
+    void refreshContainerCache(final int inventoryId)
     {
         final Map<String, Integer> nameCounts = new HashMap<>();
         final Map<Integer, Integer> idCounts = new HashMap<>();
@@ -588,7 +599,7 @@ public final class GoalTrackerPlugin extends Plugin
         return total;
     }
 
-    private int countHeldEquivalent(final int targetItemId, final String targetItemName)
+    int countHeldEquivalent(final int targetItemId, final String targetItemName)
     {
         // Fallback to ID-only counting if we don't have a name
         if (targetItemName == null || targetItemName.isEmpty() || itemManager == null)

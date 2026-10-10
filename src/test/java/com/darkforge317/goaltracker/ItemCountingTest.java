@@ -1,7 +1,5 @@
 package com.darkforge317.goaltracker;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import net.runelite.api.Client;
 import net.runelite.api.Item;
 import net.runelite.api.ItemComposition;
@@ -21,17 +19,15 @@ class ItemCountingTest
     private ItemManager itemManager;
 
     @BeforeEach
-    void setUp() throws Exception
+    void setUp()
     {
-        plugin = new GoalTrackerPlugin();
         client = mock(Client.class);
         itemManager = mock(ItemManager.class);
-        inject("client", client);
-        inject("itemManager", itemManager);
+        plugin = new GoalTrackerPlugin(client, itemManager);
     }
 
     @Test
-    void countsCraftedItemsOnce() throws Exception
+    void countsCraftedItemsOnce()
     {
         itemName(100, "Blisterwood stake");
         container(InventoryID.INV, new Item(100, 5));
@@ -41,7 +37,7 @@ class ItemCountingTest
     }
 
     @Test
-    void openingBankCountsEachContainerOnce() throws Exception
+    void openingBankCountsEachContainerOnce()
     {
         itemName(100, "Maple logs");
         container(InventoryID.INV, new Item(100, 3));
@@ -52,7 +48,7 @@ class ItemCountingTest
     }
 
     @Test
-    void includesNotedAndDegradedVariantsWithoutDuplicatingBase() throws Exception
+    void includesNotedAndDegradedVariantsWithoutDuplicatingBase()
     {
         itemName(100, "Torag's platelegs");
         itemName(101, "Torag's platelegs 75");
@@ -64,7 +60,7 @@ class ItemCountingTest
     }
 
     @Test
-    void retainsExactIdFallbackForMissingOrDifferentNames() throws Exception
+    void retainsExactIdFallbackForMissingOrDifferentNames()
     {
         itemName(100, "Maple logs");
         container(InventoryID.BANK, new Item(100, 7));
@@ -73,18 +69,11 @@ class ItemCountingTest
     }
 
     @Test
-    void retainsExactIdFallbackWhenCompositionLookupFails() throws Exception
+    void retainsExactIdFallbackWhenCompositionLookupFails()
     {
         when(itemManager.getItemComposition(100)).thenThrow(new IllegalStateException());
         container(InventoryID.BANK, new Item(100, 7));
         assertEquals(7, count(100, "Maple logs"));
-    }
-
-    private void inject(String name, Object value) throws Exception
-    {
-        Field field = GoalTrackerPlugin.class.getDeclaredField(name);
-        field.setAccessible(true);
-        field.set(plugin, value);
     }
 
     private void itemName(int id, String name)
@@ -94,20 +83,16 @@ class ItemCountingTest
         when(itemManager.getItemComposition(id)).thenReturn(composition);
     }
 
-    private void container(int id, Item... items) throws Exception
+    private void container(int id, Item... items)
     {
         ItemContainer container = mock(ItemContainer.class);
         when(container.getItems()).thenReturn(items);
         when(client.getItemContainer(id)).thenReturn(container);
-        Method refresh = GoalTrackerPlugin.class.getDeclaredMethod("refreshContainerCache", int.class);
-        refresh.setAccessible(true);
-        refresh.invoke(plugin, id);
+        plugin.refreshContainerCache(id);
     }
 
-    private int count(int id, String name) throws Exception
+    private int count(int id, String name)
     {
-        Method count = GoalTrackerPlugin.class.getDeclaredMethod("countHeldEquivalent", int.class, String.class);
-        count.setAccessible(true);
-        return (int) count.invoke(plugin, id, name);
+        return plugin.countHeldEquivalent(id, name);
     }
 }
