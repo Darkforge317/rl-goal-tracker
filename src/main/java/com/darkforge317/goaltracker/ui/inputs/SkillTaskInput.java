@@ -42,7 +42,7 @@ public final class SkillTaskInput extends TaskInput
         }
         catch (IllegalArgumentException ex)
         {
-            JOptionPane.showMessageDialog(this, "Enter a level from 1 to 99 or XP from 0 to 200M (k/m allowed).",
+            JOptionPane.showMessageDialog(this, "Enter a level from 1 to 127 (up to two decimal places) or XP from 0 to 200M (k/m allowed).",
                 "Invalid skill target", JOptionPane.ERROR_MESSAGE);
         }
     }
