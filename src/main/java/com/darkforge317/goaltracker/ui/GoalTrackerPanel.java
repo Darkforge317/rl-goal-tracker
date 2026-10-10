@@ -45,7 +45,6 @@ public final class GoalTrackerPanel extends JPanel implements Refreshable
     private final UndoStack<Goal> undoStack = new UndoStack<>();
     private ActionBarButton undoButtonRef;
     private ActionBarButton redoButtonRef;
-    private GoalPanel goalPanel;
     private Consumer<Goal> goalAddedListener;
     private Consumer<Goal> goalUpdatedListener;
     private Consumer<Task> taskAddedListener;
@@ -173,7 +172,7 @@ public final class GoalTrackerPanel extends JPanel implements Refreshable
         mainPanel.add(headerContainer, BorderLayout.NORTH);
         mainPanel.add(goalListPanel, BorderLayout.CENTER);
 
-        home();
+        initializeHomeView();
     }
 
     private void showChangelogList()
@@ -185,42 +184,23 @@ public final class GoalTrackerPanel extends JPanel implements Refreshable
 
     private void refreshHomeListIfVisible()
     {
-        if (goalPanel == null)
-        {
-            sortGoalsForHome();
-            goalListPanel.tryBuildList();
-            goalListPanel.refresh();
-            revalidate();
-            repaint();
-        }
+        sortGoalsForHome();
+        goalListPanel.tryBuildList();
+        goalListPanel.refresh();
+        revalidate();
+        repaint();
     }
 
     public void view(Goal goal)
     {
-        removeAll();
-        this.goalPanel = new GoalPanel(plugin, goal, this::home);
-        this.goalPanel.onGoalUpdated(this.goalUpdatedListener);
-        this.goalPanel.onTaskAdded(this.taskAddedListener);
-        this.goalPanel.onTaskUpdated(this.taskUpdatedListener);
-        add(this.goalPanel, BorderLayout.CENTER);
-        this.goalPanel.refresh();
-        revalidate();
-        repaint();
+        panelService.showGoalPanel(goal, this::home);
     }
 
     private void safeView(Goal goal)
     {
         try
         {
-            removeAll();
-            this.goalPanel = new GoalPanel(plugin, goal, this::home);
-            this.goalPanel.onGoalUpdated(this.goalUpdatedListener);
-            this.goalPanel.onTaskAdded(this.taskAddedListener);
-            this.goalPanel.onTaskUpdated(this.taskUpdatedListener);
-            add(this.goalPanel, BorderLayout.CENTER);
-            this.goalPanel.refresh();
-            revalidate();
-            repaint();
+            panelService.showGoalPanel(goal, this::home);
         }
         catch (Throwable t)
         {
@@ -230,7 +210,6 @@ public final class GoalTrackerPanel extends JPanel implements Refreshable
                 "Sorry, something went wrong opening that goal. Returning to Home.",
                 "Goal Open Error",
                 JOptionPane.ERROR_MESSAGE);
-            this.goalPanel = null;
             home();
         }
     }
@@ -247,6 +226,11 @@ public final class GoalTrackerPanel extends JPanel implements Refreshable
                 pendingNewGoal = null;
             }
         }
+        panelService.showHome();
+    }
+
+    private void initializeHomeView()
+    {
         removeAll();
         sortGoalsForHome();
         goalListPanel.tryBuildList();
@@ -257,46 +241,29 @@ public final class GoalTrackerPanel extends JPanel implements Refreshable
         mainPanel.repaint();
         revalidate();
         repaint();
-        this.goalPanel = null;
     }
 
 
     @Override
     public void refresh()
     {
-        if (goalPanel == null)
-        {
-            refreshHomeListIfVisible();
-        }
-        else
-        {
-            goalPanel.refresh();
-        }
+        refreshHomeListIfVisible();
     }
 
     public void onGoalUpdated(Consumer<Goal> listener)
     {
         this.goalUpdatedListener = listener;
         this.goalListPanel.onUpdated(this.goalUpdatedListener);
-        if (this.goalPanel != null) {
-            this.goalPanel.onGoalUpdated(this.goalUpdatedListener);
-        }
     }
 
     public void onTaskUpdated(Consumer<Task> listener)
     {
         this.taskUpdatedListener = listener;
-        if (this.goalPanel != null) {
-            this.goalPanel.onTaskUpdated(this.taskUpdatedListener);
-        }
     }
 
     public void onTaskAdded(Consumer<Task> listener)
     {
         this.taskAddedListener = listener;
-        if (this.goalPanel != null) {
-            this.goalPanel.onTaskAdded(this.taskAddedListener);
-        }
     }
 
     private void updateUndoRedoButtons()
@@ -328,13 +295,10 @@ public final class GoalTrackerPanel extends JPanel implements Refreshable
         java.util.List<Goal> goals = goalManager.getGoals();
         int idx = Math.max(0, Math.min(entry.getIndex(), goals.size()));
         goals.add(idx, entry.getItem());
-        if (goalPanel == null)
-        {
-            goalListPanel.tryBuildList();
-            goalListPanel.refresh();
-            revalidate();
-            repaint();
-        }
+        goalListPanel.tryBuildList();
+        goalListPanel.refresh();
+        revalidate();
+        repaint();
         updateUndoRedoButtons();
     }
 
@@ -348,13 +312,10 @@ public final class GoalTrackerPanel extends JPanel implements Refreshable
         {
             goals.remove(idx);
         }
-        if (goalPanel == null)
-        {
-            goalListPanel.tryBuildList();
-            goalListPanel.refresh();
-            revalidate();
-            repaint();
-        }
+        goalListPanel.tryBuildList();
+        goalListPanel.refresh();
+        revalidate();
+        repaint();
         updateUndoRedoButtons();
     }
 
@@ -451,14 +412,10 @@ public final class GoalTrackerPanel extends JPanel implements Refreshable
             goalManager.importJson(json, overwrite);
             plugin.warmItemIcons();
 
-            if (goalPanel != null) {
-                home();
-            } else {
-                goalListPanel.tryBuildList();
-                goalListPanel.refresh();
-                revalidate();
-                repaint();
-            }
+            goalListPanel.tryBuildList();
+            goalListPanel.refresh();
+            revalidate();
+            repaint();
 
             JOptionPane.showMessageDialog(this, "Imported goals from\n" + file.getAbsolutePath(), "Import Complete", JOptionPane.INFORMATION_MESSAGE);
         }
@@ -501,13 +458,9 @@ public final class GoalTrackerPanel extends JPanel implements Refreshable
 
         goalManager.addGoals(selected.getGoals());
 
-        if (goalPanel != null) {
-            home();
-        } else {
-            goalListPanel.tryBuildList();
-            goalListPanel.refresh();
-            revalidate();
-            repaint();
-        }
+        goalListPanel.tryBuildList();
+        goalListPanel.refresh();
+        revalidate();
+        repaint();
     }
 }

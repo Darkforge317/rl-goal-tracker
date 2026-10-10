@@ -4,6 +4,8 @@ import com.darkforge317.goaltracker.GoalTrackerPlugin;
 import com.darkforge317.goaltracker.ui.ChangelogListPanel;
 import com.darkforge317.goaltracker.ui.ChangelogPanel;
 import com.darkforge317.goaltracker.ui.GoalTrackerPanel;
+import com.darkforge317.goaltracker.ui.GoalPanel;
+import com.darkforge317.goaltracker.models.Goal;
 import com.darkforge317.goaltracker.ui.Refreshable;
 import com.google.inject.Inject;
 import net.runelite.client.ui.PluginPanel;
@@ -41,9 +43,17 @@ public class PanelService extends PluginPanel {
         repaint();
     }
 
-    public void showGoalPanel()
+    public void showGoalPanel(Goal goal, Runnable closeListener)
     {
-
+        removeAll();
+        GoalPanel panel = new GoalPanel(plugin, goal, closeListener);
+        panel.onGoalUpdated(plugin::onGoalUpdatedCallback);
+        panel.onTaskAdded(plugin::onTaskAddedCallback);
+        panel.onTaskUpdated(plugin::onTaskUpdatedCallback);
+        add(panel, BorderLayout.CENTER);
+        panel.refresh();
+        revalidate();
+        repaint();
     }
 
     public void showChangelogListPanel()

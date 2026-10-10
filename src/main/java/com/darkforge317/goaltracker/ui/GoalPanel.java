@@ -3,7 +3,6 @@ package com.darkforge317.goaltracker.ui;
 import com.darkforge317.goaltracker.GoalTrackerPlugin;
 import com.darkforge317.goaltracker.models.ActionHistory;
 import com.darkforge317.goaltracker.models.Goal;
-import com.darkforge317.goaltracker.models.RemoveTaskAction;
 import com.darkforge317.goaltracker.models.enums.TaskType;
 import com.darkforge317.goaltracker.models.task.Task;
 import com.darkforge317.goaltracker.utils.TaskHierarchyUtils;
@@ -44,7 +43,7 @@ public final class GoalPanel extends JPanel implements Refreshable
     private ActionBarButton redoButton;
     private ActionBarButton prereqsButton;
 
-    GoalPanel(GoalTrackerPlugin plugin, Goal goal, Runnable closeListener)
+    public GoalPanel(GoalTrackerPlugin plugin, Goal goal, Runnable closeListener)
     {
         super();
         this.plugin = plugin;
@@ -166,10 +165,7 @@ public final class GoalPanel extends JPanel implements Refreshable
                     this.refresh();
                 });
 
-                taskPanel.onRemovedWithIndex((removedTask, index) -> {
-                    actionHistory.push(new RemoveTaskAction(goal.getTasks(), removedTask, index));
-                    updateUndoRedoButtons();
-                });
+                taskPanel.onRemovedWithIndex((removedTask, index) -> updateUndoRedoButtons());
 
                 return taskPanel;
             } catch (Throwable t) {
@@ -190,6 +186,9 @@ public final class GoalPanel extends JPanel implements Refreshable
         taskListPanel.setGap(0);
         taskListPanel.setPlaceholder("No tasks added yet");
         taskListPanel.setRowVisibilityFilter(task -> !TaskHierarchyUtils.hasCollapsedAncestor(goal.getTasks(), task));
+        taskListPanel.setHiddenRowAnchor(task -> TaskHierarchyUtils.getVisibleCollapsedAncestor(goal.getTasks(), task));
+        taskListPanel.setReorderValidator((order, movedTask) ->
+                !TaskHierarchyUtils.hasCollapsedAncestor(order, movedTask));
         taskListPanel.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
         taskListPanel.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         taskListPanel.setWheelScrollingEnabled(false);

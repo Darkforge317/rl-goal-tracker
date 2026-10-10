@@ -8,6 +8,7 @@ import com.darkforge317.goaltracker.adapters.TaskAdapter;
 import com.darkforge317.goaltracker.models.Goal;
 import com.darkforge317.goaltracker.models.task.Task;
 import com.darkforge317.goaltracker.utils.ReorderableList;
+import com.darkforge317.goaltracker.utils.TaskHierarchyUtils;
 import net.runelite.api.Quest;
 import net.runelite.api.Skill;
 
@@ -25,7 +26,21 @@ public final class GoalSerializer
 
     public ReorderableList<Goal> deserialize(String serialized)
     {
-        return ReorderableList.from(this.getBuilder().fromJson(serialized, Goal[].class));
+        ReorderableList<Goal> goals = ReorderableList.from(this.getBuilder().fromJson(serialized, Goal[].class));
+        for (Goal goal : goals)
+        {
+            if (goal == null) continue;
+            if (goal.getHierarchyVersion() < 1)
+            {
+                TaskHierarchyUtils.initializeFromIndent(goal.getTasks());
+                goal.setHierarchyVersion(1);
+            }
+            else
+            {
+                TaskHierarchyUtils.ensureTaskIds(goal.getTasks());
+            }
+        }
+        return goals;
     }
 
     public String serialize(List<Goal> goals)
