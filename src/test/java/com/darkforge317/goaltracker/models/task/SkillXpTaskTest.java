@@ -16,7 +16,7 @@ class SkillXpTaskTest {
 
     @Test
     void levelTitlesSurvivePersistenceAndUseXpForCompletion() {
-        for (double level : new double[]{111, 92.5, 127}) {
+        for (double level : new double[]{100, 120, 127}) {
             SkillXpTask task = SkillXpTask.builder().skill(Skill.FISHING)
                 .targetSkillXp(com.darkforge317.goaltracker.ui.components.SkillTargetFields.xpForLevel(level))
                 .targetLevel(level).build();

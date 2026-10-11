@@ -24,7 +24,7 @@ public final class SkillXpTask extends Task
     private int targetSkillXp;
     private int currentSkillXp;
 
-    /** Original level-field target; null for targets entered as XP. */
+    /** Whole virtual level-field target; null for fractional levels and XP input. */
     private Double targetLevel;
 
     private String targetTitle()

@@ -149,7 +149,13 @@ public final class SkillTargetFields extends JPanel
         double value = parseLevel(level.getText());
         return value <= 99 && value == Math.floor(value);
     }
-    public Double getEnteredLevel() { return levelTarget ? parseLevel(level.getText()) : null; }
+    /** Only whole virtual milestones retain a level title on an XP task. */
+    public Double getEnteredLevel()
+    {
+        if (!levelTarget) return null;
+        double value = parseLevel(level.getText());
+        return value > 99 && value == Math.floor(value) ? value : null;
+    }
     public int getTargetLevel() { return (int) parseLevel(level.getText()); }
     public int getTargetXp()
     {
