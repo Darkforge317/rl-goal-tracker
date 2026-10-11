@@ -38,7 +38,7 @@ public final class SkillTaskInput extends TaskInput
                     .targetSkillLevel(target.getTargetLevel()).build());
             else
                 addTask(SkillXpTask.builder().skill(skill.getSelectedSkill())
-                    .targetSkillXp(target.getTargetXp()).build());
+                    .targetSkillXp(target.getTargetXp()).targetLevel(target.getEnteredLevel()).build());
         }
         catch (IllegalArgumentException ex)
         {

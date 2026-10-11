@@ -658,6 +658,11 @@ public final class GoalTrackerPlugin extends Plugin
                     item.recomputeFromCount(countHeldEquivalent(item.getItemId(), item.getItemName()));
                 }
             }
+            if (client.getGameState() == GameState.LOGGED_IN && task.getStatus().isCompleted() && !task.isNotified())
+            {
+                notifyTask(task);
+                task.setNotified(true);
+            }
             SwingUtilities.invokeLater(() -> {
                 goalManager.save();
                 uiStatusManager.refresh(task);

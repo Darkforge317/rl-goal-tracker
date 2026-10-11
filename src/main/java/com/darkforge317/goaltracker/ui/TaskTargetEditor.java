@@ -113,7 +113,9 @@ final class TaskTargetEditor
         }
         else
         {
-            if (level) skillTarget.setLevelTarget(target);
+            if (task instanceof SkillXpTask && ((SkillXpTask) task).getTargetLevel() != null)
+                skillTarget.setLevelTarget(((SkillXpTask) task).getTargetLevel());
+            else if (level) skillTarget.setLevelTarget(target);
             else skillTarget.setXpTarget(target);
             fields.add(skillTarget, BorderLayout.CENTER);
         }
@@ -125,7 +127,6 @@ final class TaskTargetEditor
         fields.add(buttons, BorderLayout.SOUTH);
         cancel.addActionListener(e -> dialog.dispose());
         save.addActionListener(e -> {
-            int maximum = item != null ? Integer.MAX_VALUE : level ? 99 : 200000000;
             final int value;
             try
             {
@@ -136,8 +137,8 @@ final class TaskTargetEditor
             catch (IllegalArgumentException | ArithmeticException | java.text.ParseException ex)
             {
                 JOptionPane.showMessageDialog(dialog, item != null
-                    ? "Enter a whole number from 1 to " + maximum + ". You can use k or m."
-                    : "Enter a level from 1 to 99 or XP from 0 to 200M (k/m allowed).",
+                    ? "Enter a whole number from 1 to " + Integer.MAX_VALUE + ". You can use k or m."
+                    : "Enter a level from 1 to 127 (up to two decimal places) or XP from 0 to 200M (k/m allowed).",
                     "Invalid target", JOptionPane.ERROR_MESSAGE);
                 return;
             }
@@ -155,6 +156,8 @@ final class TaskTargetEditor
             if (item == null)
             {
                 savedTask = retargetSkill(task, skillTarget.isLevelTarget(), value);
+                if (savedTask instanceof SkillXpTask)
+                    ((SkillXpTask) savedTask).setTargetLevel(skillTarget.getEnteredLevel());
                 if (savedTask != task)
                 {
                     goal.getTasks().set(goal.getTasks().indexOf(task), savedTask);

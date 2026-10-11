@@ -24,16 +24,25 @@ public final class SkillXpTask extends Task
     private int targetSkillXp;
     private int currentSkillXp;
 
+    /** Original level-field target; null for targets entered as XP. */
+    private Double targetLevel;
+
+    private String targetTitle()
+    {
+        return targetLevel == null ? String.format("%d %s XP", targetSkillXp, skill.getName())
+            : String.format("%s %s", java.math.BigDecimal.valueOf(targetLevel).stripTrailingZeros().toPlainString(), skill.getName());
+    }
+
     @Override
     public String toString()
     {
-        return String.format("%d %s XP", targetSkillXp, skill.getName());
+        return targetTitle();
     }
 
     @Override
     public String getDisplayName()
     {
-        return String.format("%d %s XP", targetSkillXp, skill.getName());
+        return targetTitle();
     }
 
     @Override
