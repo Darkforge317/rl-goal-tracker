@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -17,6 +18,13 @@ import lombok.experimental.SuperBuilder;
  */
 public abstract class Task
 {
+    @Builder.Default
+    @SerializedName("task_id")
+    private String taskId = UUID.randomUUID().toString();
+
+    @SerializedName("parent_task_id")
+    private String parentTaskId;
+
     @Builder.Default
     @SerializedName(value = "status", alternate = {"previous_result"})
     private Status status = Status.NOT_STARTED;

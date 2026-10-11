@@ -6,6 +6,7 @@ import com.darkforge317.goaltracker.models.task.ManualTask;
 import com.darkforge317.goaltracker.models.task.QuestTask;
 import com.darkforge317.goaltracker.models.task.SkillLevelTask;
 import com.darkforge317.goaltracker.utils.ReorderableList;
+import com.darkforge317.goaltracker.utils.TaskHierarchyUtils;
 import lombok.Getter;
 import net.runelite.api.Quest;
 import net.runelite.api.Skill;
@@ -186,6 +187,7 @@ public class GoalPresetRepository {
                         QuestTask.builder().quest(Quest.DRAGON_SLAYER_I).build()
                 ))
                 .build();
+        TaskHierarchyUtils.initializeFromIndent(f2p.getTasks());
         return new Preset("Free-to-Play Quests", "Every F2P quest in OSRS (20 total) as of today.", Arrays.asList(f2p));
     }
     private static Preset buildFastTravelUnlocks() {

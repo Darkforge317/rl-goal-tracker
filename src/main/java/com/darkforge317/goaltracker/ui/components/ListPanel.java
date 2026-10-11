@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
+import java.util.function.BiPredicate;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -35,6 +37,8 @@ public final class ListPanel<T> extends JScrollPane implements Refreshable
     private int rowLeftInset = 0;
     private int rowRightInset = 0;
     private Predicate<T> rowVisibilityFilter = t -> true;
+    private BiPredicate<List<T>, T> reorderValidator = (order, item) -> true;
+    private Function<T, T> hiddenRowAnchor = null;
 
     public ListPanel(
             ReorderableList<T> reorderableList,
@@ -55,19 +59,20 @@ public final class ListPanel<T> extends JScrollPane implements Refreshable
             public void onDrag(Component component) {
                 T updatedItem = ((ListItemPanel<T>)component).item;
 
-                // Capture, in the list's CURRENT order, the run of hidden items
-                // (filtered out due to a collapsed ancestor) that immediately
-                // follows each visible item - these must move as a block with
-                // whatever visible item they're already anchored under.
+                // Capture hidden rows and keep them anchored to their visible owner
+                // when the visible rows are reordered.
                 List<T> oldOrder = new ArrayList<>(reorderableList);
                 Map<T, List<T>> hiddenFollowersOf = new HashMap<>();
-                List<T> currentRun = null;
+                T currentVisible = null;
                 for (T t : oldOrder) {
                     if (rowVisibilityFilter.test(t)) {
-                        currentRun = new ArrayList<>();
-                        hiddenFollowersOf.put(t, currentRun);
-                    } else if (currentRun != null) {
-                        currentRun.add(t);
+                        currentVisible = t;
+                        hiddenFollowersOf.computeIfAbsent(t, ignored -> new ArrayList<>());
+                    } else {
+                        T anchor = hiddenRowAnchor == null ? currentVisible : hiddenRowAnchor.apply(t);
+                        if (anchor != null) {
+                            hiddenFollowersOf.computeIfAbsent(anchor, ignored -> new ArrayList<>()).add(t);
+                        }
                     }
                 }
 
@@ -89,6 +94,13 @@ public final class ListPanel<T> extends JScrollPane implements Refreshable
                     if (followers != null) {
                         newFullOrder.addAll(followers);
                     }
+                }
+
+                if (!reorderValidator.test(newFullOrder, updatedItem)) {
+                    // Reject drops that would place the moved row under a collapsed
+                    // ancestor. Rebuild from the unchanged model order to restore the UI.
+                    refresh();
+                    return;
                 }
 
                 reorderableList.clear();
@@ -145,6 +157,16 @@ public final class ListPanel<T> extends JScrollPane implements Refreshable
     {
         this.rowVisibilityFilter = filter != null ? filter : (t -> true);
         tryBuildList();
+    }
+
+    public void setReorderValidator(BiPredicate<List<T>, T> validator)
+    {
+        this.reorderValidator = validator != null ? validator : (order, item) -> true;
+    }
+
+    public void setHiddenRowAnchor(Function<T, T> anchor)
+    {
+        this.hiddenRowAnchor = anchor;
     }
 
     private List<ListItemPanel<T>> buildItemPanels()
