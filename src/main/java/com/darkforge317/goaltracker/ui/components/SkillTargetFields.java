@@ -149,11 +149,12 @@ public final class SkillTargetFields extends JPanel
         double value = parseLevel(level.getText());
         return value <= 99 && value == Math.floor(value);
     }
+    public Double getEnteredLevel() { return levelTarget ? parseLevel(level.getText()) : null; }
     public int getTargetLevel() { return (int) parseLevel(level.getText()); }
     public int getTargetXp()
     {
         return levelTarget ? xpForLevel(parseLevel(level.getText())) : parseXp(xp.getText());
     }
-    public void setLevelTarget(int value) { level.setText(Integer.toString(value)); }
+    public void setLevelTarget(double value) { level.setText(BigDecimal.valueOf(value).stripTrailingZeros().toPlainString()); }
     public void setXpTarget(int value) { xp.setText(Integer.toString(value)); }
 }
