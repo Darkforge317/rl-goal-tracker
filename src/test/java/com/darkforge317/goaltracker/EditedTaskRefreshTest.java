@@ -20,22 +20,18 @@ class EditedTaskRefreshTest
         Client client = mock(Client.class);
         when(client.getGameState()).thenReturn(GameState.LOGGED_IN);
         when(client.getSkillExperience(Skill.FISHING)).thenReturn(1000);
-        GoalTrackerPlugin plugin = new GoalTrackerPlugin(client, null);
         ClientThread thread = mock(ClientThread.class);
         ChatMessageManager messages = mock(ChatMessageManager.class);
         GoalTrackerConfig config = mock(GoalTrackerConfig.class);
         when(config.completionMessageColor()).thenReturn(Color.WHITE);
-        inject(plugin, "clientThread", thread);
-        inject(plugin, "chatMessageManager", messages);
-        inject(plugin, "config", config);
+        GoalTrackerPlugin plugin = new GoalTrackerPlugin(client, thread, messages, config,
+            mock(GoalManager.class), mock(TaskUIStatusManager.class));
         // Run client work synchronously to exercise the edit completion check.
         doAnswer(call -> {
             Runnable work = call.getArgument(0);
             work.run();
             return null;
         }).when(thread).invokeLater(any(Runnable.class));
-        inject(plugin, "goalManager", mock(GoalManager.class));
-        inject(plugin, "uiStatusManager", mock(TaskUIStatusManager.class));
         SkillXpTask task = SkillXpTask.builder().skill(Skill.FISHING).targetSkillXp(500).build();
         Goal goal = Goal.builder().build();
         plugin.refreshEditedTask(task, goal);
@@ -53,10 +49,4 @@ class EditedTaskRefreshTest
         javax.swing.SwingUtilities.invokeAndWait(() -> {});
     }
 
-    private static void inject(Object target, String name, Object value) throws Exception
-    {
-        java.lang.reflect.Field field = target.getClass().getDeclaredField(name);
-        field.setAccessible(true);
-        field.set(target, value);
-    }
 }

@@ -73,6 +73,17 @@ public final class GoalTrackerPlugin extends Plugin
         this.itemManager = itemManager;
     }
 
+    GoalTrackerPlugin(Client client, ClientThread clientThread, ChatMessageManager chatMessageManager,
+                      GoalTrackerConfig config, GoalManager goalManager, TaskUIStatusManager uiStatusManager)
+    {
+        this.client = client;
+        this.clientThread = clientThread;
+        this.chatMessageManager = chatMessageManager;
+        this.config = config;
+        this.goalManager = goalManager;
+        this.uiStatusManager = uiStatusManager;
+    }
+
     public static final int[] PLAYER_INVENTORIES = {
             InventoryID.INV,
             InventoryID.WORN,
