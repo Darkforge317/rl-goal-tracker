@@ -239,6 +239,8 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             popupMenu.add(moveMenu);
         }
 
+        addEditMenuItem();
+
         var previousItem = list.getPreviousItem(item);
 
         if (item.isNotFullyIndented() && previousItem != null && previousItem.getIndentLevel() >= item.getIndentLevel()) {
@@ -471,6 +473,8 @@ public final class ListTaskPanel extends ListItemPanel<Task>
         }
 
         // Indent / Unindent
+        addEditMenuItem();
+
         var previousItem = list.getPreviousItem(item);
         if (item.isNotFullyIndented() && previousItem != null && previousItem.getIndentLevel() >= item.getIndentLevel()) {
             popupMenu.add(indentItem);
@@ -574,6 +578,16 @@ public final class ListTaskPanel extends ListItemPanel<Task>
         // Ensure remove is at the bottom: remove and re-add it
         popupMenu.remove(removeItem);
         popupMenu.add(removeItem);
+    }
+
+    private void addEditMenuItem()
+    {
+        if (taskContent != null && taskContent.canEditTarget())
+        {
+            JMenuItem edit = new JMenuItem("Edit");
+            edit.addActionListener(e -> taskContent.editTarget());
+            popupMenu.add(edit);
+        }
     }
 
     private void refreshParentList()

@@ -73,6 +73,17 @@ public final class GoalTrackerPlugin extends Plugin
         this.itemManager = itemManager;
     }
 
+    GoalTrackerPlugin(Client client, ClientThread clientThread, ChatMessageManager chatMessageManager,
+                      GoalTrackerConfig config, GoalManager goalManager, TaskUIStatusManager uiStatusManager)
+    {
+        this.client = client;
+        this.clientThread = clientThread;
+        this.chatMessageManager = chatMessageManager;
+        this.config = config;
+        this.goalManager = goalManager;
+        this.uiStatusManager = uiStatusManager;
+    }
+
     public static final int[] PLAYER_INVENTORIES = {
             InventoryID.INV,
             InventoryID.WORN,
@@ -642,6 +653,40 @@ public final class GoalTrackerPlugin extends Plugin
         String s = TRAILING_NUMBER_PATTERN.matcher(raw).replaceAll("").trim();
         s = MULTI_SPACE_PATTERN.matcher(s).replaceAll(" ");
         return s;
+    }
+
+    /** Recheck an edited target, including targets that were previously completed. */
+    public void refreshEditedTask(Task task, com.darkforge317.goaltracker.models.Goal goal)
+    {
+        refreshEditedTask(task, goal, task.getStatus().isCompleted());
+    }
+
+    /** Recheck an edited target and notify only when the edit changes it from incomplete to complete. */
+    public void refreshEditedTask(Task task, com.darkforge317.goaltracker.models.Goal goal, boolean wasCompleted)
+    {
+        clientThread.invokeLater(() -> {
+            if (client.getGameState() == GameState.LOGGED_IN)
+            {
+                if (task instanceof SkillLevelTask) ((SkillLevelTask) task).refreshStatus(client);
+                else if (task instanceof SkillXpTask) ((SkillXpTask) task).refreshStatus(client);
+                else if (task instanceof ItemTask)
+                {
+                    ItemTask item = (ItemTask) task;
+                    item.recomputeFromCount(countHeldEquivalent(item.getItemId(), item.getItemName()));
+                }
+            }
+            if (client.getGameState() == GameState.LOGGED_IN && !wasCompleted
+                && task.getStatus().isCompleted() && !task.isNotified())
+            {
+                notifyTask(task);
+                task.setNotified(true);
+            }
+            SwingUtilities.invokeLater(() -> {
+                goalManager.save();
+                uiStatusManager.refresh(task);
+                uiStatusManager.refresh(goal);
+            });
+        });
     }
 
     /**

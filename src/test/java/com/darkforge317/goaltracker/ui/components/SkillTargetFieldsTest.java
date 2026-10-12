@@ -130,4 +130,29 @@ class SkillTargetFieldsTest
             assertEquals(Experience.getXpForLevel(100), fields.getTargetXp());
         });
     }
+    @Test void onlyWholeVirtualLevelInputKeepsLevelTitles() throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> {
+            SkillTargetFields fields = new SkillTargetFields();
+            for (double level : new double[]{99, 100, 120, 120.5, 92.5, 127})
+            {
+                fields.setLevelTarget(level);
+                Double expected = level > 99 && level == Math.floor(level) ? level : null;
+                assertEquals(expected, fields.getEnteredLevel());
+                if (!fields.isLevelTarget())
+                {
+                    com.darkforge317.goaltracker.models.task.SkillXpTask task =
+                        com.darkforge317.goaltracker.models.task.SkillXpTask.builder()
+                            .skill(net.runelite.api.Skill.FISHING)
+                            .targetSkillXp(fields.getTargetXp()).targetLevel(fields.getEnteredLevel()).build();
+                    assertEquals(expected == null ? fields.getTargetXp() + " Fishing XP"
+                        : ((int) level) + " Fishing", task.toString());
+                }
+            }
+            fields.setXpTarget(Experience.getXpForLevel(120));
+            assertNull(fields.getEnteredLevel());
+            assertFalse(fields.isLevelTarget());
+        });
+    }
+
 }
