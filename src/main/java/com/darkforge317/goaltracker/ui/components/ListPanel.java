@@ -11,6 +11,7 @@ import java.awt.*;
 import java.util.*;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.BiPredicate;
@@ -39,6 +40,7 @@ public final class ListPanel<T> extends JScrollPane implements Refreshable
     private Predicate<T> rowVisibilityFilter = t -> true;
     private BiPredicate<List<T>, T> reorderValidator = (order, item) -> true;
     private Function<T, T> hiddenRowAnchor = null;
+    private BiConsumer<List<T>, List<T>> reorderListener;
 
     public ListPanel(
             ReorderableList<T> reorderableList,
@@ -105,6 +107,11 @@ public final class ListPanel<T> extends JScrollPane implements Refreshable
 
                 reorderableList.clear();
                 reorderableList.addAll(newFullOrder);
+
+                if (!oldOrder.equals(newFullOrder) && reorderListener != null)
+                {
+                    reorderListener.accept(new ArrayList<>(oldOrder), new ArrayList<>(newFullOrder));
+                }
 
                 if (updatedListener != null) updatedListener.accept(updatedItem);
 
@@ -274,5 +281,10 @@ public final class ListPanel<T> extends JScrollPane implements Refreshable
 
     public void onUpdated(Consumer<T> listener) {
         this.updatedListener = listener;
+    }
+
+    public void onReordered(BiConsumer<List<T>, List<T>> listener)
+    {
+        this.reorderListener = listener;
     }
 }

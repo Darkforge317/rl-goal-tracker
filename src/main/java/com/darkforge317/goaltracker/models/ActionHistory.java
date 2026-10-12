@@ -3,6 +3,7 @@ package com.darkforge317.goaltracker.models;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Simple undo/redo stack for user actions.
@@ -18,6 +19,22 @@ public final class ActionHistory
 
     private final Deque<Action> undoStack = new ArrayDeque<>();
     private final Deque<Action> redoStack = new ArrayDeque<>();
+    private final java.util.List<Runnable> listeners = new CopyOnWriteArrayList<>();
+
+    public void addListener(Runnable listener)
+    {
+        listeners.add(Objects.requireNonNull(listener, "listener"));
+    }
+
+    public void removeListener(Runnable listener)
+    {
+        listeners.remove(listener);
+    }
+
+    private void fireChanged()
+    {
+        for (Runnable listener : listeners) listener.run();
+    }
 
     /** Push a new action and clear the redo history. */
     public void push(final Action action)
@@ -25,6 +42,7 @@ public final class ActionHistory
         Objects.requireNonNull(action, "action");
         undoStack.addLast(action);
         redoStack.clear();
+        fireChanged();
     }
 
     /** Undo the most recent action, if any. */
@@ -35,6 +53,7 @@ public final class ActionHistory
         {
             action.undo();
             redoStack.addLast(action);
+            fireChanged();
         }
     }
 
@@ -46,6 +65,7 @@ public final class ActionHistory
         {
             action.redo();
             undoStack.addLast(action);
+            fireChanged();
         }
     }
 
@@ -64,5 +84,6 @@ public final class ActionHistory
     {
         undoStack.clear();
         redoStack.clear();
+        fireChanged();
     }
 }

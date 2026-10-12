@@ -76,6 +76,7 @@ public final class GoalPanel extends JPanel implements Refreshable
         actionBar.left().add(prereqsButton);
         actionBar.left().add(undoButton);
         actionBar.left().add(redoButton);
+        actionHistory.addListener(this::updateUndoRedoButtons);
 
         ActionBarButton importButton = new ActionBarButton("Import", () -> {
             String input = javax.swing.JOptionPane.showInputDialog(GoalPanel.this, "Paste goals JSON:");
@@ -161,6 +162,7 @@ public final class GoalPanel extends JPanel implements Refreshable
                     if (this.goalUpdatedListener != null) this.goalUpdatedListener.accept(goal);
                     plugin.getUiStatusManager().refresh(goal);
                     this.refresh();
+                    updateUndoRedoButtons();
                 });
 
                 taskPanel.onRemovedWithIndex((removedTask, index) -> updateUndoRedoButtons());
@@ -183,6 +185,23 @@ public final class GoalPanel extends JPanel implements Refreshable
         });
         taskListPanel.setGap(0);
         taskListPanel.setPlaceholder("No tasks added yet");
+        taskListPanel.onReordered((oldOrder, newOrder) -> {
+            ActionHistory.Action action = new ActionHistory.Action()
+            {
+                private void apply(java.util.List<Task> order)
+                {
+                    goal.getTasks().clear();
+                    goal.getTasks().addAll(order);
+                    TaskHierarchyUtils.normalizeIndentLevels(goal.getTasks());
+                    plugin.getUiStatusManager().refresh(goal);
+                }
+
+                @Override public void undo() { apply(oldOrder); }
+                @Override public void redo() { apply(newOrder); }
+            };
+            actionHistory.push(action);
+            updateUndoRedoButtons();
+        });
         taskListPanel.setRowVisibilityFilter(task -> !TaskHierarchyUtils.hasCollapsedAncestor(goal.getTasks(), task));
         taskListPanel.setHiddenRowAnchor(task -> TaskHierarchyUtils.getVisibleCollapsedAncestor(goal.getTasks(), task));
         taskListPanel.setReorderValidator((order, movedTask) ->
@@ -471,6 +490,7 @@ public final class GoalPanel extends JPanel implements Refreshable
     {
         actionHistory.undo();
         refreshTaskList();
+        if (goalUpdatedListener != null) goalUpdatedListener.accept(goal);
         updateUndoRedoButtons();
     }
 
@@ -478,6 +498,7 @@ public final class GoalPanel extends JPanel implements Refreshable
     {
         actionHistory.redo();
         refreshTaskList();
+        if (goalUpdatedListener != null) goalUpdatedListener.accept(goal);
         updateUndoRedoButtons();
     }
 

@@ -488,6 +488,7 @@ public final class ListTaskPanel extends ListItemPanel<Task>
         private final Map<Component, Cursor> sourceCursors;
         private final String sourceToolTip;
         private Map<Component, Cursor> hoveredCursors;
+        private Map<JComponent, String> hoveredToolTips;
         private boolean active;
         private boolean deferInteractionReset;
         private ListTaskPanel pressedInvalidTarget;
@@ -597,6 +598,7 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             {
                 hovered.setParentSelectionOverlay(null);
                 restoreCursors(hoveredCursors);
+                restoreToolTips(hoveredToolTips);
             }
             hovered = next;
             if (hovered != null)
@@ -604,6 +606,8 @@ public final class ListTaskPanel extends ListItemPanel<Task>
                 boolean valid = candidates.contains(hovered.item) && source.isValidParentCandidate(hovered.item);
                 hovered.setParentSelectionOverlay(valid ? VALID_HIGHLIGHT : INVALID_HIGHLIGHT);
                 hoveredCursors = captureAndSetCursors(hovered, valid ? ADD_CURSOR : INVALID_CURSOR);
+                hoveredToolTips = captureAndSetToolTips(hovered,
+                        (valid ? "Valid target." : "Invalid target.") + " Right click or escape to cancel.");
             }
         }
 
@@ -654,6 +658,35 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             Map<Component, Cursor> originals = captureCursors(root);
             setCursorRecursively(root, cursor);
             return originals;
+        }
+
+        private static Map<JComponent, String> captureAndSetToolTips(Component root, String toolTip)
+        {
+            Map<JComponent, String> originals = new IdentityHashMap<>();
+            setToolTipRecursively(root, toolTip, originals);
+            return originals;
+        }
+
+        private static void setToolTipRecursively(Component component, String toolTip,
+                                                  Map<JComponent, String> originals)
+        {
+            if (component instanceof JComponent)
+            {
+                JComponent swingComponent = (JComponent) component;
+                originals.put(swingComponent, swingComponent.getToolTipText());
+                swingComponent.setToolTipText(toolTip);
+            }
+            if (component instanceof Container)
+            {
+                for (Component child : ((Container) component).getComponents())
+                    setToolTipRecursively(child, toolTip, originals);
+            }
+        }
+
+        private static void restoreToolTips(Map<JComponent, String> originals)
+        {
+            if (originals == null) return;
+            originals.forEach(JComponent::setToolTipText);
         }
 
         private static Map<Component, Cursor> captureCursors(Component root)
