@@ -103,6 +103,63 @@ public final class TaskHierarchyUtils
         return subtree;
     }
 
+    /**
+     * Returns legal insertion indices after removing the moved task's visible subtree.
+     * Child tasks may be reordered only at sibling-subtree boundaries; roots may be
+     * reordered only between complete hierarchy blocks.
+     */
+    public static List<Integer> getValidInsertionSlots(List<Task> tasks, List<Task> visibleItems, Task movedTask)
+    {
+        List<Task> draggedSubtree = getSubtree(tasks, movedTask);
+        List<Task> remaining = new ArrayList<>(visibleItems);
+        remaining.removeAll(draggedSubtree);
+
+        Task parent = getParent(tasks, movedTask);
+        List<Integer> validSlots = new ArrayList<>();
+        if (parent != null)
+        {
+            int parentIndex = remaining.indexOf(parent);
+            if (parentIndex < 0) return java.util.Collections.singletonList(0);
+            validSlots.add(parentIndex + 1);
+            for (Task sibling : getChildren(tasks, parent))
+            {
+                if (draggedSubtree.contains(sibling)) continue;
+                int siblingSubtreeEnd = remaining.indexOf(sibling);
+                for (Task descendant : getDescendants(tasks, sibling))
+                {
+                    int index = remaining.indexOf(descendant);
+                    if (index >= 0) siblingSubtreeEnd = Math.max(siblingSubtreeEnd, index);
+                }
+                if (siblingSubtreeEnd >= 0) validSlots.add(siblingSubtreeEnd + 1);
+            }
+            java.util.Collections.sort(validSlots);
+            return validSlots;
+        }
+
+        for (int slot = 0; slot <= remaining.size(); slot++)
+        {
+            boolean insideHierarchy = false;
+            for (Task possibleParent : remaining)
+            {
+                int parentIndex = remaining.indexOf(possibleParent);
+                if (parentIndex >= slot) continue;
+                int lastDescendantIndex = parentIndex;
+                for (Task descendant : getDescendants(tasks, possibleParent))
+                {
+                    int index = remaining.indexOf(descendant);
+                    if (index >= 0) lastDescendantIndex = Math.max(lastDescendantIndex, index);
+                }
+                if (slot <= lastDescendantIndex)
+                {
+                    insideHierarchy = true;
+                    break;
+                }
+            }
+            if (!insideHierarchy) validSlots.add(slot);
+        }
+        return validSlots;
+    }
+
     public static boolean hasChildren(List<Task> tasks, Task parent)
     {
         return !getChildren(tasks, parent).isEmpty();
@@ -139,6 +196,7 @@ public final class TaskHierarchyUtils
 
     public static boolean canSetParent(List<Task> tasks, Task task, Task parent)
     {
+        if (task == parent || getDescendants(tasks, task).contains(parent)) return false;
         int parentDepth = 0;
         Set<String> ancestors = new HashSet<>();
         Task current = parent;

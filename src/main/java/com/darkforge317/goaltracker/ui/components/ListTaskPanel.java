@@ -763,14 +763,14 @@ public final class ListTaskPanel extends ListItemPanel<Task>
         }
     }
 
-    private void removeParent()
+    void removeParent()
     {
         Task oldParent = TaskHierarchyUtils.getParent(list, item);
         Task newParent = oldParent == null ? null : TaskHierarchyUtils.getParent(list, oldParent);
         changeParent(newParent == null ? null : newParent.getTaskId(), oldParent, true);
     }
 
-    private void changeParent(String newParentId)
+    void changeParent(String newParentId)
     {
         changeParent(newParentId, null, false);
     }

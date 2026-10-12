@@ -1,39 +1,51 @@
 [
   {
+    "hierarchy_version": 1,
     "description": "My Goal",
     "display_order": -1,
     "pinned": false,
     "items": [
       {
         "description": "Do all the things!",
+        "task_id": "task-1",
         "status": "completed",
         "has_been_notified": true,
         "indent_level": 0,
+        "collapsed": false,
         "type": "manual"
       },
       {
         "skill": "Attack",
         "level": 99,
         "current_skill_level": 0,
+        "task_id": "task-2",
+        "parent_task_id": "task-1",
         "status": "in_progress",
         "has_been_notified": false,
         "indent_level": 1,
+        "collapsed": false,
         "type": "skill_level"
       },
       {
         "skill": "Attack",
         "xp": 1234,
         "current_skill_xp": 0,
+        "task_id": "task-3",
+        "parent_task_id": "task-2",
         "status": "not_started",
         "has_been_notified": false,
         "indent_level": 2,
+        "collapsed": false,
         "type": "skill_xp"
       },
       {
         "quest_id": 0,
+        "task_id": "task-4",
+        "parent_task_id": "task-1",
         "status": "not_started",
         "has_been_notified": false,
         "indent_level": 1,
+        "collapsed": false,
         "type": "quest"
       },
       {
@@ -41,9 +53,11 @@
         "acquired": 4,
         "item_id": 314,
         "item_name": "Feather",
+        "task_id": "task-5",
         "status": "not_started",
         "has_been_notified": false,
         "indent_level": 0,
+        "collapsed": false,
         "type": "item"
       }
     ]

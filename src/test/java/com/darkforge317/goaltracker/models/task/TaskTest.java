@@ -32,11 +32,11 @@ class TaskTest {
 
     @Test
     void indent_shouldNotIndentIfFullyIndented() {
-        ManualTask task = ManualTask.builder().indentLevel(3).status(Status.COMPLETED).build();
+        ManualTask task = ManualTask.builder().indentLevel(Task.MAX_INDENT_LEVEL).status(Status.COMPLETED).build();
 
         task.indent();
 
-        assertEquals(task.getIndentLevel(), 3);
+        assertEquals(Task.MAX_INDENT_LEVEL, task.getIndentLevel());
     }
 
     @Test

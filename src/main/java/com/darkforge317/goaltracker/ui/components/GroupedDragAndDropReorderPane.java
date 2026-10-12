@@ -86,7 +86,7 @@ final class GroupedDragAndDropReorderPane extends JLayeredPane
         }
         if (root == null) return;
         List<Component> all = orderedDefaultComponents();
-        rowGap = measureRowGap(all);
+        rowGap = DragInsertionGeometry.measureRowGap(all);
         List<Component> group = new ArrayList<>(groupResolver.apply(root));
         group.removeIf(component -> !all.contains(component));
         if (!group.contains(root)) group.add(root);
@@ -130,7 +130,7 @@ final class GroupedDragAndDropReorderPane extends JLayeredPane
         int minY = insertionY(minDragIndex, remaining);
         int maxY = insertionY(maxDragIndex, remaining);
         int requestedTop = point.y - dragYOffset;
-        moveGroup(clamp(requestedTop, minY, Math.max(minY, maxY)));
+        moveGroup(DragInsertionGeometry.clamp(requestedTop, minY, Math.max(minY, maxY)));
 
         // Compare insertion slots to the dragged block's top, not the cursor's
         // raw y-coordinate. The cursor may be grabbed partway down the row (or
@@ -153,24 +153,7 @@ final class GroupedDragAndDropReorderPane extends JLayeredPane
 
     private int insertionY(int index, List<Component> remaining)
     {
-        if (index < dragIndex && index < remaining.size()) return remaining.get(index).getY();
-        if (index == dragIndex)
-        {
-            if (index == 0) return 0;
-            Component previous = remaining.get(Math.min(index - 1, remaining.size() - 1));
-            return previous.getY() + previous.getHeight() + rowGap;
-        }
-        if (index < remaining.size()) return remaining.get(index).getY() - groupHeight - rowGap;
-        if (remaining.isEmpty()) return 0;
-        Component last = remaining.get(remaining.size() - 1);
-        return last.getY() + last.getHeight() - groupHeight;
-    }
-
-    private int measureRowGap(List<Component> rows)
-    {
-        if (rows.size() > 1)
-            return Math.max(0, rows.get(1).getY() - rows.get(0).getY() - rows.get(0).getHeight());
-        return 0;
+        return DragInsertionGeometry.insertionY(index, dragIndex, remaining, groupHeight, rowGap);
     }
 
     private List<Integer> allowedSlots(Component root, List<Component> visibleRows, int remainingCount)
@@ -202,18 +185,7 @@ final class GroupedDragAndDropReorderPane extends JLayeredPane
 
     private int nearestSlotByY(int y, List<Integer> allowedSlots, List<Component> remaining)
     {
-        int best = allowedSlots.get(0);
-        int distance = Math.abs(y - insertionY(best, remaining));
-        for (int slot : allowedSlots)
-        {
-            int nextDistance = Math.abs(y - insertionY(slot, remaining));
-            if (nextDistance < distance)
-            {
-                best = slot;
-                distance = nextDistance;
-            }
-        }
-        return best;
+        return DragInsertionGeometry.nearestSlotByY(y, allowedSlots, dragIndex, remaining, groupHeight, rowGap);
     }
 
     private void moveGroup(int top)
@@ -248,8 +220,6 @@ final class GroupedDragAndDropReorderPane extends JLayeredPane
             if (getLayer(component) == DEFAULT_LAYER) components.add(component);
         return components;
     }
-
-    private static int clamp(int value, int min, int max) { return Math.max(min, Math.min(value, max)); }
 
     private final class GroupLayout extends javax.swing.BoxLayout
     {

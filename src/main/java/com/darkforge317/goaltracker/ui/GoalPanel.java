@@ -205,61 +205,8 @@ public final class GoalPanel extends JPanel implements Refreshable
         taskListPanel.setRowVisibilityFilter(task -> !TaskHierarchyUtils.hasCollapsedAncestor(goal.getTasks(), task));
         taskListPanel.setHiddenRowAnchor(task -> TaskHierarchyUtils.getVisibleCollapsedAncestor(goal.getTasks(), task));
         taskListPanel.setDragGroupProvider(task -> TaskHierarchyUtils.getSubtree(goal.getTasks(), task));
-        taskListPanel.setDragBoundsProvider((visibleItems, movedTask) -> {
-            java.util.List<Task> draggedSubtree = TaskHierarchyUtils.getSubtree(goal.getTasks(), movedTask);
-            java.util.List<Task> remaining = new java.util.ArrayList<>(visibleItems);
-            remaining.removeAll(draggedSubtree);
-
-            Task parent = TaskHierarchyUtils.getParent(goal.getTasks(), movedTask);
-            java.util.List<Integer> validSlots = new java.util.ArrayList<>();
-            if (parent != null)
-            {
-                int parentIndex = remaining.indexOf(parent);
-                if (parentIndex < 0) return java.util.Collections.singletonList(0);
-                // Only allow insertion at sibling-subtree boundaries. A task may
-                // reorder beside its siblings, but must not split a sibling parent
-                // from that sibling's own children.
-                validSlots.add(parentIndex + 1);
-                for (Task sibling : TaskHierarchyUtils.getChildren(goal.getTasks(), parent))
-                {
-                    if (draggedSubtree.contains(sibling)) continue;
-                    int siblingSubtreeEnd = remaining.indexOf(sibling);
-                    for (Task descendant : TaskHierarchyUtils.getDescendants(goal.getTasks(), sibling))
-                    {
-                        int index = remaining.indexOf(descendant);
-                        if (index >= 0) siblingSubtreeEnd = Math.max(siblingSubtreeEnd, index);
-                    }
-                    if (siblingSubtreeEnd >= 0) validSlots.add(siblingSubtreeEnd + 1);
-                }
-                java.util.Collections.sort(validSlots);
-                return validSlots;
-            }
-
-            // Top-level tasks can only be inserted between hierarchy blocks, never
-            // between a parent and any of its visible descendants.
-            for (int slot = 0; slot <= remaining.size(); slot++)
-            {
-                boolean insideHierarchy = false;
-                for (Task possibleParent : remaining)
-                {
-                    int parentIndex = remaining.indexOf(possibleParent);
-                    if (parentIndex >= slot) continue;
-                    int lastDescendantIndex = parentIndex;
-                    for (Task descendant : TaskHierarchyUtils.getDescendants(goal.getTasks(), possibleParent))
-                    {
-                        int index = remaining.indexOf(descendant);
-                        if (index >= 0) lastDescendantIndex = Math.max(lastDescendantIndex, index);
-                    }
-                    if (slot <= lastDescendantIndex)
-                    {
-                        insideHierarchy = true;
-                        break;
-                    }
-                }
-                if (!insideHierarchy) validSlots.add(slot);
-            }
-            return validSlots;
-        });
+        taskListPanel.setDragBoundsProvider((visibleItems, movedTask) ->
+                TaskHierarchyUtils.getValidInsertionSlots(goal.getTasks(), visibleItems, movedTask));
         taskListPanel.setReorderValidator((order, movedTask) ->
                 !TaskHierarchyUtils.hasCollapsedAncestor(order, movedTask));
         taskListPanel.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
