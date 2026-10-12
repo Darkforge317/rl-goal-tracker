@@ -348,6 +348,16 @@ public final class TaskItemContent extends JPanel implements Refreshable
         }
     }
 
+    public boolean canEditTarget()
+    {
+        return TaskTargetEditor.supports(task);
+    }
+
+    public void editTarget()
+    {
+        TaskTargetEditor.open(this, plugin, goal, task);
+    }
+
     private void onShiftStateChanged()
     {
         interactionState.setShiftDown(plugin.getKeyInputService().isShiftDown());

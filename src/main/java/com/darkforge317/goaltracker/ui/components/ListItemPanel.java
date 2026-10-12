@@ -11,6 +11,8 @@ import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.MatteBorder;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -172,6 +174,26 @@ public class ListItemPanel<T> extends JPanel implements Refreshable
         });
 
         popupMenu.setBorder(new EmptyBorder(5, 5, 5, 5));
+        popupMenu.addPopupMenuListener(new PopupMenuListener()
+        {
+            @Override
+            public void popupMenuWillBecomeVisible(PopupMenuEvent e)
+            {
+                // Status can change independently of the list row. Rebuild menu labels
+                // immediately before display so actions reflect the item's current state.
+                ListItemPanel.this.refresh();
+            }
+
+            @Override
+            public void popupMenuWillBecomeInvisible(PopupMenuEvent e)
+            {
+            }
+
+            @Override
+            public void popupMenuCanceled(PopupMenuEvent e)
+            {
+            }
+        });
         cardBody.setComponentPopupMenu(popupMenu);
         setComponentPopupMenu(popupMenu);
         // Also show context menu on press/release to handle platform differences
