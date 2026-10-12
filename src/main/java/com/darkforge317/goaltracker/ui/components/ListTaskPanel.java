@@ -40,6 +40,7 @@ public final class ListTaskPanel extends ListItemPanel<Task>
 
     private void addShiftRemoveListenerRecursive(Component c)
     {
+        if (taskContent != null && c == taskContent.getAddChildButton()) return;
         c.addMouseListener(shiftClickRemoveListener);
         if (c instanceof Container)
         {
@@ -249,6 +250,13 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             addShiftRemoveListenerRecursive(taskContent);
             addMouseDragEventForwarderRecursive(taskContent);
         }
+    }
+
+    @Override
+    protected void addMouseDragEventForwarderRecursive(Component component)
+    {
+        if (taskContent != null && component == taskContent.getAddChildButton()) return;
+        super.addMouseDragEventForwarderRecursive(component);
     }
 
     public void setActionHistory(ActionHistory history) {

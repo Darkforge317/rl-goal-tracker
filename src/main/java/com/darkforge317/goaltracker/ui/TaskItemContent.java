@@ -10,6 +10,7 @@ import com.darkforge317.goaltracker.models.task.Task;
 import com.darkforge317.goaltracker.services.TaskIconService;
 import com.darkforge317.goaltracker.ui.components.ListItemPanel;
 import com.darkforge317.goaltracker.ui.components.ListPanel;
+import com.darkforge317.goaltracker.ui.components.TextButton;
 import com.darkforge317.goaltracker.utils.TaskHierarchyUtils;
 import lombok.Getter;
 import lombok.Setter;
@@ -22,6 +23,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.util.Locale;
+import java.util.function.Consumer;
 
 import static com.darkforge317.goaltracker.utils.Constants.STATUS_TO_COLOR;
 
@@ -51,6 +53,8 @@ public final class TaskItemContent extends JPanel implements Refreshable
     private final JPanel titleStack = new JPanel(new CardLayout());
     private final JLabel iconLabel = new JLabel();
     private final JLabel collapseArrow = new JLabel();
+    private final TextButton addChildButton = new TextButton("+");
+    private Consumer<Task> addChildListener;
     private JPanel iconWrapper;
     private JPanel iconRow;
     private boolean titleEditable;
@@ -145,7 +149,18 @@ public final class TaskItemContent extends JPanel implements Refreshable
         titleStack.setOpaque(false);
         titleStack.add(titleLabel, "label");
         titleStack.add(titleEdit, "edit");
-        add(titleStack, BorderLayout.CENTER);
+
+        addChildButton.setToolTipText("Add child task");
+        addChildButton.setBorder(new EmptyBorder(0, 8, 0, 4));
+        addChildButton.onClick(e -> {
+            if (addChildListener != null) addChildListener.accept(task);
+        });
+
+        JPanel titleRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        titleRow.setOpaque(false);
+        titleRow.add(titleStack);
+        titleRow.add(addChildButton);
+        add(titleRow, BorderLayout.CENTER);
 
         iconWrapper = new JPanel(new BorderLayout());
         iconWrapper.setBorder(new EmptyBorder(0, 0, 0, 0));
@@ -371,6 +386,16 @@ public final class TaskItemContent extends JPanel implements Refreshable
         }
 
         revalidate();
+    }
+
+    public void onAddChild(Consumer<Task> listener)
+    {
+        this.addChildListener = listener;
+    }
+
+    public Component getAddChildButton()
+    {
+        return addChildButton;
     }
 
     @Override

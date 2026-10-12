@@ -5,6 +5,7 @@ import com.darkforge317.goaltracker.models.ActionHistory;
 import com.darkforge317.goaltracker.models.Goal;
 import com.darkforge317.goaltracker.models.enums.TaskType;
 import com.darkforge317.goaltracker.models.task.Task;
+import com.darkforge317.goaltracker.utils.ReorderableList;
 import com.darkforge317.goaltracker.utils.TaskHierarchyUtils;
 import com.darkforge317.goaltracker.ui.components.*;
 import com.darkforge317.goaltracker.ui.components.*;
@@ -142,6 +143,7 @@ public final class GoalPanel extends JPanel implements Refreshable
                 taskPanel.setActionHistory(actionHistory);
                 TaskItemContent taskContent = new TaskItemContent(plugin, goal, task);
                 taskContent.setActionHistory(actionHistory);
+                taskContent.onAddChild(this::showAddChildDialog);
                 taskPanel.add(taskContent);
                 taskPanel.setTaskContent(taskContent);
                 taskContent.refresh();
@@ -262,6 +264,93 @@ public final class GoalPanel extends JPanel implements Refreshable
 
         if (Objects.nonNull(this.taskAddedListener)) this.taskAddedListener.accept(task);
         if (Objects.nonNull(this.taskUpdatedListener)) this.taskUpdatedListener.accept(task);
+    }
+
+    private void showAddChildDialog(Task parentTask)
+    {
+        if (parentTask.getIndentLevel() >= Task.MAX_INDENT_LEVEL)
+        {
+            JOptionPane.showMessageDialog(this,
+                    "This task is already at the maximum nesting depth.",
+                    "Cannot add child",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        Window owner = SwingUtilities.getWindowAncestor(this);
+        JDialog dialog = new JDialog(owner, "Add child task", Dialog.ModalityType.APPLICATION_MODAL);
+        dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        dialog.setLayout(new BorderLayout(0, 8));
+
+        NewTaskPanel childTaskPanel = new NewTaskPanel(plugin, goal);
+        childTaskPanel.onTaskAdded(child -> {
+            addChildTask(parentTask, child);
+            dialog.dispose();
+        });
+        childTaskPanel.expandMoreOptions();
+        Dimension childPanelSize = childTaskPanel.getPreferredSize();
+        childTaskPanel.setPreferredSize(new Dimension(320, childPanelSize.height));
+        JScrollPane childTaskScrollPane = new JScrollPane(childTaskPanel,
+                ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        childTaskScrollPane.setBorder(BorderFactory.createEmptyBorder());
+        childTaskScrollPane.getViewport().setBackground(ColorScheme.DARK_GRAY_COLOR);
+        childTaskScrollPane.setPreferredSize(new Dimension(320, childPanelSize.height));
+        dialog.add(childTaskScrollPane, BorderLayout.CENTER);
+
+        JButton cancelButton = new JButton("Cancel");
+        cancelButton.addActionListener(e -> dialog.dispose());
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.add(cancelButton);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        dialog.pack();
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
+    }
+
+    private void addChildTask(Task parentTask, Task childTask)
+    {
+        ReorderableList<Task> tasks = goal.getTasks();
+        tasks.remove(childTask); // TaskInput appends before notifying its listener.
+        TaskHierarchyUtils.ensureTaskIds(tasks);
+        TaskHierarchyUtils.ensureTaskIds(java.util.Collections.singletonList(childTask));
+
+        int insertionIndex = tasks.indexOf(parentTask) + 1;
+        for (Task descendant : TaskHierarchyUtils.getDescendants(tasks, parentTask))
+        {
+            insertionIndex = Math.max(insertionIndex, tasks.indexOf(descendant) + 1);
+        }
+        final int childIndex = insertionIndex;
+        final boolean parentWasCollapsed = parentTask.isCollapsed();
+
+        ActionHistory.Action action = new ActionHistory.Action()
+        {
+            @Override public void undo()
+            {
+                tasks.remove(childTask);
+                parentTask.setCollapsed(parentWasCollapsed);
+                TaskHierarchyUtils.normalizeIndentLevels(tasks);
+                if (goalUpdatedListener != null) goalUpdatedListener.accept(goal);
+                plugin.getUiStatusManager().refresh(goal);
+            }
+
+            @Override public void redo()
+            {
+                childTask.setParentTaskId(parentTask.getTaskId());
+                tasks.add(Math.max(0, Math.min(childIndex, tasks.size())), childTask);
+                parentTask.setCollapsed(false);
+                TaskHierarchyUtils.normalizeIndentLevels(tasks);
+                if (goalUpdatedListener != null) goalUpdatedListener.accept(goal);
+                plugin.getUiStatusManager().refresh(goal);
+            }
+        };
+
+        action.redo();
+        actionHistory.push(action);
+        updateUndoRedoButtons();
+        if (this.goalUpdatedListener != null) this.goalUpdatedListener.accept(goal);
+        updateFromNewTask(childTask);
     }
 
     public void refreshTaskList()
