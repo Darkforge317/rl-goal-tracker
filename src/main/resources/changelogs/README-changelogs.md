@@ -1,46 +1,58 @@
-# Changelog README
-## What are changelogs
-Changelogs record changes included in the next plugin release, for both players and contributors.
+# Changelog Guide
 
-This generally includes things such as:
-- Bug fixes (GitHub labels: Bug, Confirmed Bug)
-- Quality of Life improvements (QoL)
-- New features (Feature)
-- Documentation changes (Documentation)
-- Completed developer-facing improvements, whether planned beforehand or discovered and completed during the PR
+## Rules & Guidance
+Please keep to the following changelog rules and guidances.
+1. Do not include planned or unfinished work. The changelog describes the next release.
+2. Don't bump the plugin version, the Plugin Owner will do this before submitting an update in Plugin Hub.
+3. Keep new versions at the top of `versions.txt` for readability.
+4. Do not sign your name on any entries.
+    - Players that care will look at the PRs to see all the hard work you've done.
+5. Ensure every PR with changelog-worthy changes includes at least one changelog entry.
+    - "Changelog-worthy" is not well-defined, so don't be afraid to add an entry if you think it's worth doing so.
+    - If the Plugin Owner disagrees with the entry, or thinks your changes deserve an entry, then they'll say so.
+6. Bug-fix entries should describe bugs in the currently released plugin. Don't list defects found and fixed while developing unreleased work; changelogs are release notes, not a commit history.
 
-## When to create a changelog
-Add or update an entry in the next-release changelog for each PR that fixes a bug, adds a feature, improves quality of life, changes documentation, or completes a developer-facing improvement worth recording.
+## Quick steps
 
-The Dev Todo List label describes future work that is out of scope for the current PR. Don't list an open or planned item as completed release-note content; add it under Developer Improvements when the work is implemented. Developer improvements discovered and completed within a PR can also be recorded there, even if they were never on the Dev Todo List. Labels such as Next Release and Released describe release status, not changelog sections.
+1. Compare the current plugin version in `runelite-plugin.properties` against the newest changelog in `versions.txt`.
+   - If the newest entry is one version ahead of the plugin version:
+     - Add your changes to the pre-existing newest changelog.
+   - Otherwise:
+     - Copy the template below and create a new file in `src/main/resources/changelogs/logs`.
+     - Name the file so that it is one version above the plugin's current version
+     - Add the version name to the top of `versions.txt`. This name **MUST** match the name of the file you created.
+     - Add your changes under the relevant section.
+2. Include your modifications to the changelog file (and `versions.txt` if changed) in your PR.
 
-Routine internal refactors, dependency bumps, and compliance-only changes generally don't need an entry unless they meaningfully improve contributor workflows or are otherwise useful to document.
 
-## How to create a changelog
-Changelogs live in `src/main/resources/changelogs/logs/`, one file per version, tracked in `src/main/resources/changelogs/versions.txt`. Add or update the changelog entry in the same PR as each change that meets the criteria above.
+## Sections
+Each of these sections describe a type of update. Most of the time this should match the label found on the Issue you are working on (if applicable).
 
-The version in `runelite-plugin.properties` is the current plugin release. Changelog entries document the next release, so **do not bump the plugin version just to add a changelog entry**. The plugin version is updated separately when preparing a release.
+- **New Features** (`Feature`)
+- **Quality of Life** (`QoL`)
+- **Bug Fixes** (`Bug`, `Confirmed Bug`)
+- **Documentation** (`Documentation`)
+- **Developer Improvements** (`Dev Todo List`)
+    - And anything else you discovered and finished that was in-scope for your PR
 
-### How to use the template
-- Check the current plugin version in `runelite-plugin.properties`, and compare it to the newest changelog entry (the version at the top of `versions.txt`).
-- **If the newest changelog entry's version matches the current plugin version** — nothing has been started for the next release yet:
-    - Create a copy of the template below.
-    - Name the copy the current version incremented by one.
-        - **For example**: if `runelite-plugin.properties` shows `version=2.1.1`, the copy should be named `v2-1-2.md`.
-    - Add the new version number as a new line at the top of `versions.txt`, so the newest entry stays easy to find at a glance.
-- **If the newest changelog entry's version is already one higher than the current plugin version** — someone already started documenting the next release:
-    - Open that existing file instead, and skip the two steps above.
-- Add an entry for your update to whichever file you're now working with. Include the changed changelog file (and `versions.txt`, if you added a new entry) in your PR.
+## Images
 
-For each PR, add a concise entry under the appropriate heading (New Features, Quality of Life, Bug Fixes, Documentation, or Developer Improvements). If another PR has already created the next-version file, add your entry there instead of creating another version.
+Put images beside the logs in a folder for that changelog version. For version `2.1.1`, use `src/main/resources/changelogs/images/V2-1-1/`. Supported formats are PNG, GIF, JPG, and JPEG. Reference bundled images like this:
 
-Note: versions.txt entries are compared numerically when the plugin determines which is newest, so the file's order isn't load-bearing - but keep new entries at the top anyway, so anyone reading the file can immediately tell what the current version is without having to compare numbers themselves.
+```markdown
+![Description](/changelogs/images/V2-1-1/example.png)
+![Larger image](/changelogs/images/V2-1-1/example.png){width=320px}
+```
+
+Images keep their aspect ratio and shrink to fit the panel. `{width=320px}` requests a display width and can enlarge small images; it is always clamped to the available panel width. Tables are not supported because they cannot be displayed reliably in the narrow panel; use lists or short paragraphs instead. List indentation is capped to keep deep nesting readable. Remote images aren't loaded. Preview image sizing in RuneLite.
 
 ## Changelog Template
 
 Hi everyone, we've got another great update for you today!
 
 [1-3 line summary of the update]
+
+---
 
 ## New Features
 - **[Title]**: [1-2 sentence description]
@@ -57,5 +69,5 @@ Hi everyone, we've got another great update for you today!
 ## Developer Improvements
 - **[Title]**: [1-2 sentence description]
 
-
+---
 That's all for now, thanks for using the Goal Tracker plugin!

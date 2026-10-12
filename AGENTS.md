@@ -31,6 +31,7 @@
 ## Changelogs
 
 - For bug fixes, new features, quality-of-life updates, documentation changes, and completed developer-facing improvements, follow `src/main/resources/changelogs/README-changelogs.md` and add or update the next-release changelog entry in the same PR.
+- Bug-fix entries should describe defects present in the currently released plugin. Do not add separate release notes for defects found and fixed while developing unreleased work; changelogs summarize releases rather than commits.
 - Developer improvements can be discovered and completed within a PR; they do not need to originate from a GitHub issue.
 - Record Dev Todo List work after it is implemented, not while it is still planned.
 
