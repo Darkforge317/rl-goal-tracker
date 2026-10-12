@@ -459,18 +459,58 @@ public final class ListTaskPanel extends ListItemPanel<Task>
         }
     }
 
-    private void startParentSelection(List<Task> candidates)
+    void startParentSelection(List<Task> candidates)
     {
         if (interactionState.getMode() == TaskInteractionState.Mode.SET_PARENT) return;
         ParentSelectionMode selection = new ParentSelectionMode(this, candidates);
         selection.start();
     }
 
+    String getInvalidParentReason(Task candidate)
+    {
+        if (candidate == item || java.util.Objects.equals(candidate.getTaskId(), item.getTaskId()))
+            return "Can't select itself as its parent.";
+        if (java.util.Objects.equals(candidate.getTaskId(), item.getParentTaskId()))
+            return "Already the parent.";
+        if (TaskHierarchyUtils.getDescendants(list, item).contains(candidate))
+            return "Can't make a child the parent.";
+        if (!TaskHierarchyUtils.canSetParent(list, item, candidate))
+            return "This would exceed the maximum hierarchy depth.";
+        return null;
+    }
+
     private boolean isValidParentCandidate(Task candidate)
     {
-        return candidate != item
-                && !java.util.Objects.equals(candidate.getTaskId(), item.getParentTaskId())
-                && !TaskHierarchyUtils.getDescendants(list, item).contains(candidate);
+        return getInvalidParentReason(candidate) == null;
+    }
+
+    static String formatParentSelectionTooltip(String status)
+    {
+        return "<html>" + status + "<br>Right click or Escape to cancel.</html>";
+    }
+
+    static BufferedImage createPlusCursorImage(int width, int height)
+    {
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = image.createGraphics();
+        int dimensionParity = Math.min(width, height) % 2;
+        int armLength = Math.min(16, Math.min(width, height) - 4);
+        if (armLength % 2 != dimensionParity) armLength--;
+        int barWidth = dimensionParity == 0 ? 4 : 3;
+        int outlineArmLength = Math.min(Math.min(width, height), armLength + 4);
+        int outlineBarWidth = Math.min(Math.min(width, height), barWidth + 4);
+        drawCenteredPlus(graphics, width, height, outlineArmLength, outlineBarWidth, new Color(20, 30, 20));
+        drawCenteredPlus(graphics, width, height, armLength, barWidth, new Color(60, 230, 90));
+        graphics.dispose();
+        return image;
+    }
+
+    private static void drawCenteredPlus(Graphics2D graphics, int width, int height,
+                                         int armLength, int barWidth, Color color)
+    {
+        graphics.setColor(color);
+        graphics.fillRect((width - barWidth) / 2, (height - armLength) / 2, barWidth, armLength);
+        graphics.fillRect((width - armLength) / 2, (height - barWidth) / 2, armLength, barWidth);
     }
 
     /** Temporary window-level interaction that lets the player choose a visible task as parent. */
@@ -491,6 +531,7 @@ public final class ListTaskPanel extends ListItemPanel<Task>
         private Map<JComponent, String> hoveredToolTips;
         private boolean active;
         private boolean deferInteractionReset;
+        private boolean swallowRightClickRelease;
         private ListTaskPanel pressedInvalidTarget;
 
         private ParentSelectionMode(ListTaskPanel source, List<Task> candidates)
@@ -517,8 +558,28 @@ public final class ListTaskPanel extends ListItemPanel<Task>
         @Override
         public void eventDispatched(AWTEvent event)
         {
-            if (!active || !(event instanceof MouseEvent)) return;
+            if (!(event instanceof MouseEvent)) return;
             MouseEvent mouse = (MouseEvent) event;
+            if (swallowRightClickRelease)
+            {
+                if (mouse.getID() == MouseEvent.MOUSE_PRESSED && SwingUtilities.isRightMouseButton(mouse))
+                {
+                    mouse.consume();
+                    return;
+                }
+                if (mouse.getID() == MouseEvent.MOUSE_RELEASED && SwingUtilities.isRightMouseButton(mouse))
+                {
+                    mouse.consume();
+                    swallowRightClickRelease = false;
+                    Toolkit.getDefaultToolkit().removeAWTEventListener(this);
+                    SwingUtilities.invokeLater(() -> {
+                        source.interactionState.endParentSelection();
+                        restoreContextMenus();
+                    });
+                }
+                return;
+            }
+            if (!active) return;
             Component component = mouse.getSource() instanceof Component ? (Component) mouse.getSource() : null;
             ListTaskPanel target = component instanceof ListTaskPanel ? (ListTaskPanel) component
                     : component == null ? null
@@ -549,11 +610,8 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             {
                 mouse.consume();
                 deferInteractionReset = true;
+                swallowRightClickRelease = true;
                 finish();
-                SwingUtilities.invokeLater(() -> {
-                    source.interactionState.endParentSelection();
-                    restoreContextMenus();
-                });
             }
             else if (SwingUtilities.isLeftMouseButton(mouse))
             {
@@ -603,11 +661,13 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             hovered = next;
             if (hovered != null)
             {
-                boolean valid = candidates.contains(hovered.item) && source.isValidParentCandidate(hovered.item);
+                String invalidReason = source.getInvalidParentReason(hovered.item);
+                boolean valid = candidates.contains(hovered.item) && invalidReason == null;
                 hovered.setParentSelectionOverlay(valid ? VALID_HIGHLIGHT : INVALID_HIGHLIGHT);
                 hoveredCursors = captureAndSetCursors(hovered, valid ? ADD_CURSOR : INVALID_CURSOR);
                 hoveredToolTips = captureAndSetToolTips(hovered,
-                        (valid ? "Valid target." : "Invalid target.") + " Right click or escape to cancel.");
+                        formatParentSelectionTooltip(valid ? "Valid target."
+                                : invalidReason == null ? "Not an eligible parent." : invalidReason));
             }
         }
 
@@ -621,7 +681,7 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             if (!active) return;
             active = false;
             setHovered(null);
-            Toolkit.getDefaultToolkit().removeAWTEventListener(this);
+            if (!swallowRightClickRelease) Toolkit.getDefaultToolkit().removeAWTEventListener(this);
             KeyboardFocusManager.getCurrentKeyboardFocusManager().removeKeyEventDispatcher(this);
             restoreCursors(sourceCursors);
             if (!deferInteractionReset)
@@ -731,11 +791,12 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             {
                 Dimension size = Toolkit.getDefaultToolkit().getBestCursorSize(24, 24);
                 if (size.width == 0 || size.height == 0) return Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR);
-                BufferedImage image = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB);
-                Graphics2D graphics = image.createGraphics();
-                graphics.setColor(new Color(20, 30, 20));
+                BufferedImage image;
                 if (invalid)
                 {
+                    image = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB);
+                    Graphics2D graphics = image.createGraphics();
+                    graphics.setColor(new Color(20, 30, 20));
                     graphics.setStroke(new BasicStroke(5, BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER));
                     graphics.drawLine(5, 5, 18, 18);
                     graphics.drawLine(18, 5, 5, 18);
@@ -743,17 +804,15 @@ public final class ListTaskPanel extends ListItemPanel<Task>
                     graphics.setStroke(new BasicStroke(3, BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER));
                     graphics.drawLine(5, 5, 18, 18);
                     graphics.drawLine(18, 5, 5, 18);
+                    graphics.dispose();
                 }
                 else
                 {
-                    graphics.fillRect(10, 2, 5, 19);
-                    graphics.fillRect(2, 10, 19, 5);
-                    graphics.setColor(new Color(60, 230, 90));
-                    graphics.fillRect(11, 3, 3, 17);
-                    graphics.fillRect(3, 11, 17, 3);
+                    image = createPlusCursorImage(size.width, size.height);
                 }
-                graphics.dispose();
-                return Toolkit.getDefaultToolkit().createCustomCursor(image, new Point(12, 12),
+                Point hotSpot = invalid ? new Point(12, 12)
+                        : new Point((size.width - 1) / 2, (size.height - 1) / 2);
+                return Toolkit.getDefaultToolkit().createCustomCursor(image, hotSpot,
                         invalid ? "InvalidParentCursor" : "SetParentCursor");
             }
             catch (RuntimeException e)

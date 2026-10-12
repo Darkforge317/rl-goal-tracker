@@ -53,7 +53,7 @@ public final class TaskItemContent extends JPanel implements Refreshable
     private final JPanel titleStack = new JPanel(new CardLayout());
     private final JLabel iconLabel = new JLabel();
     private final JLabel collapseArrow = new JLabel();
-    private final TextButton addChildButton = new TextButton("+");
+    private final TextButton addChildButton = new TextButton("");
     private boolean parentSelectionMode;
     private final TaskInteractionState interactionState;
     private Consumer<Task> addChildListener;
@@ -103,6 +103,7 @@ public final class TaskItemContent extends JPanel implements Refreshable
     }
 
     private static final int ARROW_SIZE = 10; // px - tweak overall arrow size here
+    private static final int ADD_CHILD_ICON_SIZE = 11;
     private static final ImageIcon COLLAPSED_ARROW_ICON;
     private static final ImageIcon EXPANDED_ARROW_ICON;
     private static final ImageIcon BLANK_ARROW_ICON;
@@ -155,7 +156,10 @@ public final class TaskItemContent extends JPanel implements Refreshable
         titleStack.add(titleEdit, "edit");
 
         addChildButton.setToolTipText("Add child task");
-        addChildButton.setBorder(new EmptyBorder(0, 8, 0, 4));
+        BufferedImage addChildImage = net.runelite.client.util.ImageUtil.loadImageResource(TaskItemContent.class, "/add_child.png");
+        addChildButton.setIcon(new ImageIcon(resizeImage(addChildImage, ADD_CHILD_ICON_SIZE, ADD_CHILD_ICON_SIZE)));
+        addChildButton.setPreferredSize(new Dimension(ADD_CHILD_ICON_SIZE + 8, 24));
+        addChildButton.setBorder(new EmptyBorder(0, 4, 0, 4));
         addChildButton.onClick(e -> {
             if (interactionState.getMode() != TaskInteractionState.Mode.NORMAL) return;
             if (addChildListener != null) addChildListener.accept(task);
@@ -382,6 +386,9 @@ public final class TaskItemContent extends JPanel implements Refreshable
         if (parentSelectionMode) return;
         boolean shiftDelete = interactionState.getMode() == TaskInteractionState.Mode.SHIFT_DELETE;
         updateAllChildCursors(shiftDelete ? TRASH_CURSOR : DEFAULT_PANEL_CURSOR);
+        if (!shiftDelete && interactionState.getMode() == TaskInteractionState.Mode.NORMAL) {
+            addChildButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        }
         if (!shiftDelete && TaskHierarchyUtils.hasChildren(goal.getTasks(), task)
                 && COLLAPSED_ARROW_ICON != null) {
             collapseArrow.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
