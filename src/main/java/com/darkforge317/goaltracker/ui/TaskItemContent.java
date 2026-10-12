@@ -54,6 +54,7 @@ public final class TaskItemContent extends JPanel implements Refreshable
     private final JLabel iconLabel = new JLabel();
     private final JLabel collapseArrow = new JLabel();
     private final TextButton addChildButton = new TextButton("+");
+    private boolean parentSelectionMode;
     private Consumer<Task> addChildListener;
     private JPanel iconWrapper;
     private JPanel iconRow;
@@ -153,6 +154,7 @@ public final class TaskItemContent extends JPanel implements Refreshable
         addChildButton.setToolTipText("Add child task");
         addChildButton.setBorder(new EmptyBorder(0, 8, 0, 4));
         addChildButton.onClick(e -> {
+            if (parentSelectionMode) return;
             if (addChildListener != null) addChildListener.accept(task);
         });
 
@@ -170,6 +172,7 @@ public final class TaskItemContent extends JPanel implements Refreshable
         collapseArrow.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
+                if (parentSelectionMode) return;
                 task.setCollapsed(!task.isCollapsed());
                 Container ancestor = SwingUtilities.getAncestorOfClass(ListPanel.class, TaskItemContent.this);
                 if (ancestor instanceof ListPanel) {
@@ -293,6 +296,7 @@ public final class TaskItemContent extends JPanel implements Refreshable
 
             @Override
             public void mouseExited(MouseEvent e) {
+                if (parentSelectionMode) return;
                 PointerInfo pi = MouseInfo.getPointerInfo();
                 if (pi != null) {
                     Point mousePos = pi.getLocation();
@@ -325,6 +329,7 @@ public final class TaskItemContent extends JPanel implements Refreshable
 
     private void onShiftStateChanged()
     {
+        if (parentSelectionMode) return;
         PointerInfo pi = MouseInfo.getPointerInfo();
         if (pi == null) return;
 
@@ -346,6 +351,7 @@ public final class TaskItemContent extends JPanel implements Refreshable
     }
 
     private void updateCursorForModifiers(int modifiersEx) {
+        if (parentSelectionMode) return;
         boolean isShiftDown = (modifiersEx & InputEvent.SHIFT_DOWN_MASK) != 0;
         updateAllChildCursors(isShiftDown ? TRASH_CURSOR : DEFAULT_PANEL_CURSOR);
     }
@@ -396,6 +402,12 @@ public final class TaskItemContent extends JPanel implements Refreshable
     public Component getAddChildButton()
     {
         return addChildButton;
+    }
+
+    public void setParentSelectionMode(boolean enabled)
+    {
+        parentSelectionMode = enabled;
+        addChildButton.setHoverEffectsEnabled(!enabled);
     }
 
     @Override

@@ -13,8 +13,15 @@ import com.darkforge317.goaltracker.utils.TaskHierarchyUtils;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.AWTEventListener;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 /**
@@ -23,7 +30,10 @@ import java.util.function.Consumer;
  */
 public final class ListTaskPanel extends ListItemPanel<Task>
 {
+    private static ParentSelectionMode activeParentSelection;
+
     private TaskItemContent taskContent;
+    private Color parentSelectionOverlay;
 
     private Consumer<Task> parentChangedListener;
 
@@ -244,6 +254,25 @@ public final class ListTaskPanel extends ListItemPanel<Task>
 
     public void onParentChanged(Consumer<Task> listener) { this.parentChangedListener = listener; }
 
+    private void setParentSelectionOverlay(Color color)
+    {
+        parentSelectionOverlay = color;
+        repaint();
+    }
+
+    @Override
+    public void paint(Graphics graphics)
+    {
+        super.paint(graphics);
+        if (parentSelectionOverlay != null)
+        {
+            Graphics2D overlay = (Graphics2D) graphics.create();
+            overlay.setColor(parentSelectionOverlay);
+            overlay.fillRect(0, 0, getWidth(), getHeight());
+            overlay.dispose();
+        }
+    }
+
     public void setTaskContent(TaskItemContent taskContent) {
         this.taskContent = taskContent;
         if (taskContent != null) {
@@ -426,22 +455,228 @@ public final class ListTaskPanel extends ListItemPanel<Task>
         java.util.List<Task> descendants = TaskHierarchyUtils.getDescendants(list, item);
         java.util.List<Task> candidates = new java.util.ArrayList<>();
         for (Task candidate : list)
-            if (candidate != item && !candidate.isCollapsed()
-                    && !TaskHierarchyUtils.hasCollapsedAncestor(list, candidate)
-                    && !descendants.contains(candidate)
-                    && TaskHierarchyUtils.canSetParent(list, item, candidate)) candidates.add(candidate);
+            if (candidate != item && !descendants.contains(candidate)) candidates.add(candidate);
         JMenuItem setParent = new JMenuItem("Set parent...");
         setParent.setEnabled(!candidates.isEmpty());
-        setParent.addActionListener(e -> {
-            Object selected = JOptionPane.showInputDialog(this, "Choose a parent task:", "Set parent",
-                    JOptionPane.PLAIN_MESSAGE, null, candidates.toArray(), TaskHierarchyUtils.getParent(list, item));
-            if (selected instanceof Task) changeParent(((Task) selected).getTaskId());
-        });
+        setParent.addActionListener(e -> startParentSelection(candidates));
         popupMenu.add(setParent);
         if (item.getParentTaskId() != null) {
             JMenuItem removeParent = new JMenuItem("Remove parent");
             removeParent.addActionListener(e -> removeParent());
             popupMenu.add(removeParent);
+        }
+    }
+
+    private void startParentSelection(List<Task> candidates)
+    {
+        if (activeParentSelection != null) activeParentSelection.cancel();
+        activeParentSelection = new ParentSelectionMode(this, candidates);
+        activeParentSelection.start();
+    }
+
+    private boolean isValidParentCandidate(Task candidate)
+    {
+        return candidate != item
+                && !TaskHierarchyUtils.getDescendants(list, item).contains(candidate);
+    }
+
+    /** Temporary window-level interaction that lets the player choose a visible task as parent. */
+    private static final class ParentSelectionMode implements AWTEventListener, java.awt.KeyEventDispatcher
+    {
+        private static final Cursor ADD_CURSOR = createAddCursor();
+        private static final Cursor INVALID_CURSOR = createInvalidCursor();
+        private static final Color VALID_HIGHLIGHT = new Color(40, 200, 70, 80);
+        private static final Color INVALID_HIGHLIGHT = new Color(220, 45, 45, 85);
+
+        private final ListTaskPanel source;
+        private final List<Task> candidates;
+        private ListTaskPanel hovered;
+        private final Map<Component, Cursor> sourceCursors;
+        private final String sourceToolTip;
+        private Map<Component, Cursor> hoveredCursors;
+        private boolean active;
+
+        private ParentSelectionMode(ListTaskPanel source, List<Task> candidates)
+        {
+            this.source = source;
+            this.candidates = new ArrayList<>(candidates);
+            this.sourceCursors = captureCursors(source);
+            this.sourceToolTip = source.getToolTipText();
+        }
+
+        private void start()
+        {
+            active = true;
+            Toolkit.getDefaultToolkit().addAWTEventListener(this,
+                    AWTEvent.MOUSE_MOTION_EVENT_MASK | AWTEvent.MOUSE_EVENT_MASK);
+            KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(this);
+            if (source.taskContent != null) source.taskContent.setParentSelectionMode(true);
+            setCursorRecursively(source, ADD_CURSOR);
+            source.setToolTipText("Choose a task to become the parent. Right-click or press Escape to cancel.");
+        }
+
+        @Override
+        public void eventDispatched(AWTEvent event)
+        {
+            if (!active || !(event instanceof MouseEvent)) return;
+            MouseEvent mouse = (MouseEvent) event;
+            Component component = mouse.getSource() instanceof Component ? (Component) mouse.getSource() : null;
+            ListTaskPanel target = component instanceof ListTaskPanel ? (ListTaskPanel) component
+                    : component == null ? null
+                    : (ListTaskPanel) SwingUtilities.getAncestorOfClass(ListTaskPanel.class, component);
+
+            if (mouse.getID() == MouseEvent.MOUSE_MOVED || mouse.getID() == MouseEvent.MOUSE_DRAGGED)
+            {
+                setHovered(target != null && target.list == source.list ? target : null);
+                return;
+            }
+
+            if (mouse.getID() != MouseEvent.MOUSE_PRESSED) return;
+            if (SwingUtilities.isRightMouseButton(mouse))
+            {
+                mouse.consume();
+                cancel();
+            }
+            else if (SwingUtilities.isLeftMouseButton(mouse))
+            {
+                mouse.consume();
+                if (target != null && target.list == source.list && candidates.contains(target.item)
+                        && source.isValidParentCandidate(target.item))
+                {
+                    ListTaskPanel selected = target;
+                    finish();
+                    source.changeParent(selected.item.getTaskId());
+                }
+            }
+        }
+
+        @Override
+        public boolean dispatchKeyEvent(KeyEvent event)
+        {
+            if (active && event.getID() == KeyEvent.KEY_PRESSED && event.getKeyCode() == KeyEvent.VK_ESCAPE)
+            {
+                event.consume();
+                cancel();
+                return true;
+            }
+            return false;
+        }
+
+        private void setHovered(ListTaskPanel next)
+        {
+            if (hovered == next) return;
+            if (hovered != null)
+            {
+                hovered.setParentSelectionOverlay(null);
+                if (hovered.taskContent != null) hovered.taskContent.setParentSelectionMode(false);
+                restoreCursors(hoveredCursors);
+            }
+            hovered = next;
+            if (hovered != null)
+            {
+                boolean valid = candidates.contains(hovered.item) && source.isValidParentCandidate(hovered.item);
+                if (hovered.taskContent != null) hovered.taskContent.setParentSelectionMode(true);
+                hovered.setParentSelectionOverlay(valid ? VALID_HIGHLIGHT : INVALID_HIGHLIGHT);
+                hoveredCursors = captureAndSetCursors(hovered, valid ? ADD_CURSOR : INVALID_CURSOR);
+            }
+        }
+
+        private void cancel()
+        {
+            finish();
+        }
+
+        private void finish()
+        {
+            if (!active) return;
+            active = false;
+            setHovered(null);
+            Toolkit.getDefaultToolkit().removeAWTEventListener(this);
+            KeyboardFocusManager.getCurrentKeyboardFocusManager().removeKeyEventDispatcher(this);
+            restoreCursors(sourceCursors);
+            if (source.taskContent != null) source.taskContent.setParentSelectionMode(false);
+            source.setToolTipText(sourceToolTip);
+            if (activeParentSelection == this) activeParentSelection = null;
+        }
+
+        private static Map<Component, Cursor> captureAndSetCursors(Component root, Cursor cursor)
+        {
+            Map<Component, Cursor> originals = captureCursors(root);
+            setCursorRecursively(root, cursor);
+            return originals;
+        }
+
+        private static Map<Component, Cursor> captureCursors(Component root)
+        {
+            Map<Component, Cursor> cursors = new IdentityHashMap<>();
+            captureCursors(root, cursors);
+            return cursors;
+        }
+
+        private static void captureCursors(Component component, Map<Component, Cursor> cursors)
+        {
+            cursors.put(component, component.getCursor());
+            if (component instanceof Container)
+                for (Component child : ((Container) component).getComponents()) captureCursors(child, cursors);
+        }
+
+        private static void setCursorRecursively(Component component, Cursor cursor)
+        {
+            component.setCursor(cursor);
+            if (component instanceof Container)
+                for (Component child : ((Container) component).getComponents()) setCursorRecursively(child, cursor);
+        }
+
+        private static void restoreCursors(Map<Component, Cursor> cursors)
+        {
+            if (cursors != null) cursors.forEach(Component::setCursor);
+        }
+
+        private static Cursor createAddCursor()
+        {
+            return createSymbolCursor(false);
+        }
+
+        private static Cursor createInvalidCursor()
+        {
+            return createSymbolCursor(true);
+        }
+
+        private static Cursor createSymbolCursor(boolean invalid)
+        {
+            try
+            {
+                Dimension size = Toolkit.getDefaultToolkit().getBestCursorSize(24, 24);
+                if (size.width == 0 || size.height == 0) return Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR);
+                BufferedImage image = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB);
+                Graphics2D graphics = image.createGraphics();
+                graphics.setColor(new Color(20, 30, 20));
+                if (invalid)
+                {
+                    graphics.setStroke(new BasicStroke(5, BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER));
+                    graphics.drawLine(5, 5, 18, 18);
+                    graphics.drawLine(18, 5, 5, 18);
+                    graphics.setColor(new Color(245, 55, 55));
+                    graphics.setStroke(new BasicStroke(3, BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER));
+                    graphics.drawLine(5, 5, 18, 18);
+                    graphics.drawLine(18, 5, 5, 18);
+                }
+                else
+                {
+                    graphics.fillRect(10, 2, 5, 19);
+                    graphics.fillRect(2, 10, 19, 5);
+                    graphics.setColor(new Color(60, 230, 90));
+                    graphics.fillRect(11, 3, 3, 17);
+                    graphics.fillRect(3, 11, 17, 3);
+                }
+                graphics.dispose();
+                return Toolkit.getDefaultToolkit().createCustomCursor(image, new Point(12, 12),
+                        invalid ? "InvalidParentCursor" : "SetParentCursor");
+            }
+            catch (RuntimeException e)
+            {
+                return Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR);
+            }
         }
     }
 
@@ -466,7 +701,7 @@ public final class ListTaskPanel extends ListItemPanel<Task>
         {
             for (Task candidate : list)
                 if (newParentId.equals(candidate.getTaskId())) { newParent = candidate; break; }
-            if (newParent == null || !TaskHierarchyUtils.canSetParent(list, item, newParent)) return;
+            if (newParent == null || !isValidParentCandidate(newParent)) return;
         }
         final Task destinationParent = newParent;
         java.util.List<Task> oldOrder = new java.util.ArrayList<>(list);
