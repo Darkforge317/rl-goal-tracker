@@ -17,15 +17,9 @@ public final class SkillSelector extends JPanel
 
     public SkillSelector(SkillIconManager icons)
     {
-        this(icons, false);
-    }
-
-    public SkillSelector(SkillIconManager icons, boolean includeOverall)
-    {
         super(new BorderLayout());
         setBackground(ColorScheme.DARKER_GRAY_COLOR);
         List<Skill> skills = Arrays.stream(Skill.values())
-            .filter(skill -> includeOverall || skill != Skill.OVERALL)
             .collect(Collectors.toList());
         dropdown = new ComboBox<>(skills);
         dropdown.setFont(new Font("RuneScape UF", Font.PLAIN, 10));
