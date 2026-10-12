@@ -69,12 +69,12 @@ public final class ChangelogService
         return entries.isEmpty() ? null : entries.get(0);
     }
 
-    public Boolean isNewestEntry(ChangelogEntry entry)
+    public boolean isNewestEntry(ChangelogEntry entry)
     {
         ChangelogEntry newestEntry = getNewestEntry();
-        if (newestEntry == null) return false;
+        if (newestEntry == null || entry == null) return false;
 
-        return newestEntry.equals(entry);
+        return compareVersionNumbers(newestEntry.getVersion(), entry.getVersion()) == 0;
     }
 
     /**

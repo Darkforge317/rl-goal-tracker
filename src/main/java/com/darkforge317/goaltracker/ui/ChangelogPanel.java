@@ -69,7 +69,7 @@ public class ChangelogPanel extends JPanel
             closeButton.addActionListener(e -> onCloseButtonClicked());
 
             seeAllButton.setText("All Changelogs");
-            seeAllButton.setToolTipText("Browse all changelog entries");
+            seeAllButton.setToolTipText("Mark this update as seen and browse all changelog entries");
             seeAllButton.addActionListener(e -> onSeeAllButtonClicked());
 
             headerBar.add(closeButton);
@@ -134,6 +134,7 @@ public class ChangelogPanel extends JPanel
     }
 
     private void onSeeAllButtonClicked() {
+        plugin.getConfig().highestChangelogVersionSeen(entry.getVersion());
         panelService.showChangelogListPanel();
     }
 
