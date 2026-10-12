@@ -55,6 +55,7 @@ public class ChangelogListPanel extends JPanel
         JPanel headerBar = new JPanel(new GridLayout(1, 2, 4, 0));
         headerBar.setBorder(new EmptyBorder(4, 4, 4, 4));
         JButton backButton = new JButton("Back");
+        backButton.setToolTipText("Return to Goal Tracker home");
         backButton.addActionListener(e -> onBackButtonClicked());
         headerBar.add(backButton);
 
@@ -91,6 +92,7 @@ public class ChangelogListPanel extends JPanel
 
         for (ChangelogService.ChangelogEntry entry : changelogEntries) {
             JButton changelogEntryButton = new JButton("Version " + entry.getVersion());
+            changelogEntryButton.setToolTipText("View changelog for version " + entry.getVersion());
             changelogEntryButton.setBackground(ColorScheme.DARK_GRAY_COLOR);
             changelogEntryButton.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
             changelogEntryButton.addActionListener( e -> onChangelogEntryClicked(entry));

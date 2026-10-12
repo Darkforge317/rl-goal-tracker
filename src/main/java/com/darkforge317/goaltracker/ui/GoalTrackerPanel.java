@@ -80,12 +80,17 @@ public final class GoalTrackerPanel extends JPanel implements Refreshable
         titleRow.add(title);
 
         // Buttons row (bottom)
-        JPanel buttonsRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+        JPanel buttonsRow = new JPanel(new GridLayout(0, 2, 5, 4));
         buttonsRow.setBackground(ColorScheme.DARK_GRAY_COLOR);
         ActionBarButton addGoalBtn = new ActionBarButton("+ Add goal", this::addNewGoal);
-        ActionBarButton addFromPresetBtn = new ActionBarButton("Add from Preset…", this::addFromPreset);
+        addGoalBtn.setToolTipText("Create a new goal");
+        ActionBarButton addFromPresetBtn = new ActionBarButton("Add preset", this::addFromPreset);
+        addFromPresetBtn.setToolTipText("Create a goal from a preset");
+        ActionBarButton changelogsButton = new ActionBarButton("Changelogs", this::showChangelogList);
+        changelogsButton.setToolTipText("Browse previous changelog entries");
         buttonsRow.add(addGoalBtn);
         buttonsRow.add(addFromPresetBtn);
+        buttonsRow.add(changelogsButton);
 
         // Stack rows vertically
         JPanel headerTop = new JPanel();
@@ -95,28 +100,6 @@ public final class GoalTrackerPanel extends JPanel implements Refreshable
         headerTop.add(Box.createVerticalStrut(4));
         headerTop.add(buttonsRow);
 
-        JPanel subHeaderRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
-        subHeaderRow.setBackground(ColorScheme.DARK_GRAY_COLOR);
-        ActionBarButton changelogsButton = new ActionBarButton("Changelogs", this::showChangelogList);
-        subHeaderRow.add(changelogsButton);
-
-        // Equalize widths across both rows so buttons line up consistently.
-        // First, find the max button width we need.
-        int maxButtonWidth = Math.max(addGoalBtn.getPreferredSize().width,
-                Math.max(addFromPresetBtn.getPreferredSize().width, changelogsButton.getPreferredSize().width));
-
-        // Then define the dimensions the buttons should have.
-        // Largest width we need, and Add Goal button's height
-        Dimension uniformSize = new Dimension(maxButtonWidth, addGoalBtn.getPreferredSize().height);
-
-        // Set the button sizes to this new uniform size
-        addGoalBtn.setPreferredSize(uniformSize);
-        addFromPresetBtn.setPreferredSize(uniformSize);
-        changelogsButton.setPreferredSize(uniformSize);
-
-        headerTop.add(Box.createVerticalStrut(4));
-        headerTop.add(subHeaderRow);
-
         titlePanel.add(headerTop, BorderLayout.CENTER);
 
         // Action bar
@@ -125,11 +108,15 @@ public final class GoalTrackerPanel extends JPanel implements Refreshable
 
         undoButtonRef = new ActionBarButton("Undo", this::doUndo);
         redoButtonRef = new ActionBarButton("Redo", this::doRedo);
+        undoButtonRef.setToolTipText("Undo the last goal change");
+        redoButtonRef.setToolTipText("Redo the last undone goal change");
         actionBar.left().add(undoButtonRef);
         actionBar.left().add(redoButtonRef);
 
         ActionBarButton exportButton = new ActionBarButton("Export", this::exportGoalsToFile);
         ActionBarButton importButton = new ActionBarButton("Import", this::importGoalsFromFile);
+        exportButton.setToolTipText("Export your goals to a JSON file");
+        importButton.setToolTipText("Import goals from a JSON file");
         actionBar.right().add(exportButton);
         actionBar.right().add(importButton);
 
@@ -304,12 +291,14 @@ public final class GoalTrackerPanel extends JPanel implements Refreshable
         if (undoButtonRef != null)
         {
             undoButtonRef.setEnabled(undoStack.hasUndo());
-            undoButtonRef.setToolTipText(undoStack.hasUndo() ? null : "Nothing to undo");
+            undoButtonRef.setToolTipText(undoStack.hasUndo()
+                    ? "Undo the last goal change" : "Nothing to undo");
         }
         if (redoButtonRef != null)
         {
             redoButtonRef.setEnabled(undoStack.hasRedo());
-            redoButtonRef.setToolTipText(undoStack.hasRedo() ? null : "Nothing to redo");
+            redoButtonRef.setToolTipText(undoStack.hasRedo()
+                    ? "Redo the last undone goal change" : "Nothing to redo");
         }
     }
 

@@ -49,8 +49,10 @@ public class ChangelogPanel extends JPanel
             JButton homeButton = new JButton();
 
             backButton.setText("Back");
+            backButton.setToolTipText("Return to the changelog list");
             backButton.addActionListener(e -> onBackButtonClicked());
             homeButton.setText("Home");
+            homeButton.setToolTipText("Return to Goal Tracker home");
             homeButton.addActionListener(e -> onHomeButtonClicked());
 
             headerBar.add(backButton);
@@ -63,9 +65,11 @@ public class ChangelogPanel extends JPanel
             JButton seeAllButton = new JButton();
 
             closeButton.setText("Close");
+            closeButton.setToolTipText("Close this changelog and return to Goal Tracker");
             closeButton.addActionListener(e -> onCloseButtonClicked());
 
             seeAllButton.setText("All Changelogs");
+            seeAllButton.setToolTipText("Browse all changelog entries");
             seeAllButton.addActionListener(e -> onSeeAllButtonClicked());
 
             headerBar.add(closeButton);

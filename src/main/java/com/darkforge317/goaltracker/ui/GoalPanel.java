@@ -62,6 +62,7 @@ public final class GoalPanel extends JPanel implements Refreshable
         JPanel backRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         backRow.setBackground(ColorScheme.DARK_GRAY_COLOR);
         ActionBarButton backButton = new ActionBarButton("Back", closeListener::run);
+        backButton.setToolTipText("Return to your goals");
         backRow.add(backButton);
 
         // Action bar with Add pre-reqs on the left of Undo/Redo
@@ -72,6 +73,8 @@ public final class GoalPanel extends JPanel implements Refreshable
 
         undoButton = new ActionBarButton("Undo", this::doUndo);
         redoButton = new ActionBarButton("Redo", this::doRedo);
+        undoButton.setToolTipText("Undo the last task change");
+        redoButton.setToolTipText("Redo the last undone task change");
 
         actionBar.left().add(prereqsButton);
         actionBar.left().add(undoButton);
@@ -113,6 +116,7 @@ public final class GoalPanel extends JPanel implements Refreshable
             plugin.getUiStatusManager().refresh(goal);
             refreshTaskList();
         });
+        importButton.setToolTipText("Import goals from JSON text");
         actionBar.left().add(importButton);
 
         // Stack back row above the action bar in the header's NORTH
