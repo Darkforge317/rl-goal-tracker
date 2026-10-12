@@ -3,7 +3,6 @@ package com.darkforge317.goaltracker.ui.components;
 import com.darkforge317.goaltracker.ui.Refreshable;
 import com.darkforge317.goaltracker.utils.ReorderableList;
 import net.runelite.client.ui.ColorScheme;
-import net.runelite.client.ui.components.DragAndDropReorderPane;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -16,6 +15,7 @@ import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
+import java.util.Collections;
 import java.util.stream.Collectors;
 
 /**
@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
  */
 public final class ListPanel<T> extends JScrollPane implements Refreshable
 {
-    private final DragAndDropReorderPane listPanel = new DragAndDropReorderPane();
+    private final GroupedDragAndDropReorderPane listPanel = new GroupedDragAndDropReorderPane();
 
     private final ReorderableList<T> reorderableList;
     private final BiFunction<JComponent, T, ListItemPanel<T>> renderItem;
@@ -41,6 +41,12 @@ public final class ListPanel<T> extends JScrollPane implements Refreshable
     private BiPredicate<List<T>, T> reorderValidator = (order, item) -> true;
     private Function<T, T> hiddenRowAnchor = null;
     private BiConsumer<List<T>, List<T>> reorderListener;
+    private Function<T, List<T>> dragGroupProvider = Collections::singletonList;
+    private BiFunction<List<T>, T, List<Integer>> dragBoundsProvider = (items, moved) -> {
+        List<Integer> slots = new ArrayList<>();
+        for (int i = 0; i <= items.size(); i++) slots.add(i);
+        return slots;
+    };
 
     public ListPanel(
             ReorderableList<T> reorderableList,
@@ -50,15 +56,29 @@ public final class ListPanel<T> extends JScrollPane implements Refreshable
         this.reorderableList = reorderableList;
         this.renderItem = renderItem;
 
+        listPanel.setGroupResolver(component -> {
+            T moved = ((ListItemPanel<T>) component).item;
+            List<T> groupItems = dragGroupProvider.apply(moved);
+            List<Component> groupComponents = new ArrayList<>();
+            for (Component candidate : listPanel.getComponents())
+                if (candidate instanceof ListItemPanel && groupItems.contains(((ListItemPanel<T>) candidate).item))
+                    groupComponents.add(candidate);
+            return groupComponents;
+        });
+        listPanel.setBoundsResolver((component, rows) -> {
+            T moved = ((ListItemPanel<T>) component).item;
+            List<T> visibleItems = new ArrayList<>();
+            for (Component row : rows) visibleItems.add(((ListItemPanel<T>) row).item);
+            return dragBoundsProvider.apply(visibleItems, moved);
+        });
+
 
         listPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
         // Supports padding. Previously had 10px left/right padding, but introduction
         // of a horizontal scroll panel in GoalPanel.java caused the padding to look out of place
         listPanel.setBorder(new EmptyBorder(0, 0, 0, 0));
 
-        listPanel.addDragListener(new DragAndDropReorderPane.DragListener() {
-            @Override
-            public void onDrag(Component component) {
+        listPanel.addDragListener(component -> {
                 T updatedItem = ((ListItemPanel<T>)component).item;
 
                 // Capture hidden rows and keep them anchored to their visible owner
@@ -72,52 +92,32 @@ public final class ListPanel<T> extends JScrollPane implements Refreshable
                         hiddenFollowersOf.computeIfAbsent(t, ignored -> new ArrayList<>());
                     } else {
                         T anchor = hiddenRowAnchor == null ? currentVisible : hiddenRowAnchor.apply(t);
-                        if (anchor != null) {
-                            hiddenFollowersOf.computeIfAbsent(anchor, ignored -> new ArrayList<>()).add(t);
-                        }
+                        if (anchor != null) hiddenFollowersOf.computeIfAbsent(anchor, ignored -> new ArrayList<>()).add(t);
                     }
                 }
 
-                // New order of the visible items only, read from their current
-                // physical position in listPanel (this reflects the drag that
-                // just happened - DragAndDropReorderPane only moves the one
-                // dragged component, everything else keeps its relative order)
                 List<T> newVisibleOrder = new ArrayList<>();
-                for (Component c : listPanel.getComponents()) {
-                    newVisibleOrder.add(((ListItemPanel<T>) c).item);
+                for (Component c : listPanel.getOrderedComponents()) {
+                    if (c instanceof ListItemPanel) newVisibleOrder.add(((ListItemPanel<T>) c).item);
                 }
-
-                // Rebuild the full list: each visible item immediately followed
-                // by whatever hidden items were already anchored under it
                 List<T> newFullOrder = new ArrayList<>();
                 for (T visible : newVisibleOrder) {
                     newFullOrder.add(visible);
                     List<T> followers = hiddenFollowersOf.get(visible);
-                    if (followers != null) {
-                        newFullOrder.addAll(followers);
-                    }
+                    if (followers != null) newFullOrder.addAll(followers);
                 }
 
                 if (!reorderValidator.test(newFullOrder, updatedItem)) {
-                    // Reject drops that would place the moved row under a collapsed
-                    // ancestor. Rebuild from the unchanged model order to restore the UI.
                     refresh();
                     return;
                 }
-
                 reorderableList.clear();
                 reorderableList.addAll(newFullOrder);
-
                 if (!oldOrder.equals(newFullOrder) && reorderListener != null)
-                {
                     reorderListener.accept(new ArrayList<>(oldOrder), new ArrayList<>(newFullOrder));
-                }
-
                 if (updatedListener != null) updatedListener.accept(updatedItem);
-
                 refresh();
-            }
-        });
+            });
 
         JPanel wrapperPanel = new JPanel(new BorderLayout());
         wrapperPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
@@ -286,5 +286,19 @@ public final class ListPanel<T> extends JScrollPane implements Refreshable
     public void onReordered(BiConsumer<List<T>, List<T>> listener)
     {
         this.reorderListener = listener;
+    }
+
+    public void setDragGroupProvider(Function<T, List<T>> provider)
+    {
+        dragGroupProvider = provider != null ? provider : Collections::singletonList;
+    }
+
+    public void setDragBoundsProvider(BiFunction<List<T>, T, List<Integer>> provider)
+    {
+        dragBoundsProvider = provider != null ? provider : (items, moved) -> {
+            List<Integer> slots = new ArrayList<>();
+            for (int i = 0; i <= items.size(); i++) slots.add(i);
+            return slots;
+        };
     }
 }
