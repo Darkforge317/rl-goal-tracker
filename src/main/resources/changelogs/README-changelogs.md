@@ -11,6 +11,7 @@ Please keep to the following changelog rules and guidances.
     - "Changelog-worthy" is not well-defined, so don't be afraid to add an entry if you think it's worth doing so.
     - If the Plugin Owner disagrees with the entry, or thinks your changes deserve an entry, then they'll say so.
 6. Bug-fix entries should describe bugs in the currently released plugin. Don't list defects found and fixed while developing unreleased work; changelogs are release notes, not a commit history.
+7. Keep empty/unused sections from the template. The Plugin Owner will remove unnecessary sections before releasing the next plugin update.
 
 ## Quick steps
 
@@ -27,6 +28,7 @@ Please keep to the following changelog rules and guidances.
 
 ## Sections
 Each of these sections describe a type of update. Most of the time this should match the label found on the Issue you are working on (if applicable).
+If a section is empty, the plugin owner will remove it before release.
 
 - **New Features** (`Feature`)
 - **Quality of Life** (`QoL`)
