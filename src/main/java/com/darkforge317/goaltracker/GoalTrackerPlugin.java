@@ -51,8 +51,10 @@ import javax.inject.Inject;
 import javax.swing.*;
 import java.awt.*;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 @Slf4j
@@ -91,7 +93,10 @@ public final class GoalTrackerPlugin extends Plugin
             InventoryID.WORN,
             InventoryID.BANK,
             InventoryID.SEED_VAULT,
-            InventoryID.INV_GROUP_TEMP
+            InventoryID.INV_GROUP_TEMP,
+            // Emits change events during transfers to/from Group Ironman shared storage.
+            // This temporary player-side container is a transfer snapshot, not extra held items.
+            InventoryID.INV_PLAYER_TEMP
     };
 
     @Getter
@@ -184,6 +189,9 @@ public final class GoalTrackerPlugin extends Plugin
     // instead of rescanning all 5 containers on every ItemContainerChanged event.
     private final Map<Integer, Map<String, Integer>> containerNameCounts = new HashMap<>();
     private final Map<Integer, Map<Integer, Integer>> containerIdCounts = new HashMap<>();
+    private final Map<Integer, Boolean> itemPlaceholderCache = new HashMap<>();
+    private final Set<Integer> pendingContainerRefreshes = new HashSet<>();
+    private boolean containerRefreshPending;
 
     // Cached normalized display name per item ID, since ItemManager composition lookups
     // are relatively expensive and the same IDs repeat across containers/tasks/events.
@@ -514,17 +522,70 @@ public final class GoalTrackerPlugin extends Plugin
             return;
         }
 
-        // Rebuild the cache for only the container that changed, not all 5.
         final Integer changedInventory = inventoryIdFromContainerId(event.getContainerId());
-        if (changedInventory != null)
+        if (changedInventory == null)
         {
-            refreshContainerCache(changedInventory);
+            return;
         }
 
-        refreshItemTasks();
+        pendingContainerRefreshes.addAll(containersToRefreshTogether(changedInventory));
 
-        // Debounce panel refresh; coalesce multiple rapid inventory changes
-        schedulePanelRefresh(400);
+        if (!containerRefreshPending)
+        {
+            containerRefreshPending = true;
+            clientThread.invokeLater(() -> {
+                Set<Integer> inventoriesToRefresh = new HashSet<>(pendingContainerRefreshes);
+                pendingContainerRefreshes.clear();
+                containerRefreshPending = false;
+
+                refreshContainerCaches(inventoriesToRefresh);
+
+                refreshItemTasks();
+                schedulePanelRefresh(400);
+            });
+        }
+
+    }
+
+    static Set<Integer> containersToRefreshTogether(int changedInventory)
+    {
+        Set<Integer> inventories = new HashSet<>();
+        if (changedInventory == InventoryID.INV || changedInventory == InventoryID.BANK)
+        {
+            // Bank transfers update both containers. Refresh both after the client
+            // finishes processing this event batch to avoid combining stale counts.
+            inventories.add(InventoryID.INV);
+            inventories.add(InventoryID.BANK);
+        }
+        else if (changedInventory == InventoryID.INV_PLAYER_TEMP)
+        {
+            // This transfer snapshot is only an event source. Refresh the two
+            // actual holdings without caching or counting the temporary container.
+            inventories.add(InventoryID.INV);
+            inventories.add(InventoryID.INV_GROUP_TEMP);
+        }
+        else if (changedInventory == InventoryID.INV_GROUP_TEMP)
+        {
+            // Shared-storage transfers can also report the shared container directly.
+            inventories.add(InventoryID.INV);
+            inventories.add(InventoryID.INV_GROUP_TEMP);
+        }
+        else
+        {
+            inventories.add(changedInventory);
+        }
+        return inventories;
+    }
+
+    void refreshContainerCaches(Set<Integer> inventoriesToRefresh)
+    {
+        for (int inventory : TRACKED_INVENTORIES)
+        {
+            if (inventoriesToRefresh.contains(inventory))
+            {
+                refreshContainerCache(inventory);
+            }
+        }
     }
 
     private static boolean isPlayerInventoryContainer(int containerId)
@@ -554,11 +615,16 @@ public final class GoalTrackerPlugin extends Plugin
         {
             for (Item i : container.getItems())
             {
-                if (i == null || i.getId() <= 0)
+                if (i == null || i.getId() <= 0 || isPlaceholderItem(i.getId()))
                 {
                     continue;
                 }
-                final int qty = Math.max(1, i.getQuantity());
+                final int qty = i.getQuantity();
+                if (qty <= 0)
+                {
+                    // Bank placeholders retain the item ID but have no quantity.
+                    continue;
+                }
 
                 idCounts.merge(i.getId(), qty, Integer::sum);
 
@@ -574,9 +640,23 @@ public final class GoalTrackerPlugin extends Plugin
         containerIdCounts.put(inventoryId, idCounts);
     }
 
+    private boolean isPlaceholderItem(final int itemId)
+    {
+        return itemPlaceholderCache.computeIfAbsent(itemId, id -> {
+            try
+            {
+                return itemManager.getItemComposition(id).getPlaceholderTemplateId() != -1;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+        });
+    }
+
     private static Integer inventoryIdFromContainerId(final int containerId)
     {
-        for (int inv : TRACKED_INVENTORIES)
+        for (int inv : PLAYER_INVENTORIES)
         {
             if (inv == containerId)
             {

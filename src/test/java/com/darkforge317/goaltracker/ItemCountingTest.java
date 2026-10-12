@@ -9,6 +9,9 @@ import net.runelite.client.game.ItemManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
@@ -48,6 +51,87 @@ class ItemCountingTest
     }
 
     @Test
+    void withdrawingFromBankRefreshesBothSidesBeforeCounting()
+    {
+        itemName(100, "Feathers");
+        AtomicReference<Item[]> bankContents = new AtomicReference<>(new Item[] {new Item(100, 5400)});
+        AtomicReference<Item[]> inventoryContents = new AtomicReference<>(new Item[0]);
+        ItemContainer bank = mock(ItemContainer.class);
+        ItemContainer inventory = mock(ItemContainer.class);
+        when(bank.getItems()).thenAnswer(ignored -> bankContents.get());
+        when(inventory.getItems()).thenAnswer(ignored -> inventoryContents.get());
+        when(client.getItemContainer(InventoryID.BANK)).thenReturn(bank);
+        when(client.getItemContainer(InventoryID.INV)).thenReturn(inventory);
+
+        plugin.refreshContainerCaches(Set.of(InventoryID.BANK, InventoryID.INV));
+        assertEquals(5400, count(100, "Feathers"));
+
+        // After withdrawing the feathers, RuneLite has moved them from bank to inventory.
+        bankContents.set(new Item[0]);
+        inventoryContents.set(new Item[] {new Item(100, 5400)});
+
+        plugin.refreshContainerCaches(GoalTrackerPlugin.containersToRefreshTogether(InventoryID.INV));
+        assertEquals(5400, count(100, "Feathers"));
+    }
+
+    @Test
+    void transferringFromGroupStorageRefreshesBothSidesWithoutCountingTransferSnapshot()
+    {
+        itemName(100, "Feathers");
+        AtomicReference<Item[]> sharedStorageContents = new AtomicReference<>(new Item[] {new Item(100, 5400)});
+        AtomicReference<Item[]> inventoryContents = new AtomicReference<>(new Item[0]);
+        ItemContainer sharedStorage = mock(ItemContainer.class);
+        ItemContainer inventory = mock(ItemContainer.class);
+        when(sharedStorage.getItems()).thenAnswer(ignored -> sharedStorageContents.get());
+        when(inventory.getItems()).thenAnswer(ignored -> inventoryContents.get());
+        when(client.getItemContainer(InventoryID.INV_GROUP_TEMP)).thenReturn(sharedStorage);
+        when(client.getItemContainer(InventoryID.INV)).thenReturn(inventory);
+
+        plugin.refreshContainerCaches(Set.of(InventoryID.INV_GROUP_TEMP, InventoryID.INV));
+        assertEquals(5400, count(100, "Feathers"));
+
+        // The shared-storage transfer removes the item from one counted container
+        // and adds it to the inventory. INV_PLAYER_TEMP may also emit a change event,
+        // but that transient snapshot is deliberately not counted as another holding.
+        sharedStorageContents.set(new Item[0]);
+        inventoryContents.set(new Item[] {new Item(100, 5400)});
+
+        Set<Integer> refreshSet = GoalTrackerPlugin.containersToRefreshTogether(InventoryID.INV_PLAYER_TEMP);
+        assertEquals(Set.of(InventoryID.INV, InventoryID.INV_GROUP_TEMP), refreshSet);
+        plugin.refreshContainerCaches(refreshSet);
+        assertEquals(5400, count(100, "Feathers"));
+    }
+
+    @Test
+    void bankPlaceholderDoesNotCountAsAnItem()
+    {
+        itemName(100, "Feathers");
+        itemName(101, "Feathers");
+        ItemComposition placeholderComposition = mock(ItemComposition.class);
+        when(placeholderComposition.getName()).thenReturn("Feathers");
+        when(placeholderComposition.getPlaceholderTemplateId()).thenReturn(14401);
+        when(itemManager.getItemComposition(101)).thenReturn(placeholderComposition);
+        AtomicReference<Item[]> bankContents = new AtomicReference<>(new Item[] {new Item(100, 5495)});
+        AtomicReference<Item[]> inventoryContents = new AtomicReference<>(new Item[0]);
+        ItemContainer bank = mock(ItemContainer.class);
+        ItemContainer inventory = mock(ItemContainer.class);
+        when(bank.getItems()).thenAnswer(ignored -> bankContents.get());
+        when(inventory.getItems()).thenAnswer(ignored -> inventoryContents.get());
+        when(client.getItemContainer(InventoryID.BANK)).thenReturn(bank);
+        when(client.getItemContainer(InventoryID.INV)).thenReturn(inventory);
+
+        plugin.refreshContainerCaches(Set.of(InventoryID.BANK, InventoryID.INV));
+        assertEquals(5495, count(100, "Feathers"));
+
+        // RuneLite represents the placeholder as its own item variant, with a positive quantity.
+        bankContents.set(new Item[] {new Item(101, 1)});
+        inventoryContents.set(new Item[] {new Item(100, 5495)});
+        plugin.refreshContainerCaches(GoalTrackerPlugin.containersToRefreshTogether(InventoryID.BANK));
+
+        assertEquals(5495, count(100, "Feathers"));
+    }
+
+    @Test
     void includesNotedAndDegradedVariantsWithoutDuplicatingBase()
     {
         itemName(100, "Torag's platelegs");
@@ -80,6 +164,7 @@ class ItemCountingTest
     {
         ItemComposition composition = mock(ItemComposition.class);
         when(composition.getName()).thenReturn(name);
+        when(composition.getPlaceholderTemplateId()).thenReturn(-1);
         when(itemManager.getItemComposition(id)).thenReturn(composition);
     }
 
