@@ -3,9 +3,9 @@ package com.darkforge317.goaltracker.ui;
 import com.darkforge317.goaltracker.GoalTrackerPlugin;
 import com.darkforge317.goaltracker.models.ActionHistory;
 import com.darkforge317.goaltracker.models.Goal;
-import com.darkforge317.goaltracker.models.RemoveTaskAction;
 import com.darkforge317.goaltracker.models.enums.TaskType;
 import com.darkforge317.goaltracker.models.task.Task;
+import com.darkforge317.goaltracker.utils.ReorderableList;
 import com.darkforge317.goaltracker.utils.TaskHierarchyUtils;
 import com.darkforge317.goaltracker.ui.components.*;
 import com.darkforge317.goaltracker.ui.components.*;
@@ -40,15 +40,17 @@ public final class GoalPanel extends JPanel implements Refreshable
     private Consumer<Task> taskUpdatedListener;
 
     private final ActionHistory actionHistory = new ActionHistory();
+    private final TaskInteractionState taskInteractionState;
     private ActionBarButton undoButton;
     private ActionBarButton redoButton;
     private ActionBarButton prereqsButton;
 
-    GoalPanel(GoalTrackerPlugin plugin, Goal goal, Runnable closeListener)
+    public GoalPanel(GoalTrackerPlugin plugin, Goal goal, Runnable closeListener)
     {
         super();
         this.plugin = plugin;
         this.goal = goal;
+        this.taskInteractionState = new TaskInteractionState();
 
         setLayout(new BorderLayout());
 
@@ -74,6 +76,7 @@ public final class GoalPanel extends JPanel implements Refreshable
         actionBar.left().add(prereqsButton);
         actionBar.left().add(undoButton);
         actionBar.left().add(redoButton);
+        actionHistory.addListener(this::updateUndoRedoButtons);
 
         ActionBarButton importButton = new ActionBarButton("Import", () -> {
             String input = javax.swing.JOptionPane.showInputDialog(GoalPanel.this, "Paste goals JSON:");
@@ -139,10 +142,11 @@ public final class GoalPanel extends JPanel implements Refreshable
 
         taskListPanel = new ListPanel<>(goal.getTasks(), (parent, task) -> {
             try {
-                ListTaskPanel taskPanel = new ListTaskPanel(goal.getTasks(), task, parent);
+                ListTaskPanel taskPanel = new ListTaskPanel(goal.getTasks(), task, parent, taskInteractionState);
                 taskPanel.setActionHistory(actionHistory);
-                TaskItemContent taskContent = new TaskItemContent(plugin, goal, task);
+                TaskItemContent taskContent = new TaskItemContent(plugin, goal, task, taskInteractionState);
                 taskContent.setActionHistory(actionHistory);
+                taskContent.onAddChild(this::showAddChildDialog);
                 taskPanel.add(taskContent);
                 taskPanel.setTaskContent(taskContent);
                 taskContent.refresh();
@@ -154,28 +158,20 @@ public final class GoalPanel extends JPanel implements Refreshable
                 ));
 
 
-                taskPanel.onIndented(e -> {
+                taskPanel.onParentChanged(e -> {
                     if (this.goalUpdatedListener != null) this.goalUpdatedListener.accept(goal);
                     plugin.getUiStatusManager().refresh(goal);
                     this.refresh();
-                });
-
-                taskPanel.onUnindented(e -> {
-                    if (this.goalUpdatedListener != null) this.goalUpdatedListener.accept(goal);
-                    plugin.getUiStatusManager().refresh(goal);
-                    this.refresh();
-                });
-
-                taskPanel.onRemovedWithIndex((removedTask, index) -> {
-                    actionHistory.push(new RemoveTaskAction(goal.getTasks(), removedTask, index));
                     updateUndoRedoButtons();
                 });
+
+                taskPanel.onRemovedWithIndex((removedTask, index) -> updateUndoRedoButtons());
 
                 return taskPanel;
             } catch (Throwable t) {
                 log.error("Failed to render task panel for task {}", task, t);
                 // Render a minimal, visible error row instead of breaking the entire list
-                ListTaskPanel fallback = new ListTaskPanel(goal.getTasks(), task, parent);
+                ListTaskPanel fallback = new ListTaskPanel(goal.getTasks(), task, parent, taskInteractionState);
                 JPanel error = new JPanel(new BorderLayout());
                 error.setOpaque(true);
                 error.setBackground(ColorScheme.DARK_GRAY_COLOR);
@@ -189,7 +185,30 @@ public final class GoalPanel extends JPanel implements Refreshable
         });
         taskListPanel.setGap(0);
         taskListPanel.setPlaceholder("No tasks added yet");
+        taskListPanel.onReordered((oldOrder, newOrder) -> {
+            ActionHistory.Action action = new ActionHistory.Action()
+            {
+                private void apply(java.util.List<Task> order)
+                {
+                    goal.getTasks().clear();
+                    goal.getTasks().addAll(order);
+                    TaskHierarchyUtils.normalizeIndentLevels(goal.getTasks());
+                    plugin.getUiStatusManager().refresh(goal);
+                }
+
+                @Override public void undo() { apply(oldOrder); }
+                @Override public void redo() { apply(newOrder); }
+            };
+            actionHistory.push(action);
+            updateUndoRedoButtons();
+        });
         taskListPanel.setRowVisibilityFilter(task -> !TaskHierarchyUtils.hasCollapsedAncestor(goal.getTasks(), task));
+        taskListPanel.setHiddenRowAnchor(task -> TaskHierarchyUtils.getVisibleCollapsedAncestor(goal.getTasks(), task));
+        taskListPanel.setDragGroupProvider(task -> TaskHierarchyUtils.getSubtree(goal.getTasks(), task));
+        taskListPanel.setDragBoundsProvider((visibleItems, movedTask) ->
+                TaskHierarchyUtils.getValidInsertionSlots(goal.getTasks(), visibleItems, movedTask));
+        taskListPanel.setReorderValidator((order, movedTask) ->
+                !TaskHierarchyUtils.hasCollapsedAncestor(order, movedTask));
         taskListPanel.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
         taskListPanel.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         taskListPanel.setWheelScrollingEnabled(false);
@@ -269,6 +288,93 @@ public final class GoalPanel extends JPanel implements Refreshable
 
         if (Objects.nonNull(this.taskAddedListener)) this.taskAddedListener.accept(task);
         if (Objects.nonNull(this.taskUpdatedListener)) this.taskUpdatedListener.accept(task);
+    }
+
+    private void showAddChildDialog(Task parentTask)
+    {
+        if (parentTask.getIndentLevel() >= Task.MAX_INDENT_LEVEL)
+        {
+            JOptionPane.showMessageDialog(this,
+                    "This task is already at the maximum nesting depth.",
+                    "Cannot add child",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        Window owner = SwingUtilities.getWindowAncestor(this);
+        JDialog dialog = new JDialog(owner, "Add child task", Dialog.ModalityType.APPLICATION_MODAL);
+        dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        dialog.setLayout(new BorderLayout(0, 8));
+
+        NewTaskPanel childTaskPanel = new NewTaskPanel(plugin, goal);
+        childTaskPanel.onTaskAdded(child -> {
+            addChildTask(parentTask, child);
+            dialog.dispose();
+        });
+        childTaskPanel.expandMoreOptions();
+        Dimension childPanelSize = childTaskPanel.getPreferredSize();
+        childTaskPanel.setPreferredSize(new Dimension(320, childPanelSize.height));
+        JScrollPane childTaskScrollPane = new JScrollPane(childTaskPanel,
+                ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        childTaskScrollPane.setBorder(BorderFactory.createEmptyBorder());
+        childTaskScrollPane.getViewport().setBackground(ColorScheme.DARK_GRAY_COLOR);
+        childTaskScrollPane.setPreferredSize(new Dimension(320, childPanelSize.height));
+        dialog.add(childTaskScrollPane, BorderLayout.CENTER);
+
+        JButton cancelButton = new JButton("Cancel");
+        cancelButton.addActionListener(e -> dialog.dispose());
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.add(cancelButton);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        dialog.pack();
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
+    }
+
+    private void addChildTask(Task parentTask, Task childTask)
+    {
+        ReorderableList<Task> tasks = goal.getTasks();
+        tasks.remove(childTask); // TaskInput appends before notifying its listener.
+        TaskHierarchyUtils.ensureTaskIds(tasks);
+        TaskHierarchyUtils.ensureTaskIds(java.util.Collections.singletonList(childTask));
+
+        int insertionIndex = tasks.indexOf(parentTask) + 1;
+        for (Task descendant : TaskHierarchyUtils.getDescendants(tasks, parentTask))
+        {
+            insertionIndex = Math.max(insertionIndex, tasks.indexOf(descendant) + 1);
+        }
+        final int childIndex = insertionIndex;
+        final boolean parentWasCollapsed = parentTask.isCollapsed();
+
+        ActionHistory.Action action = new ActionHistory.Action()
+        {
+            @Override public void undo()
+            {
+                tasks.remove(childTask);
+                parentTask.setCollapsed(parentWasCollapsed);
+                TaskHierarchyUtils.normalizeIndentLevels(tasks);
+                if (goalUpdatedListener != null) goalUpdatedListener.accept(goal);
+                plugin.getUiStatusManager().refresh(goal);
+            }
+
+            @Override public void redo()
+            {
+                childTask.setParentTaskId(parentTask.getTaskId());
+                tasks.add(Math.max(0, Math.min(childIndex, tasks.size())), childTask);
+                parentTask.setCollapsed(false);
+                TaskHierarchyUtils.normalizeIndentLevels(tasks);
+                if (goalUpdatedListener != null) goalUpdatedListener.accept(goal);
+                plugin.getUiStatusManager().refresh(goal);
+            }
+        };
+
+        action.redo();
+        actionHistory.push(action);
+        updateUndoRedoButtons();
+        if (this.goalUpdatedListener != null) this.goalUpdatedListener.accept(goal);
+        updateFromNewTask(childTask);
     }
 
     public void refreshTaskList()
@@ -387,6 +493,7 @@ public final class GoalPanel extends JPanel implements Refreshable
     {
         actionHistory.undo();
         refreshTaskList();
+        if (goalUpdatedListener != null) goalUpdatedListener.accept(goal);
         updateUndoRedoButtons();
     }
 
@@ -394,6 +501,7 @@ public final class GoalPanel extends JPanel implements Refreshable
     {
         actionHistory.redo();
         refreshTaskList();
+        if (goalUpdatedListener != null) goalUpdatedListener.accept(goal);
         updateUndoRedoButtons();
     }
 

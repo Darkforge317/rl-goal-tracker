@@ -78,6 +78,13 @@ public final class NewTaskPanel extends JPanel
         moreOptionsButton.setMainColor(ColorScheme.PROGRESS_ERROR_COLOR);
 
         moreOptionsPanel.setVisible(true);
+        revalidate();
+        repaint();
+    }
+
+    public void expandMoreOptions()
+    {
+        showMoreOptions();
     }
 
     private void createMoreOptionsPanel()
