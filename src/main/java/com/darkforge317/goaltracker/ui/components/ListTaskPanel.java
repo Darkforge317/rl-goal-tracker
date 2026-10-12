@@ -440,31 +440,68 @@ public final class ListTaskPanel extends ListItemPanel<Task>
         popupMenu.add(setParent);
         if (item.getParentTaskId() != null) {
             JMenuItem removeParent = new JMenuItem("Remove parent");
-            removeParent.addActionListener(e -> changeParent(null));
+            removeParent.addActionListener(e -> removeParent());
             popupMenu.add(removeParent);
         }
     }
 
+    private void removeParent()
+    {
+        Task oldParent = TaskHierarchyUtils.getParent(list, item);
+        Task newParent = oldParent == null ? null : TaskHierarchyUtils.getParent(list, oldParent);
+        changeParent(newParent == null ? null : newParent.getTaskId(), oldParent, true);
+    }
+
     private void changeParent(String newParentId)
+    {
+        changeParent(newParentId, null, false);
+    }
+
+    private void changeParent(String newParentId, Task positionAnchor, boolean afterAnchorSubtree)
     {
         String oldParentId = item.getParentTaskId();
         if (java.util.Objects.equals(oldParentId, newParentId)) return;
+        Task newParent = null;
         if (newParentId != null)
         {
-            Task newParent = null;
             for (Task candidate : list)
                 if (newParentId.equals(candidate.getTaskId())) { newParent = candidate; break; }
             if (newParent == null || !TaskHierarchyUtils.canSetParent(list, item, newParent)) return;
         }
-        java.util.List<Integer> oldIndents = new java.util.ArrayList<>();
-        for (Task task : list) oldIndents.add(task.getIndentLevel());
+        final Task destinationParent = newParent;
+        java.util.List<Task> oldOrder = new java.util.ArrayList<>(list);
+        java.util.List<Task> subtree = TaskHierarchyUtils.getSubtree(list, item);
         ActionHistory.Action action = new ActionHistory.Action() {
             @Override public void undo() {
                 item.setParentTaskId(oldParentId);
-                for (int i = 0; i < list.size(); i++) list.get(i).setIndentLevel(oldIndents.get(i));
+                list.clear();
+                list.addAll(oldOrder);
+                TaskHierarchyUtils.normalizeIndentLevels(list);
             }
             @Override public void redo() {
                 item.setParentTaskId(newParentId);
+                if (destinationParent != null || positionAnchor != null)
+                {
+                    list.removeAll(subtree);
+                    int insertIndex;
+                    if (afterAnchorSubtree && positionAnchor != null)
+                    {
+                        int anchorIndex = list.indexOf(positionAnchor);
+                        insertIndex = anchorIndex < 0 ? list.size() : anchorIndex + 1;
+                        for (Task descendant : TaskHierarchyUtils.getDescendants(list, positionAnchor))
+                        {
+                            insertIndex = Math.max(insertIndex, list.indexOf(descendant) + 1);
+                        }
+                    }
+                    else if (destinationParent != null)
+                    {
+                        insertIndex = list.indexOf(destinationParent) + 1;
+                        for (Task descendant : TaskHierarchyUtils.getDescendants(list, destinationParent))
+                            insertIndex = Math.max(insertIndex, list.indexOf(descendant) + 1);
+                    }
+                    else insertIndex = list.size();
+                    list.addAll(insertIndex, subtree);
+                }
                 TaskHierarchyUtils.normalizeIndentLevels(list);
             }
         };
