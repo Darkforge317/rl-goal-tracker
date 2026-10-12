@@ -1,5 +1,6 @@
 package com.darkforge317.goaltracker;
 
+import com.darkforge317.goaltracker.models.task.ItemTask;
 import net.runelite.api.Client;
 import net.runelite.api.Item;
 import net.runelite.api.ItemComposition;
@@ -13,6 +14,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 class ItemCountingTest
@@ -70,7 +73,7 @@ class ItemCountingTest
         bankContents.set(new Item[0]);
         inventoryContents.set(new Item[] {new Item(100, 5400)});
 
-        plugin.refreshContainerCaches(GoalTrackerPlugin.containersToRefreshTogether(InventoryID.INV));
+        plugin.refreshContainerCaches(GoalTrackerPlugin.containersToRefreshTogether(InventoryID.INV, true));
         assertEquals(5400, count(100, "Feathers"));
     }
 
@@ -96,7 +99,7 @@ class ItemCountingTest
         sharedStorageContents.set(new Item[0]);
         inventoryContents.set(new Item[] {new Item(100, 5400)});
 
-        Set<Integer> refreshSet = GoalTrackerPlugin.containersToRefreshTogether(InventoryID.INV_PLAYER_TEMP);
+        Set<Integer> refreshSet = GoalTrackerPlugin.containersToRefreshTogether(InventoryID.INV_PLAYER_TEMP, false);
         assertEquals(Set.of(InventoryID.INV, InventoryID.INV_GROUP_TEMP), refreshSet);
         plugin.refreshContainerCaches(refreshSet);
         assertEquals(5400, count(100, "Feathers"));
@@ -126,9 +129,91 @@ class ItemCountingTest
         // RuneLite represents the placeholder as its own item variant, with a positive quantity.
         bankContents.set(new Item[] {new Item(101, 1)});
         inventoryContents.set(new Item[] {new Item(100, 5495)});
-        plugin.refreshContainerCaches(GoalTrackerPlugin.containersToRefreshTogether(InventoryID.BANK));
+        plugin.refreshContainerCaches(GoalTrackerPlugin.containersToRefreshTogether(InventoryID.BANK, false));
 
         assertEquals(5495, count(100, "Feathers"));
+    }
+
+    @Test
+    void inventoryChangesWhileBankIsClosedPreserveCachedBankCounts()
+    {
+        itemName(100, "Feathers");
+        container(InventoryID.BANK, new Item(100, 5495));
+        AtomicReference<Item[]> inventoryContents = new AtomicReference<>(new Item[] {new Item(100, 1)});
+        ItemContainer inventory = mock(ItemContainer.class);
+        when(inventory.getItems()).thenAnswer(ignored -> inventoryContents.get());
+        when(client.getItemContainer(InventoryID.INV)).thenReturn(inventory);
+        plugin.refreshContainerCache(InventoryID.INV);
+
+        assertEquals(5496, count(100, "Feathers"));
+
+        // A GE collection/cancellation updates inventory while the bank is closed.
+        inventoryContents.set(new Item[] {new Item(100, 2)});
+        Set<Integer> refreshSet = GoalTrackerPlugin.containersToRefreshTogether(InventoryID.INV, false);
+        assertEquals(Set.of(InventoryID.INV), refreshSet);
+        plugin.refreshContainerCaches(refreshSet);
+
+        assertEquals(5497, count(100, "Feathers"));
+    }
+
+    @Test
+    void itemTaskKeepsPerInventoryCountsWhenOnlyInventoryRefreshes()
+    {
+        itemName(100, "Feathers");
+        container(InventoryID.BANK, new Item(100, 5495));
+        container(InventoryID.INV, new Item(100, 1));
+        ItemTask task = ItemTask.builder().itemId(100).itemName("Feathers").quantity(6000).acquired(5496).build();
+
+        plugin.updateTaskInventoryCounts(task);
+        task.recomputeFromCount(task.getTotalInventoryQuantity());
+        assertEquals(5496, task.getAcquired());
+
+        // Simulate a GE event: only the inventory changes; the closed bank is not refreshed.
+        container(InventoryID.INV, new Item(100, 2));
+        plugin.updateTaskInventoryCounts(task);
+        task.recomputeFromCount(task.getTotalInventoryQuantity());
+
+        assertEquals(5495, task.getInventoryQuantity(InventoryID.BANK));
+        assertEquals(2, task.getInventoryQuantity(InventoryID.INV));
+        assertEquals(5497, task.getAcquired());
+    }
+
+    @Test
+    void loginRefreshCanPreservePersistedBankQuantityUntilBankIsOpen()
+    {
+        assertFalse(plugin.canReadContainerNow(InventoryID.BANK));
+        assertTrue(plugin.canReadContainerNow(InventoryID.INV));
+
+        itemName(100, "Feathers");
+        ItemTask task = ItemTask.builder().itemId(100).itemName("Feathers").quantity(6000).acquired(5496).build();
+        task.setInventoryQuantity(InventoryID.BANK, 5495);
+        task.setInventoryQuantity(InventoryID.INV, 1);
+
+        container(InventoryID.INV, new Item(100, 1));
+        plugin.updateTaskInventoryCounts(task);
+
+        assertEquals(5495, task.getInventoryQuantity(InventoryID.BANK));
+        assertEquals(1, task.getInventoryQuantity(InventoryID.INV));
+        assertEquals(5496, task.getTotalInventoryQuantity());
+    }
+
+    @Test
+    void legacyItemTaskPreservesUnattributedQuantityAsBankCache()
+    {
+        itemName(100, "Feathers");
+        container(InventoryID.INV, new Item(100, 1));
+        ItemTask legacyTask = ItemTask.builder()
+                .itemId(100)
+                .itemName("Feathers")
+                .quantity(6000)
+                .acquired(5496)
+                .build();
+
+        plugin.updateTaskInventoryCounts(legacyTask);
+
+        assertEquals(1, legacyTask.getInventoryQuantity(InventoryID.INV));
+        assertEquals(5495, legacyTask.getInventoryQuantity(InventoryID.BANK));
+        assertEquals(5496, legacyTask.getTotalInventoryQuantity());
     }
 
     @Test

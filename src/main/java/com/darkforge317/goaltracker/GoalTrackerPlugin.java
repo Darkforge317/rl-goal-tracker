@@ -27,8 +27,10 @@ import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.events.StatChanged;
 import net.runelite.api.events.VarbitChanged;
+import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.gameval.ItemID;
+import net.runelite.api.widgets.Widget;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.chat.QueuedMessage;
@@ -190,6 +192,7 @@ public final class GoalTrackerPlugin extends Plugin
     private final Map<Integer, Map<String, Integer>> containerNameCounts = new HashMap<>();
     private final Map<Integer, Map<Integer, Integer>> containerIdCounts = new HashMap<>();
     private final Map<Integer, Boolean> itemPlaceholderCache = new HashMap<>();
+    private final Set<Integer> initializedContainerCaches = new HashSet<>();
     private final Set<Integer> pendingContainerRefreshes = new HashSet<>();
     private boolean containerRefreshPending;
 
@@ -287,9 +290,16 @@ public final class GoalTrackerPlugin extends Plugin
         // immediately, before any ItemContainerChanged event has fired.
         // client.getItemContainer() must be called on the client thread.
         clientThread.invokeLater(() -> {
-            for (int inv : TRACKED_INVENTORIES)
+            if (client.getGameState() == GameState.LOGGED_IN)
             {
-                refreshContainerCache(inv);
+                for (int inv : TRACKED_INVENTORIES)
+                {
+                    if (canReadContainerNow(inv))
+                    {
+                        refreshContainerCache(inv);
+                    }
+                }
+                refreshItemTasks();
             }
         });
 
@@ -426,7 +436,10 @@ public final class GoalTrackerPlugin extends Plugin
                 // re-evaluate item tasks against the fresh counts.
                 for (int inv : TRACKED_INVENTORIES)
                 {
-                    refreshContainerCache(inv);
+                    if (canReadContainerNow(inv))
+                    {
+                        refreshContainerCache(inv);
+                    }
                 }
                 refreshItemTasks();
 
@@ -470,6 +483,12 @@ public final class GoalTrackerPlugin extends Plugin
     {
         clientThread.invokeLater(() -> {
             taskUpdateService.update(task);
+            if (task instanceof ItemTask)
+            {
+                ItemTask itemTask = (ItemTask) task;
+                updateTaskInventoryCounts(itemTask);
+                itemTask.recomputeFromCount(itemTask.getTotalInventoryQuantity());
+            }
             goalManager.save();
             if (task.getStatus().isCompleted()) {
                 notifyTask(task);
@@ -490,6 +509,7 @@ public final class GoalTrackerPlugin extends Plugin
     private void refreshItemTasks()
     {
         List<ItemTask> itemTasks = goalManager.getIncompleteTasksByType(TaskType.ITEM);
+        boolean cacheChanged = false;
         for (ItemTask task : itemTasks)
         {
             final int itemId = task.getItemId();
@@ -498,8 +518,10 @@ public final class GoalTrackerPlugin extends Plugin
                 continue;
             }
 
-            final int count = countHeldEquivalent(itemId, task.getItemName());
+            cacheChanged |= updateTaskInventoryCounts(task);
+            final int count = task.getTotalInventoryQuantity();
             final boolean changed = task.recomputeFromCount(count);
+            cacheChanged |= changed;
             if (!changed)
             {
                 continue;
@@ -511,6 +533,59 @@ public final class GoalTrackerPlugin extends Plugin
                 notifyTask(task);
             }
         }
+
+        if (cacheChanged)
+        {
+            goalManager.save();
+        }
+    }
+
+    boolean updateTaskInventoryCounts(final ItemTask task)
+    {
+        boolean changed = false;
+        if (!task.hasInventoryQuantityCache())
+        {
+            int knownCount = 0;
+            for (int inventory : TRACKED_INVENTORIES)
+            {
+                final int count = initializedContainerCaches.contains(inventory)
+                        ? countHeldEquivalentInContainer(inventory, task.getItemId(), task.getItemName())
+                        : 0;
+                changed |= task.setInventoryQuantity(inventory, count);
+                knownCount += count;
+            }
+
+            // Older saves only stored the aggregate. Keep any quantity we cannot
+            // yet attribute to an accessible container as a bank snapshot until
+            // that container is next read.
+            final int unassignedCount = Math.max(0, task.getAcquired() - knownCount);
+            if (unassignedCount > 0)
+            {
+                int fallbackInventory = InventoryID.BANK;
+                if (initializedContainerCaches.contains(fallbackInventory))
+                {
+                    for (int inventory : TRACKED_INVENTORIES)
+                    {
+                        if (!initializedContainerCaches.contains(inventory))
+                        {
+                            fallbackInventory = inventory;
+                            break;
+                        }
+                    }
+                }
+                changed |= task.setInventoryQuantity(
+                        fallbackInventory,
+                        task.getInventoryQuantity(fallbackInventory) + unassignedCount);
+            }
+        }
+
+        for (int inventory : initializedContainerCaches)
+        {
+            changed |= task.setInventoryQuantity(
+                    inventory,
+                    countHeldEquivalentInContainer(inventory, task.getItemId(), task.getItemName()));
+        }
+        return changed;
     }
 
     @Subscribe
@@ -528,7 +603,7 @@ public final class GoalTrackerPlugin extends Plugin
             return;
         }
 
-        pendingContainerRefreshes.addAll(containersToRefreshTogether(changedInventory));
+        pendingContainerRefreshes.addAll(containersToRefreshTogether(changedInventory, isBankOpen()));
 
         if (!containerRefreshPending)
         {
@@ -547,15 +622,22 @@ public final class GoalTrackerPlugin extends Plugin
 
     }
 
-    static Set<Integer> containersToRefreshTogether(int changedInventory)
+    static Set<Integer> containersToRefreshTogether(int changedInventory, boolean bankOpen)
     {
         Set<Integer> inventories = new HashSet<>();
-        if (changedInventory == InventoryID.INV || changedInventory == InventoryID.BANK)
+        if (changedInventory == InventoryID.BANK
+                || (changedInventory == InventoryID.INV && bankOpen))
         {
             // Bank transfers update both containers. Refresh both after the client
             // finishes processing this event batch to avoid combining stale counts.
             inventories.add(InventoryID.INV);
             inventories.add(InventoryID.BANK);
+        }
+        else if (changedInventory == InventoryID.INV)
+        {
+            // Inventory changes outside the bank (for example GE collections) must
+            // not replace the last known bank snapshot with an empty closed-bank cache.
+            inventories.add(InventoryID.INV);
         }
         else if (changedInventory == InventoryID.INV_PLAYER_TEMP)
         {
@@ -575,6 +657,35 @@ public final class GoalTrackerPlugin extends Plugin
             inventories.add(changedInventory);
         }
         return inventories;
+    }
+
+    private boolean isBankOpen()
+    {
+        final Widget bankWidget = client.getWidget(InterfaceID.Bankmain.UNIVERSE);
+        return bankWidget != null && !bankWidget.isHidden();
+    }
+
+    boolean canReadContainerNow(final int inventoryId)
+    {
+        if (inventoryId == InventoryID.BANK)
+        {
+            return isBankOpen();
+        }
+        if (inventoryId == InventoryID.INV_GROUP_TEMP)
+        {
+            return isWidgetVisible(InterfaceID.SharedBank.FRAME);
+        }
+        if (inventoryId == InventoryID.SEED_VAULT)
+        {
+            return isWidgetVisible(InterfaceID.SeedVault.UNIVERSE);
+        }
+        return true;
+    }
+
+    private boolean isWidgetVisible(final int widgetId)
+    {
+        final Widget widget = client.getWidget(widgetId);
+        return widget != null && !widget.isHidden();
     }
 
     void refreshContainerCaches(Set<Integer> inventoriesToRefresh)
@@ -611,33 +722,36 @@ public final class GoalTrackerPlugin extends Plugin
         final Map<Integer, Integer> idCounts = new HashMap<>();
 
         final ItemContainer container = client.getItemContainer(inventoryId);
-        if (container != null)
+        if (container == null)
         {
-            for (Item i : container.getItems())
+            return;
+        }
+
+        for (Item i : container.getItems())
+        {
+            if (i == null || i.getId() <= 0 || isPlaceholderItem(i.getId()))
             {
-                if (i == null || i.getId() <= 0 || isPlaceholderItem(i.getId()))
-                {
-                    continue;
-                }
-                final int qty = i.getQuantity();
-                if (qty <= 0)
-                {
-                    // Bank placeholders retain the item ID but have no quantity.
-                    continue;
-                }
+                continue;
+            }
+            final int qty = i.getQuantity();
+            if (qty <= 0)
+            {
+                // Bank placeholders retain the item ID but have no quantity.
+                continue;
+            }
 
-                idCounts.merge(i.getId(), qty, Integer::sum);
+            idCounts.merge(i.getId(), qty, Integer::sum);
 
-                final String normalized = normalizedNameFor(i.getId());
-                if (normalized != null)
-                {
-                    nameCounts.merge(normalized, qty, Integer::sum);
-                }
+            final String normalized = normalizedNameFor(i.getId());
+            if (normalized != null)
+            {
+                nameCounts.merge(normalized, qty, Integer::sum);
             }
         }
 
         containerNameCounts.put(inventoryId, nameCounts);
         containerIdCounts.put(inventoryId, idCounts);
+        initializedContainerCaches.add(inventoryId);
     }
 
     private boolean isPlaceholderItem(final int itemId)
@@ -707,23 +821,36 @@ public final class GoalTrackerPlugin extends Plugin
             return countHeld(targetItemId);
         }
 
-        final String baseName = normalizeBarrowsName(targetItemName);
         int total = 0;
-
         for (int inv : TRACKED_INVENTORIES)
         {
-            final Map<String, Integer> nameCounts = containerNameCounts.get(inv);
-            if (nameCounts != null)
-            {
-                total += nameCounts.getOrDefault(baseName, 0);
-            }
+            total += countHeldEquivalentInContainer(inv, targetItemId, targetItemName);
+        }
+        return total;
+    }
+
+    private int countHeldEquivalentInContainer(final int inventoryId,
+                                                final int targetItemId,
+                                                final String targetItemName)
+    {
+        if (targetItemName == null || targetItemName.isEmpty() || itemManager == null)
+        {
+            final Map<Integer, Integer> idCounts = containerIdCounts.get(inventoryId);
+            return idCounts == null ? 0 : idCounts.getOrDefault(targetItemId, 0);
         }
 
+        final String baseName = normalizeBarrowsName(targetItemName);
+        final Map<String, Integer> nameCounts = containerNameCounts.get(inventoryId);
+        int total = nameCounts == null ? 0 : nameCounts.getOrDefault(baseName, 0);
         // Name counts already include the exact ID when its name matches. Only
         // fall back to the ID when that item was not included in the name total.
         if (!baseName.equals(normalizedNameFor(targetItemId)))
         {
-            total += countHeld(targetItemId);
+            final Map<Integer, Integer> idCounts = containerIdCounts.get(inventoryId);
+            if (idCounts != null)
+            {
+                total += idCounts.getOrDefault(targetItemId, 0);
+            }
         }
         return total;
     }
@@ -761,7 +888,10 @@ public final class GoalTrackerPlugin extends Plugin
                 else if (task instanceof ItemTask)
                 {
                     ItemTask item = (ItemTask) task;
-                    item.recomputeFromCount(countHeldEquivalent(item.getItemId(), item.getItemName()));
+                    final int count = item.hasInventoryQuantityCache()
+                            ? item.getTotalInventoryQuantity()
+                            : countHeldEquivalent(item.getItemId(), item.getItemName());
+                    item.recomputeFromCount(count);
                 }
             }
             if (client.getGameState() == GameState.LOGGED_IN && !wasCompleted

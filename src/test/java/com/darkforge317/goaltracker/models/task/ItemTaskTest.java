@@ -1,6 +1,8 @@
 package com.darkforge317.goaltracker.models.task;
 
 import com.darkforge317.goaltracker.models.enums.TaskType;
+import net.runelite.api.gameval.InventoryID;
+import net.runelite.http.api.RuneLiteAPI;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,5 +42,30 @@ class ItemTaskTest {
         ItemTask task = ItemTask.builder().build();
 
         assertEquals(TaskType.ITEM, task.getType());
+    }
+
+    @Test
+    void inventoryQuantities_shouldBeStoredAndSummedPerContainer() {
+        ItemTask task = ItemTask.builder().acquired(5496).build();
+
+        task.setInventoryQuantity(InventoryID.BANK, 5495);
+        task.setInventoryQuantity(InventoryID.INV, 1);
+
+        assertEquals(5495, task.getInventoryQuantity(InventoryID.BANK));
+        assertEquals(1, task.getInventoryQuantity(InventoryID.INV));
+        assertEquals(5496, task.getTotalInventoryQuantity());
+    }
+
+    @Test
+    void inventoryQuantities_shouldSurviveSerialization() {
+        ItemTask task = ItemTask.builder().acquired(5496).build();
+        task.setInventoryQuantity(InventoryID.BANK, 5495);
+        task.setInventoryQuantity(InventoryID.INV, 1);
+
+        ItemTask restored = RuneLiteAPI.GSON.fromJson(RuneLiteAPI.GSON.toJson(task), ItemTask.class);
+
+        assertEquals(5495, restored.getInventoryQuantity(InventoryID.BANK));
+        assertEquals(1, restored.getInventoryQuantity(InventoryID.INV));
+        assertEquals(5496, restored.getTotalInventoryQuantity());
     }
 }

@@ -5,6 +5,7 @@ import com.darkforge317.goaltracker.models.ReorderTaskAction;
 import com.darkforge317.goaltracker.models.RemoveTasksAction;
 import com.darkforge317.goaltracker.models.enums.Status;
 import com.darkforge317.goaltracker.models.task.QuestTask;
+import com.darkforge317.goaltracker.models.task.ItemTask;
 import com.darkforge317.goaltracker.models.task.Task;
 import com.darkforge317.goaltracker.ui.TaskItemContent;
 import com.darkforge317.goaltracker.ui.TaskInteractionState;
@@ -158,7 +159,7 @@ public final class ListTaskPanel extends ListItemPanel<Task>
                 }
                 @Override public void redo() {
                     for (Task t : affected) {
-                        t.setStatus(newStatus);
+                        applyStatus(t, newStatus);
                     }
                 }
             };
@@ -169,7 +170,7 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             } else {
                 // Fallback if no history injected
                 for (Task t : affected) {
-                    t.setStatus(newStatus);
+                    applyStatus(t, newStatus);
                 }
             }
 
@@ -367,10 +368,10 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             for (Task affectedTask : affected) oldStatuses.add(affectedTask.getStatus());
             ActionHistory.Action act = new ActionHistory.Action() {
                 @Override public void undo() { for (int i = 0; i < affected.size(); i++) affected.get(i).setStatus(oldStatuses.get(i)); }
-                @Override public void redo() { for (Task t : affected) t.setStatus(newStatus); }
+                @Override public void redo() { for (Task t : affected) applyStatus(t, newStatus); }
             };
             if (history != null) { act.redo(); history.push(act); }
-            else { for (Task t : affected) t.setStatus(newStatus); }
+            else { for (Task t : affected) applyStatus(t, newStatus); }
             if (taskContent != null) taskContent.refresh();
             refreshParentList();
         });
@@ -429,6 +430,16 @@ public final class ListTaskPanel extends ListItemPanel<Task>
         // Ensure remove is at the bottom: remove and re-add it
         popupMenu.remove(removeItem);
         popupMenu.add(removeItem);
+    }
+
+    static void applyStatus(Task task, Status status)
+    {
+        task.setStatus(status);
+        if (status != Status.COMPLETED && task instanceof ItemTask)
+        {
+            ItemTask itemTask = (ItemTask) task;
+            itemTask.updateAcquiredFromCount(itemTask.getTotalInventoryQuantity());
+        }
     }
 
     private void addEditMenuItem()

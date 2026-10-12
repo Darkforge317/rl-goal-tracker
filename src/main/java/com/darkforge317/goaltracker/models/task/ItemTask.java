@@ -9,6 +9,8 @@ import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 import java.awt.image.BufferedImage;
+import java.util.HashMap;
+import java.util.Map;
 
 @Setter
 @Getter
@@ -30,6 +32,45 @@ public final class ItemTask extends Task
     private int itemId;
     @SerializedName("item_name")
     private String itemName;
+    @SerializedName("inventory_quantities")
+    private Map<Integer, Integer> inventoryQuantities;
+
+    public int getInventoryQuantity(final int inventoryId)
+    {
+        return inventoryQuantities == null ? 0 : inventoryQuantities.getOrDefault(inventoryId, 0);
+    }
+
+    public boolean hasInventoryQuantityCache()
+    {
+        return inventoryQuantities != null && !inventoryQuantities.isEmpty();
+    }
+
+    public boolean setInventoryQuantity(final int inventoryId, final int count)
+    {
+        if (inventoryQuantities == null)
+        {
+            inventoryQuantities = new HashMap<>();
+        }
+        final Integer previous = inventoryQuantities.put(inventoryId, Math.max(0, count));
+        return previous == null || previous != Math.max(0, count);
+    }
+
+    public int getTotalInventoryQuantity()
+    {
+        if (inventoryQuantities == null)
+        {
+            return acquired;
+        }
+        return inventoryQuantities.values().stream().mapToInt(count -> count == null ? 0 : count).sum();
+    }
+
+    /**
+     * Refreshes the displayed acquired quantity without changing a manually selected status.
+     */
+    public void updateAcquiredFromCount(final int count)
+    {
+        this.acquired = Math.max(0, Math.min(count, Math.max(1, quantity)));
+    }
 
     /**
      * Recompute acquired count and task status from a current item count.
