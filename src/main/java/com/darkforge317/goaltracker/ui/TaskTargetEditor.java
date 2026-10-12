@@ -58,6 +58,8 @@ final class TaskTargetEditor
             target.setStatus(target.hasReachedTargetXp() ? Status.COMPLETED : Status.NOT_STARTED);
             result = target;
         }
+        result.setTaskId(task.getTaskId());
+        result.setParentTaskId(task.getParentTaskId());
         result.setIndentLevel(task.getIndentLevel());
         result.setCollapsed(task.isCollapsed());
         return result;
