@@ -7,6 +7,7 @@ import com.darkforge317.goaltracker.models.Goal;
 import com.darkforge317.goaltracker.models.UndoStack;
 import com.darkforge317.goaltracker.models.task.Task;
 import com.darkforge317.goaltracker.presets.GoalPresetRepository;
+import com.darkforge317.goaltracker.services.PanelService;
 import com.darkforge317.goaltracker.ui.components.ActionBar;
 import com.darkforge317.goaltracker.ui.components.ActionBarButton;
 import com.darkforge317.goaltracker.ui.components.ListItemPanel;
@@ -34,12 +35,13 @@ import java.util.function.Consumer;
  * Shows header (title, add/import/export controls), goal list with undo/redo,
  * and switches between home view and individual goal panels.
  */
-public final class GoalTrackerPanel extends PluginPanel implements Refreshable
+public final class GoalTrackerPanel extends JPanel implements Refreshable
 {
     private final JPanel mainPanel = new JPanel(new BorderLayout());
     private final ListPanel<Goal> goalListPanel;
     private final GoalTrackerPlugin plugin;
     private final GoalManager goalManager;
+    private final PanelService panelService;
     private final UndoStack<Goal> undoStack = new UndoStack<>();
     private ActionBarButton undoButtonRef;
     private ActionBarButton redoButtonRef;
@@ -51,15 +53,15 @@ public final class GoalTrackerPanel extends PluginPanel implements Refreshable
     private Goal pendingNewGoal;
 
     @Inject
-    public GoalTrackerPanel(GoalTrackerPlugin plugin, GoalManager goalManager)
+    public GoalTrackerPanel(PanelService panelService, GoalTrackerPlugin plugin, GoalManager goalManager)
     {
-        super(false);
+        super(new BorderLayout());
+        this.panelService = panelService;
         this.plugin = plugin;
         this.goalManager = goalManager;
-        this.goalManager.addGoalsChangedListener(() -> SwingUtilities.invokeLater(this::refreshHomeListIfVisible));
+
 
         setBackground(ColorScheme.DARK_GRAY_COLOR);
-        setLayout(new BorderLayout());
         setBorder(new EmptyBorder(8, 8, 8, 8));
 
         // Header with title and + Add goal on right
@@ -78,12 +80,17 @@ public final class GoalTrackerPanel extends PluginPanel implements Refreshable
         titleRow.add(title);
 
         // Buttons row (bottom)
-        JPanel buttonsRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+        JPanel buttonsRow = new JPanel(new GridLayout(0, 2, 5, 4));
         buttonsRow.setBackground(ColorScheme.DARK_GRAY_COLOR);
         ActionBarButton addGoalBtn = new ActionBarButton("+ Add goal", this::addNewGoal);
-        ActionBarButton addFromPresetBtn = new ActionBarButton("Add from Preset…", this::addFromPreset);
+        addGoalBtn.setToolTipText("Create a new goal");
+        ActionBarButton addFromPresetBtn = new ActionBarButton("Add preset", this::addFromPreset);
+        addFromPresetBtn.setToolTipText("Create a goal from a preset");
+        ActionBarButton changelogsButton = new ActionBarButton("Changelogs", this::showChangelogList);
+        changelogsButton.setToolTipText("Browse previous changelog entries");
         buttonsRow.add(addGoalBtn);
         buttonsRow.add(addFromPresetBtn);
+        buttonsRow.add(changelogsButton);
 
         // Stack rows vertically
         JPanel headerTop = new JPanel();
@@ -101,11 +108,15 @@ public final class GoalTrackerPanel extends PluginPanel implements Refreshable
 
         undoButtonRef = new ActionBarButton("Undo", this::doUndo);
         redoButtonRef = new ActionBarButton("Redo", this::doRedo);
+        undoButtonRef.setToolTipText("Undo the last goal change");
+        redoButtonRef.setToolTipText("Redo the last undone goal change");
         actionBar.left().add(undoButtonRef);
         actionBar.left().add(redoButtonRef);
 
         ActionBarButton exportButton = new ActionBarButton("Export", this::exportGoalsToFile);
         ActionBarButton importButton = new ActionBarButton("Import", this::importGoalsFromFile);
+        exportButton.setToolTipText("Export your goals to a JSON file");
+        importButton.setToolTipText("Import goals from a JSON file");
         actionBar.right().add(exportButton);
         actionBar.right().add(importButton);
 
@@ -150,6 +161,13 @@ public final class GoalTrackerPanel extends PluginPanel implements Refreshable
         mainPanel.add(goalListPanel, BorderLayout.CENTER);
 
         home();
+    }
+
+    private void showChangelogList()
+    {
+        // This function still exists, otherwise we'd need to redesign
+        // ActionBarButton to not require a runnable. Not in-scope yet.
+        panelService.showChangelogListPanel();
     }
 
     private void refreshHomeListIfVisible()
@@ -233,12 +251,14 @@ public final class GoalTrackerPanel extends PluginPanel implements Refreshable
     @Override
     public void refresh()
     {
-        for (Component component : getComponents()) {
-            if (component instanceof Refreshable) {
-                ((Refreshable) component).refresh();
-            }
+        if (goalPanel == null)
+        {
+            refreshHomeListIfVisible();
         }
-        goalListPanel.refresh();
+        else
+        {
+            goalPanel.refresh();
+        }
     }
 
     public void onGoalUpdated(Consumer<Goal> listener)
@@ -271,12 +291,14 @@ public final class GoalTrackerPanel extends PluginPanel implements Refreshable
         if (undoButtonRef != null)
         {
             undoButtonRef.setEnabled(undoStack.hasUndo());
-            undoButtonRef.setToolTipText(undoStack.hasUndo() ? null : "Nothing to undo");
+            undoButtonRef.setToolTipText(undoStack.hasUndo()
+                    ? "Undo the last goal change" : "Nothing to undo");
         }
         if (redoButtonRef != null)
         {
             redoButtonRef.setEnabled(undoStack.hasRedo());
-            redoButtonRef.setToolTipText(undoStack.hasRedo() ? null : "Nothing to redo");
+            redoButtonRef.setToolTipText(undoStack.hasRedo()
+                    ? "Redo the last undone goal change" : "Nothing to redo");
         }
     }
 

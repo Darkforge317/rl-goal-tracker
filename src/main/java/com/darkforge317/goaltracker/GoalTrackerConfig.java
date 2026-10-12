@@ -41,6 +41,15 @@ public interface GoalTrackerConfig extends Config
     @ConfigItem(keyName = "goalTrackerItemNoteMapCache", name = "", description = "", hidden = true)
     void goalTrackerItemNoteMapCache(String str);
 
+    @ConfigItem(keyName = "highestChangelogVersionSeen", name = "", description = "", hidden = true)
+    default String highestChangelogVersionSeen()
+    {
+        return "";
+    }
+
+    @ConfigItem(keyName = "highestChangelogVersionSeen", name = "", description = "", hidden = true)
+    void highestChangelogVersionSeen(String str);
+
     @ConfigItem(
         keyName = "completionMessageColor",
         name = "Completion Message Color",
