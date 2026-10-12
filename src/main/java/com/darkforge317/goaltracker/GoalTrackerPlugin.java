@@ -658,6 +658,12 @@ public final class GoalTrackerPlugin extends Plugin
     /** Recheck an edited target, including targets that were previously completed. */
     public void refreshEditedTask(Task task, com.darkforge317.goaltracker.models.Goal goal)
     {
+        refreshEditedTask(task, goal, task.getStatus().isCompleted());
+    }
+
+    /** Recheck an edited target and notify only when the edit changes it from incomplete to complete. */
+    public void refreshEditedTask(Task task, com.darkforge317.goaltracker.models.Goal goal, boolean wasCompleted)
+    {
         clientThread.invokeLater(() -> {
             if (client.getGameState() == GameState.LOGGED_IN)
             {
@@ -669,7 +675,8 @@ public final class GoalTrackerPlugin extends Plugin
                     item.recomputeFromCount(countHeldEquivalent(item.getItemId(), item.getItemName()));
                 }
             }
-            if (client.getGameState() == GameState.LOGGED_IN && task.getStatus().isCompleted() && !task.isNotified())
+            if (client.getGameState() == GameState.LOGGED_IN && !wasCompleted
+                && task.getStatus().isCompleted() && !task.isNotified())
             {
                 notifyTask(task);
                 task.setNotified(true);

@@ -147,6 +147,7 @@ final class TaskTargetEditor
                 dialog.dispose();
                 return;
             }
+            boolean wasCompleted = task.getStatus().isCompleted();
             if (item != null)
             {
                 item.setQuantity(value);
@@ -169,7 +170,7 @@ final class TaskTargetEditor
             plugin.getGoalManager().save();
             plugin.getUiStatusManager().refresh(savedTask);
             plugin.getUiStatusManager().refresh(goal);
-            plugin.refreshEditedTask(savedTask, goal);
+            plugin.refreshEditedTask(savedTask, goal, wasCompleted);
             dialog.dispose();
         });
         dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
