@@ -40,6 +40,7 @@ public final class GoalPanel extends JPanel implements Refreshable
     private Consumer<Task> taskUpdatedListener;
 
     private final ActionHistory actionHistory = new ActionHistory();
+    private final TaskInteractionState taskInteractionState;
     private ActionBarButton undoButton;
     private ActionBarButton redoButton;
     private ActionBarButton prereqsButton;
@@ -49,6 +50,7 @@ public final class GoalPanel extends JPanel implements Refreshable
         super();
         this.plugin = plugin;
         this.goal = goal;
+        this.taskInteractionState = new TaskInteractionState();
 
         setLayout(new BorderLayout());
 
@@ -139,9 +141,9 @@ public final class GoalPanel extends JPanel implements Refreshable
 
         taskListPanel = new ListPanel<>(goal.getTasks(), (parent, task) -> {
             try {
-                ListTaskPanel taskPanel = new ListTaskPanel(goal.getTasks(), task, parent);
+                ListTaskPanel taskPanel = new ListTaskPanel(goal.getTasks(), task, parent, taskInteractionState);
                 taskPanel.setActionHistory(actionHistory);
-                TaskItemContent taskContent = new TaskItemContent(plugin, goal, task);
+                TaskItemContent taskContent = new TaskItemContent(plugin, goal, task, taskInteractionState);
                 taskContent.setActionHistory(actionHistory);
                 taskContent.onAddChild(this::showAddChildDialog);
                 taskPanel.add(taskContent);
@@ -167,7 +169,7 @@ public final class GoalPanel extends JPanel implements Refreshable
             } catch (Throwable t) {
                 log.error("Failed to render task panel for task {}", task, t);
                 // Render a minimal, visible error row instead of breaking the entire list
-                ListTaskPanel fallback = new ListTaskPanel(goal.getTasks(), task, parent);
+                ListTaskPanel fallback = new ListTaskPanel(goal.getTasks(), task, parent, taskInteractionState);
                 JPanel error = new JPanel(new BorderLayout());
                 error.setOpaque(true);
                 error.setBackground(ColorScheme.DARK_GRAY_COLOR);

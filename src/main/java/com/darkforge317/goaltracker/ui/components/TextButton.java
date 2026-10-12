@@ -61,7 +61,7 @@ public final class TextButton extends JLabel
             @Override
             public void mousePressed(MouseEvent e)
             {
-                clickListener.accept(e);
+                if (SwingUtilities.isLeftMouseButton(e)) clickListener.accept(e);
             }
 
             @Override

@@ -7,6 +7,7 @@ import com.darkforge317.goaltracker.models.enums.Status;
 import com.darkforge317.goaltracker.models.task.QuestTask;
 import com.darkforge317.goaltracker.models.task.Task;
 import com.darkforge317.goaltracker.ui.TaskItemContent;
+import com.darkforge317.goaltracker.ui.TaskInteractionState;
 import com.darkforge317.goaltracker.utils.QuestRequirements;
 import com.darkforge317.goaltracker.utils.ReorderableList;
 import com.darkforge317.goaltracker.utils.TaskHierarchyUtils;
@@ -30,9 +31,8 @@ import java.util.function.Consumer;
  */
 public final class ListTaskPanel extends ListItemPanel<Task>
 {
-    private static ParentSelectionMode activeParentSelection;
-
     private TaskItemContent taskContent;
+    private final TaskInteractionState interactionState;
     private Color parentSelectionOverlay;
 
     private Consumer<Task> parentChangedListener;
@@ -42,7 +42,8 @@ public final class ListTaskPanel extends ListItemPanel<Task>
     private final MouseAdapter shiftClickRemoveListener = new MouseAdapter() {
         @Override
         public void mouseClicked(MouseEvent e) {
-            if (e.isShiftDown() && SwingUtilities.isLeftMouseButton(e)) {
+            if (interactionState.getMode() == TaskInteractionState.Mode.SHIFT_DELETE
+                    && SwingUtilities.isLeftMouseButton(e)) {
                 removeItem.doClick();
             }
         }
@@ -50,7 +51,6 @@ public final class ListTaskPanel extends ListItemPanel<Task>
 
     private void addShiftRemoveListenerRecursive(Component c)
     {
-        if (taskContent != null && c == taskContent.getAddChildButton()) return;
         c.addMouseListener(shiftClickRemoveListener);
         if (c instanceof Container)
         {
@@ -61,21 +61,13 @@ public final class ListTaskPanel extends ListItemPanel<Task>
         }
     }
 
-    public ListTaskPanel(ReorderableList<Task> list, Task item, JComponent parent)
+    public ListTaskPanel(ReorderableList<Task> list, Task item, JComponent parent,
+                         TaskInteractionState interactionState)
     {
         super(list, item, parent);
+        this.interactionState = interactionState;
 
-        // Allow shift-click to remove this item and all its indented children
-        addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (e.isShiftDown() && e.getButton() == MouseEvent.BUTTON1) {
-                    // Delegate to the Remove action (which cascades children and notifies listeners)
-                    removeItem.doClick();
-                }
-            }
-        });
-        // Apply the same shift-click removal listener to all nested components
+        // Apply Shift-delete to the row and all existing nested components.
         addShiftRemoveListenerRecursive(this);
     }
 
@@ -469,14 +461,15 @@ public final class ListTaskPanel extends ListItemPanel<Task>
 
     private void startParentSelection(List<Task> candidates)
     {
-        if (activeParentSelection != null) activeParentSelection.cancel();
-        activeParentSelection = new ParentSelectionMode(this, candidates);
-        activeParentSelection.start();
+        if (interactionState.getMode() == TaskInteractionState.Mode.SET_PARENT) return;
+        ParentSelectionMode selection = new ParentSelectionMode(this, candidates);
+        selection.start();
     }
 
     private boolean isValidParentCandidate(Task candidate)
     {
         return candidate != item
+                && !java.util.Objects.equals(candidate.getTaskId(), item.getParentTaskId())
                 && !TaskHierarchyUtils.getDescendants(list, item).contains(candidate);
     }
 
@@ -490,16 +483,20 @@ public final class ListTaskPanel extends ListItemPanel<Task>
 
         private final ListTaskPanel source;
         private final List<Task> candidates;
+        private final List<ListTaskPanel> taskRows;
         private ListTaskPanel hovered;
         private final Map<Component, Cursor> sourceCursors;
         private final String sourceToolTip;
         private Map<Component, Cursor> hoveredCursors;
         private boolean active;
+        private boolean deferInteractionReset;
+        private ListTaskPanel pressedInvalidTarget;
 
         private ParentSelectionMode(ListTaskPanel source, List<Task> candidates)
         {
             this.source = source;
             this.candidates = new ArrayList<>(candidates);
+            this.taskRows = collectTaskRows(source);
             this.sourceCursors = captureCursors(source);
             this.sourceToolTip = source.getToolTipText();
         }
@@ -507,10 +504,11 @@ public final class ListTaskPanel extends ListItemPanel<Task>
         private void start()
         {
             active = true;
+            source.interactionState.beginParentSelection(source.item);
+            taskRows.forEach(row -> row.setContextMenuSuppressed(true));
             Toolkit.getDefaultToolkit().addAWTEventListener(this,
                     AWTEvent.MOUSE_MOTION_EVENT_MASK | AWTEvent.MOUSE_EVENT_MASK);
             KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(this);
-            if (source.taskContent != null) source.taskContent.setParentSelectionMode(true);
             setCursorRecursively(source, ADD_CURSOR);
             source.setToolTipText("Choose a task to become the parent. Right-click or press Escape to cancel.");
         }
@@ -527,7 +525,21 @@ public final class ListTaskPanel extends ListItemPanel<Task>
 
             if (mouse.getID() == MouseEvent.MOUSE_MOVED || mouse.getID() == MouseEvent.MOUSE_DRAGGED)
             {
-                setHovered(target != null && target.list == source.list ? target : null);
+                if (target != null && target.list == source.list)
+                {
+                    setHovered(target);
+                }
+                else if (pressedInvalidTarget == null)
+                {
+                    setHovered(null);
+                }
+                return;
+            }
+
+            if (mouse.getID() == MouseEvent.MOUSE_RELEASED)
+            {
+                if (target != null && target.list == source.list) setHovered(target);
+                pressedInvalidTarget = null;
                 return;
             }
 
@@ -535,16 +547,32 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             if (SwingUtilities.isRightMouseButton(mouse))
             {
                 mouse.consume();
-                cancel();
+                deferInteractionReset = true;
+                finish();
+                SwingUtilities.invokeLater(() -> {
+                    source.interactionState.endParentSelection();
+                    restoreContextMenus();
+                });
             }
             else if (SwingUtilities.isLeftMouseButton(mouse))
             {
                 mouse.consume();
+                if (target != null && target.list == source.list)
+                {
+                    boolean valid = candidates.contains(target.item) && source.isValidParentCandidate(target.item);
+                    setHovered(target);
+                    pressedInvalidTarget = valid ? null : target;
+                }
                 if (target != null && target.list == source.list && candidates.contains(target.item)
                         && source.isValidParentCandidate(target.item))
                 {
                     ListTaskPanel selected = target;
+                    deferInteractionReset = true;
                     finish();
+                    SwingUtilities.invokeLater(() -> {
+                        source.interactionState.endParentSelection();
+                        restoreContextMenus();
+                    });
                     source.changeParent(selected.item.getTaskId());
                 }
             }
@@ -568,14 +596,12 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             if (hovered != null)
             {
                 hovered.setParentSelectionOverlay(null);
-                if (hovered.taskContent != null) hovered.taskContent.setParentSelectionMode(false);
                 restoreCursors(hoveredCursors);
             }
             hovered = next;
             if (hovered != null)
             {
                 boolean valid = candidates.contains(hovered.item) && source.isValidParentCandidate(hovered.item);
-                if (hovered.taskContent != null) hovered.taskContent.setParentSelectionMode(true);
                 hovered.setParentSelectionOverlay(valid ? VALID_HIGHLIGHT : INVALID_HIGHLIGHT);
                 hoveredCursors = captureAndSetCursors(hovered, valid ? ADD_CURSOR : INVALID_CURSOR);
             }
@@ -594,9 +620,33 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             Toolkit.getDefaultToolkit().removeAWTEventListener(this);
             KeyboardFocusManager.getCurrentKeyboardFocusManager().removeKeyEventDispatcher(this);
             restoreCursors(sourceCursors);
-            if (source.taskContent != null) source.taskContent.setParentSelectionMode(false);
+            if (!deferInteractionReset)
+            {
+                source.interactionState.endParentSelection();
+                restoreContextMenus();
+            }
             source.setToolTipText(sourceToolTip);
-            if (activeParentSelection == this) activeParentSelection = null;
+        }
+
+        private void restoreContextMenus()
+        {
+            taskRows.forEach(row -> row.setContextMenuSuppressed(false));
+        }
+
+        private static List<ListTaskPanel> collectTaskRows(ListTaskPanel source)
+        {
+            Container listPanel = SwingUtilities.getAncestorOfClass(ListPanel.class, source);
+            List<ListTaskPanel> rows = new ArrayList<>();
+            if (listPanel != null) collectTaskRows(listPanel, rows);
+            if (!rows.contains(source)) rows.add(source);
+            return rows;
+        }
+
+        private static void collectTaskRows(Component component, List<ListTaskPanel> rows)
+        {
+            if (component instanceof ListTaskPanel) rows.add((ListTaskPanel) component);
+            if (component instanceof Container)
+                for (Component child : ((Container) component).getComponents()) collectTaskRows(child, rows);
         }
 
         private static Map<Component, Cursor> captureAndSetCursors(Component root, Cursor cursor)
