@@ -38,6 +38,7 @@ public final class GoalPanel extends JPanel implements Refreshable
     private Consumer<Goal> goalUpdatedListener;
     private Consumer<Task> taskAddedListener;
     private Consumer<Task> taskUpdatedListener;
+    private boolean addingPrereqsBatch;
 
     private final ActionHistory actionHistory = new ActionHistory();
     private final TaskInteractionState taskInteractionState;
@@ -167,6 +168,12 @@ public final class GoalPanel extends JPanel implements Refreshable
                     plugin.getUiStatusManager().refresh(goal);
                     this.refresh();
                     updateUndoRedoButtons();
+                });
+                taskPanel.onPrerequisitesAdded(() -> {
+                    if (!addingPrereqsBatch)
+                    {
+                        refreshAfterPrerequisitesAdded();
+                    }
                 });
 
                 taskPanel.onRemovedWithIndex((removedTask, index) -> updateUndoRedoButtons());
@@ -517,17 +524,25 @@ public final class GoalPanel extends JPanel implements Refreshable
         java.util.List<TaskItemContent> contents = new java.util.ArrayList<>();
         collectTaskItemContents(taskListPanel, contents);
 
-        for (TaskItemContent tic : contents)
+        addingPrereqsBatch = true;
+        try
         {
-            Task t = tic.getTask();
-            if (t != null && t.getType() == TaskType.QUEST)
+            for (TaskItemContent tic : contents)
             {
-                processed++;
-                if (tic.addPrereqsFromContext())
+                Task t = tic.getTask();
+                if (t != null && t.getType() == TaskType.QUEST)
                 {
-                    invoked++;
+                    processed++;
+                    if (tic.addPrereqsFromContext())
+                    {
+                        invoked++;
+                    }
                 }
             }
+        }
+        finally
+        {
+            addingPrereqsBatch = false;
         }
 
         // Refresh UI/state after batch
@@ -536,11 +551,7 @@ public final class GoalPanel extends JPanel implements Refreshable
         // If new prerequisites were actually added, run our clean validation sweep
         if (invoked > 0)
         {
-            plugin.refreshAllTasks(() -> {
-                plugin.getUiStatusManager().refresh(goal);
-                refreshTaskList();
-                updateUndoRedoButtons();
-            });
+            refreshAfterPrerequisitesAdded();
         }
         else
         {
@@ -566,6 +577,16 @@ public final class GoalPanel extends JPanel implements Refreshable
                     "Add pre-reqs",
                     JOptionPane.WARNING_MESSAGE);
         }
+    }
+
+    private void refreshAfterPrerequisitesAdded()
+    {
+        plugin.setValidateAll(true);
+        plugin.refreshAllTasks(() -> {
+            plugin.getUiStatusManager().refresh(goal);
+            refreshTaskList();
+            updateUndoRedoButtons();
+        });
     }
 
     private static void collectTaskItemContents(Component root, java.util.List<TaskItemContent> out)

@@ -498,6 +498,7 @@ public final class GoalTrackerPanel extends JPanel implements Refreshable
         if (selected == null) { return; }
 
         goalManager.addGoals(selected.getGoals());
+        plugin.refreshAllTasks(this::refreshHomeListIfVisible);
 
         if (goalPanel != null) {
             home();

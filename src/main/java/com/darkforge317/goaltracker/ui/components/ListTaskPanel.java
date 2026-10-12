@@ -38,6 +38,7 @@ public final class ListTaskPanel extends ListItemPanel<Task>
     private Color parentSelectionOverlay;
 
     private Consumer<Task> parentChangedListener;
+    private Runnable prerequisitesAddedListener;
 
     private ActionHistory history;
 
@@ -228,6 +229,10 @@ public final class ListTaskPanel extends ListItemPanel<Task>
                             }
                             TaskHierarchyUtils.normalizeIndentLevels(list);
                             refreshParentList();
+                            if (prerequisitesAddedListener != null)
+                            {
+                                prerequisitesAddedListener.run();
+                            }
                         }
                     }
                 });
@@ -248,6 +253,8 @@ public final class ListTaskPanel extends ListItemPanel<Task>
     }
 
     public void onParentChanged(Consumer<Task> listener) { this.parentChangedListener = listener; }
+
+    public void onPrerequisitesAdded(Runnable listener) { this.prerequisitesAddedListener = listener; }
 
     private void setParentSelectionOverlay(Color color)
     {
@@ -417,6 +424,10 @@ public final class ListTaskPanel extends ListItemPanel<Task>
                             }
                             TaskHierarchyUtils.normalizeIndentLevels(list);
                             refreshParentList();
+                            if (prerequisitesAddedListener != null)
+                            {
+                                prerequisitesAddedListener.run();
+                            }
                         }
                     }
                 });

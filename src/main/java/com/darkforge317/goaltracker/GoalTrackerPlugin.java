@@ -916,9 +916,26 @@ public final class GoalTrackerPlugin extends Plugin
     {
         // Force the execution to run safely on the OSRS client thread
         clientThread.invokeLater(() -> {
-            refreshSkillLevelTasks();
-            refreshQuestTasks();
-            refreshSkillXpTasks();
+            if (client != null && client.getGameState() == GameState.LOGGED_IN)
+            {
+                for (int inventory : TRACKED_INVENTORIES)
+                {
+                    if (canReadContainerNow(inventory))
+                    {
+                        refreshContainerCache(inventory);
+                    }
+                }
+
+                refreshSkillLevelTasks();
+                refreshQuestTasks();
+                refreshSkillXpTasks();
+                refreshItemTasks();
+            }
+
+            if (goalManager != null)
+            {
+                goalManager.save();
+            }
 
             // If the caller provided a UI update script, bounce it back to the Swing thread
             if (onCompleteUIHandler != null)
