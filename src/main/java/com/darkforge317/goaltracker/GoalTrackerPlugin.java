@@ -1,8 +1,6 @@
 package com.darkforge317.goaltracker;
 
 
-import com.darkforge317.goaltracker.services.*;
-import com.google.inject.Provides;
 import com.darkforge317.goaltracker.models.enums.TaskType;
 import com.darkforge317.goaltracker.models.Goal;
 import com.darkforge317.goaltracker.models.task.ItemTask;
@@ -10,14 +8,27 @@ import com.darkforge317.goaltracker.models.task.QuestTask;
 import com.darkforge317.goaltracker.models.task.SkillLevelTask;
 import com.darkforge317.goaltracker.models.task.SkillXpTask;
 import com.darkforge317.goaltracker.models.task.Task;
+import com.darkforge317.goaltracker.services.ChangelogService;
+import com.darkforge317.goaltracker.services.KeyInputService;
+import com.darkforge317.goaltracker.services.PanelService;
+import com.darkforge317.goaltracker.services.TaskIconService;
+import com.darkforge317.goaltracker.services.TaskUpdateService;
+import com.google.inject.Provides;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.*;
+import net.runelite.api.ChatMessageType;
+import net.runelite.api.Client;
+import net.runelite.api.GameState;
+import net.runelite.api.Item;
+import net.runelite.api.ItemContainer;
+import net.runelite.api.Skill;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.events.StatChanged;
 import net.runelite.api.events.VarbitChanged;
+import net.runelite.api.gameval.InventoryID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.chat.QueuedMessage;
@@ -39,7 +50,6 @@ import net.runelite.client.util.ColorUtil;
 import javax.inject.Inject;
 import javax.swing.*;
 import java.awt.*;
-import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,12 +64,34 @@ import java.util.regex.Pattern;
  */
 public final class GoalTrackerPlugin extends Plugin
 {
+    public GoalTrackerPlugin()
+    {
+        // RuneLite requires this no-argument constructor; tests use the overload below to inject mocks without reflection.
+    }
+
+    GoalTrackerPlugin(Client client, ItemManager itemManager)
+    {
+        this.client = client;
+        this.itemManager = itemManager;
+    }
+
+    GoalTrackerPlugin(Client client, ClientThread clientThread, ChatMessageManager chatMessageManager,
+                      GoalTrackerConfig config, GoalManager goalManager, TaskUIStatusManager uiStatusManager)
+    {
+        this.client = client;
+        this.clientThread = clientThread;
+        this.chatMessageManager = chatMessageManager;
+        this.config = config;
+        this.goalManager = goalManager;
+        this.uiStatusManager = uiStatusManager;
+    }
+
     public static final int[] PLAYER_INVENTORIES = {
-            InventoryID.INVENTORY.getId(),
-            InventoryID.EQUIPMENT.getId(),
-            InventoryID.BANK.getId(),
-            InventoryID.SEED_VAULT.getId(),
-            InventoryID.GROUP_STORAGE.getId()
+            InventoryID.INV,
+            InventoryID.WORN,
+            InventoryID.BANK,
+            InventoryID.SEED_VAULT,
+            InventoryID.INV_GROUP_TEMP
     };
 
     @Getter
@@ -139,19 +171,19 @@ public final class GoalTrackerPlugin extends Plugin
     // Debounced UI refresh timer (coalesces many varbit changes into one repaint)
     private Timer uiRefreshTimer;
 
-    private static final List<InventoryID> TRACKED_INVENTORIES = List.of(
-            InventoryID.INVENTORY,
-            InventoryID.EQUIPMENT,
+    private static final List<Integer> TRACKED_INVENTORIES = List.of(
+            InventoryID.INV,
+            InventoryID.WORN,
             InventoryID.BANK,
             InventoryID.SEED_VAULT,
-            InventoryID.GROUP_STORAGE
+            InventoryID.INV_GROUP_TEMP
     );
 
     // Per-container cached counts, keyed by normalized item name and by raw item ID.
     // Rebuilt only for the single container that actually changed (see refreshContainerCache),
     // instead of rescanning all 5 containers on every ItemContainerChanged event.
-    private final Map<InventoryID, Map<String, Integer>> containerNameCounts = new EnumMap<>(InventoryID.class);
-    private final Map<InventoryID, Map<Integer, Integer>> containerIdCounts = new EnumMap<>(InventoryID.class);
+    private final Map<Integer, Map<String, Integer>> containerNameCounts = new HashMap<>();
+    private final Map<Integer, Map<Integer, Integer>> containerIdCounts = new HashMap<>();
 
     // Cached normalized display name per item ID, since ItemManager composition lookups
     // are relatively expensive and the same IDs repeat across containers/tasks/events.
@@ -207,7 +239,7 @@ public final class GoalTrackerPlugin extends Plugin
         try
         {
             // Example: warm up the TODO_LIST icon at minimum
-            itemManager.getImage(ItemID.TODO_LIST);
+            itemManager.getImage(ItemID.GRIM_WITCH_TODOLIST);
 
             // Warm up skill icons
             for (Skill skill : Skill.values())
@@ -247,7 +279,7 @@ public final class GoalTrackerPlugin extends Plugin
         // immediately, before any ItemContainerChanged event has fired.
         // client.getItemContainer() must be called on the client thread.
         clientThread.invokeLater(() -> {
-            for (InventoryID inv : TRACKED_INVENTORIES)
+            for (int inv : TRACKED_INVENTORIES)
             {
                 refreshContainerCache(inv);
             }
@@ -269,7 +301,7 @@ public final class GoalTrackerPlugin extends Plugin
             panelService.showHome();
         }
 
-        final AsyncBufferedImage icon = itemManager.getImage(ItemID.TODO_LIST);
+        final AsyncBufferedImage icon = itemManager.getImage(ItemID.GRIM_WITCH_TODOLIST);
         if (icon == null)
         {
             log.warn("GoalTrackerPlugin: icon was null; skipping sidebar button creation");
@@ -384,7 +416,7 @@ public final class GoalTrackerPlugin extends Plugin
                 // Container contents (bank/inventory/equipment/etc.) can differ from what was
                 // cached at plugin startup, e.g. on character switch - rebuild all caches, then
                 // re-evaluate item tasks against the fresh counts.
-                for (InventoryID inv : TRACKED_INVENTORIES)
+                for (int inv : TRACKED_INVENTORIES)
                 {
                     refreshContainerCache(inv);
                 }
@@ -483,7 +515,7 @@ public final class GoalTrackerPlugin extends Plugin
         }
 
         // Rebuild the cache for only the container that changed, not all 5.
-        final InventoryID changedInventory = inventoryIdFromContainerId(event.getContainerId());
+        final Integer changedInventory = inventoryIdFromContainerId(event.getContainerId());
         if (changedInventory != null)
         {
             refreshContainerCache(changedInventory);
@@ -512,7 +544,7 @@ public final class GoalTrackerPlugin extends Plugin
      * Called only when that specific container reports a change, instead of rescanning
      * all 5 tracked containers on every ItemContainerChanged event.
      */
-    private void refreshContainerCache(final InventoryID inventoryId)
+    void refreshContainerCache(final int inventoryId)
     {
         final Map<String, Integer> nameCounts = new HashMap<>();
         final Map<Integer, Integer> idCounts = new HashMap<>();
@@ -542,11 +574,11 @@ public final class GoalTrackerPlugin extends Plugin
         containerIdCounts.put(inventoryId, idCounts);
     }
 
-    private static InventoryID inventoryIdFromContainerId(final int containerId)
+    private static Integer inventoryIdFromContainerId(final int containerId)
     {
-        for (InventoryID inv : TRACKED_INVENTORIES)
+        for (int inv : TRACKED_INVENTORIES)
         {
-            if (inv.getId() == containerId)
+            if (inv == containerId)
             {
                 return inv;
             }
@@ -576,7 +608,7 @@ public final class GoalTrackerPlugin extends Plugin
     private int countHeld(final int itemId)
     {
         int total = 0;
-        for (InventoryID inv : TRACKED_INVENTORIES)
+        for (int inv : TRACKED_INVENTORIES)
         {
             final Map<Integer, Integer> idCounts = containerIdCounts.get(inv);
             if (idCounts != null)
@@ -587,7 +619,7 @@ public final class GoalTrackerPlugin extends Plugin
         return total;
     }
 
-    private int countHeldEquivalent(final int targetItemId, final String targetItemName)
+    int countHeldEquivalent(final int targetItemId, final String targetItemName)
     {
         // Fallback to ID-only counting if we don't have a name
         if (targetItemName == null || targetItemName.isEmpty() || itemManager == null)
@@ -598,7 +630,7 @@ public final class GoalTrackerPlugin extends Plugin
         final String baseName = normalizeBarrowsName(targetItemName);
         int total = 0;
 
-        for (InventoryID inv : TRACKED_INVENTORIES)
+        for (int inv : TRACKED_INVENTORIES)
         {
             final Map<String, Integer> nameCounts = containerNameCounts.get(inv);
             if (nameCounts != null)
@@ -607,8 +639,12 @@ public final class GoalTrackerPlugin extends Plugin
             }
         }
 
-        // Include the exact base ID too, in case some pieces don't use numeric suffixes
-        total += countHeld(targetItemId);
+        // Name counts already include the exact ID when its name matches. Only
+        // fall back to the ID when that item was not included in the name total.
+        if (!baseName.equals(normalizedNameFor(targetItemId)))
+        {
+            total += countHeld(targetItemId);
+        }
         return total;
     }
 
@@ -626,6 +662,40 @@ public final class GoalTrackerPlugin extends Plugin
         String s = TRAILING_NUMBER_PATTERN.matcher(raw).replaceAll("").trim();
         s = MULTI_SPACE_PATTERN.matcher(s).replaceAll(" ");
         return s;
+    }
+
+    /** Recheck an edited target, including targets that were previously completed. */
+    public void refreshEditedTask(Task task, com.darkforge317.goaltracker.models.Goal goal)
+    {
+        refreshEditedTask(task, goal, task.getStatus().isCompleted());
+    }
+
+    /** Recheck an edited target and notify only when the edit changes it from incomplete to complete. */
+    public void refreshEditedTask(Task task, com.darkforge317.goaltracker.models.Goal goal, boolean wasCompleted)
+    {
+        clientThread.invokeLater(() -> {
+            if (client.getGameState() == GameState.LOGGED_IN)
+            {
+                if (task instanceof SkillLevelTask) ((SkillLevelTask) task).refreshStatus(client);
+                else if (task instanceof SkillXpTask) ((SkillXpTask) task).refreshStatus(client);
+                else if (task instanceof ItemTask)
+                {
+                    ItemTask item = (ItemTask) task;
+                    item.recomputeFromCount(countHeldEquivalent(item.getItemId(), item.getItemName()));
+                }
+            }
+            if (client.getGameState() == GameState.LOGGED_IN && !wasCompleted
+                && task.getStatus().isCompleted() && !task.isNotified())
+            {
+                notifyTask(task);
+                task.setNotified(true);
+            }
+            SwingUtilities.invokeLater(() -> {
+                goalManager.save();
+                uiStatusManager.refresh(task);
+                uiStatusManager.refresh(goal);
+            });
+        });
     }
 
     /**

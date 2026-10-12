@@ -10,6 +10,7 @@ import com.darkforge317.goaltracker.models.task.Task;
 import com.darkforge317.goaltracker.services.TaskIconService;
 import com.darkforge317.goaltracker.ui.components.ListItemPanel;
 import com.darkforge317.goaltracker.ui.components.ListPanel;
+import com.darkforge317.goaltracker.ui.components.TextButton;
 import com.darkforge317.goaltracker.utils.TaskHierarchyUtils;
 import lombok.Getter;
 import lombok.Setter;
@@ -22,6 +23,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.util.Locale;
+import java.util.function.Consumer;
 
 import static com.darkforge317.goaltracker.utils.Constants.STATUS_TO_COLOR;
 
@@ -51,6 +53,10 @@ public final class TaskItemContent extends JPanel implements Refreshable
     private final JPanel titleStack = new JPanel(new CardLayout());
     private final JLabel iconLabel = new JLabel();
     private final JLabel collapseArrow = new JLabel();
+    private final TextButton addChildButton = new TextButton("");
+    private boolean parentSelectionMode;
+    private final TaskInteractionState interactionState;
+    private Consumer<Task> addChildListener;
     private JPanel iconWrapper;
     private JPanel iconRow;
     private boolean titleEditable;
@@ -59,6 +65,7 @@ public final class TaskItemContent extends JPanel implements Refreshable
     @Setter
     private ActionHistory actionHistory;
     private final Runnable shiftStateListener = this::onShiftStateChanged;
+    private final Runnable interactionStateListener = this::onInteractionStateChanged;
 
 
     // Custom Trash Cursor Assets
@@ -96,6 +103,7 @@ public final class TaskItemContent extends JPanel implements Refreshable
     }
 
     private static final int ARROW_SIZE = 10; // px - tweak overall arrow size here
+    private static final int ADD_CHILD_ICON_SIZE = 11;
     private static final ImageIcon COLLAPSED_ARROW_ICON;
     private static final ImageIcon EXPANDED_ARROW_ICON;
     private static final ImageIcon BLANK_ARROW_ICON;
@@ -126,12 +134,13 @@ public final class TaskItemContent extends JPanel implements Refreshable
         return resized;
     }
 
-    TaskItemContent(GoalTrackerPlugin plugin, Goal goal, Task task)
+    TaskItemContent(GoalTrackerPlugin plugin, Goal goal, Task task, TaskInteractionState interactionState)
     {
         super(new BorderLayout());
         this.plugin = plugin;
         this.task = task;
         this.goal = goal;
+        this.interactionState = interactionState;
         iconService = plugin.getTaskIconService();
 
         // Let the label calculate its own natural width while keeping the 24px height.
@@ -145,7 +154,22 @@ public final class TaskItemContent extends JPanel implements Refreshable
         titleStack.setOpaque(false);
         titleStack.add(titleLabel, "label");
         titleStack.add(titleEdit, "edit");
-        add(titleStack, BorderLayout.CENTER);
+
+        addChildButton.setToolTipText("Add child task");
+        BufferedImage addChildImage = net.runelite.client.util.ImageUtil.loadImageResource(TaskItemContent.class, "/add_child.png");
+        addChildButton.setIcon(new ImageIcon(resizeImage(addChildImage, ADD_CHILD_ICON_SIZE, ADD_CHILD_ICON_SIZE)));
+        addChildButton.setPreferredSize(new Dimension(ADD_CHILD_ICON_SIZE + 8, 24));
+        addChildButton.setBorder(new EmptyBorder(0, 4, 0, 4));
+        addChildButton.onClick(e -> {
+            if (interactionState.getMode() != TaskInteractionState.Mode.NORMAL) return;
+            if (addChildListener != null) addChildListener.accept(task);
+        });
+
+        JPanel titleRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        titleRow.setOpaque(false);
+        titleRow.add(titleStack);
+        titleRow.add(addChildButton);
+        add(titleRow, BorderLayout.CENTER);
 
         iconWrapper = new JPanel(new BorderLayout());
         iconWrapper.setBorder(new EmptyBorder(0, 0, 0, 0));
@@ -155,6 +179,8 @@ public final class TaskItemContent extends JPanel implements Refreshable
         collapseArrow.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
+                if (interactionState.getMode() != TaskInteractionState.Mode.NORMAL
+                        || !TaskHierarchyUtils.hasChildren(goal.getTasks(), task)) return;
                 task.setCollapsed(!task.isCollapsed());
                 Container ancestor = SwingUtilities.getAncestorOfClass(ListPanel.class, TaskItemContent.this);
                 if (ancestor instanceof ListPanel) {
@@ -184,7 +210,9 @@ public final class TaskItemContent extends JPanel implements Refreshable
         titleEditable = (task instanceof ManualTask);
         if (titleEditable) {
             titleLabel.addMouseListener(new MouseAdapter() {
-                @Override public void mouseClicked(MouseEvent e) { enterEdit(); }
+                @Override public void mouseClicked(MouseEvent e) {
+                    if (interactionState.getMode() == TaskInteractionState.Mode.NORMAL) enterEdit();
+                }
             });
             titleEdit.addActionListener(e -> exitEdit(true));
             titleEdit.addFocusListener(new FocusAdapter() {
@@ -196,11 +224,14 @@ public final class TaskItemContent extends JPanel implements Refreshable
             @Override
             public void ancestorAdded(AncestorEvent event) {
                 plugin.getKeyInputService().addListener(shiftStateListener);
+                interactionState.addListener(interactionStateListener);
+                onInteractionStateChanged();
             }
 
             @Override
             public void ancestorRemoved(AncestorEvent event) {
                 plugin.getKeyInputService().removeListener(shiftStateListener);
+                interactionState.removeListener(interactionStateListener);
             }
 
             @Override
@@ -212,6 +243,7 @@ public final class TaskItemContent extends JPanel implements Refreshable
         {
             private void showMenuIfNeeded(MouseEvent e)
             {
+                if (interactionState.getMode() == TaskInteractionState.Mode.SET_PARENT) return;
                 if (!(e.isPopupTrigger() || SwingUtilities.isRightMouseButton(e)))
                 {
                     return;
@@ -263,31 +295,35 @@ public final class TaskItemContent extends JPanel implements Refreshable
         MouseAdapter rowHoverCursorAdapter = new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
+                syncShiftFromMouseEvent(e);
                 updateCursorForModifiers(e.getModifiersEx());
             }
 
             @Override
             public void mouseMoved(MouseEvent e) {
+                syncShiftFromMouseEvent(e);
                 updateCursorForModifiers(e.getModifiersEx());
             }
 
             @Override
             public void mousePressed(MouseEvent e) {
+                syncShiftFromMouseEvent(e);
                 updateCursorForModifiers(e.getModifiersEx());
             }
 
             @Override
             public void mouseExited(MouseEvent e) {
+                if (parentSelectionMode) return;
                 PointerInfo pi = MouseInfo.getPointerInfo();
                 if (pi != null) {
                     Point mousePos = pi.getLocation();
                     SwingUtilities.convertPointFromScreen(mousePos, TaskItemContent.this);
 
                     if (!TaskItemContent.this.contains(mousePos)) {
-                        updateAllChildCursors(DEFAULT_PANEL_CURSOR);
+                        updateCursorForModifiers(0);
                     }
                 } else {
-                    updateAllChildCursors(DEFAULT_PANEL_CURSOR);
+                    updateCursorForModifiers(0);
                 }
             }
         };
@@ -302,14 +338,40 @@ public final class TaskItemContent extends JPanel implements Refreshable
         titleEdit.addMouseMotionListener(rowHoverCursorAdapter);
         iconLabel.addMouseListener(rowHoverCursorAdapter);
         iconLabel.addMouseMotionListener(rowHoverCursorAdapter);
+        addChildButton.addMouseListener(rowHoverCursorAdapter);
+        addChildButton.addMouseMotionListener(rowHoverCursorAdapter);
+        collapseArrow.addMouseListener(rowHoverCursorAdapter);
+        collapseArrow.addMouseMotionListener(rowHoverCursorAdapter);
         if (iconWrapper != null) {
             iconWrapper.addMouseListener(rowHoverCursorAdapter);
             iconWrapper.addMouseMotionListener(rowHoverCursorAdapter);
         }
     }
 
+    public boolean canEditTarget()
+    {
+        return TaskTargetEditor.supports(task);
+    }
+
+    public void editTarget()
+    {
+        TaskTargetEditor.open(this, plugin, goal, task);
+    }
+
     private void onShiftStateChanged()
     {
+        interactionState.setShiftDown(plugin.getKeyInputService().isShiftDown());
+    }
+
+    private void syncShiftFromMouseEvent(MouseEvent event)
+    {
+        interactionState.setShiftDown((event.getModifiersEx() & InputEvent.SHIFT_DOWN_MASK) != 0);
+    }
+
+    private void onInteractionStateChanged()
+    {
+        setInteractionMode(interactionState.getMode());
+        if (parentSelectionMode) return;
         PointerInfo pi = MouseInfo.getPointerInfo();
         if (pi == null) return;
 
@@ -317,13 +379,13 @@ public final class TaskItemContent extends JPanel implements Refreshable
         SwingUtilities.convertPointFromScreen(mousePos, this);
         if (!this.contains(mousePos)) return; // mouse isn't over this row, nothing to refresh
 
-        boolean isShiftActive = plugin.getKeyInputService().isShiftDown();
-        updateCursorForModifiers(isShiftActive ? InputEvent.SHIFT_DOWN_MASK : 0);
+        updateCursorForModifiers(0);
 
         Point labelPos = pi.getLocation();
         SwingUtilities.convertPointFromScreen(labelPos, titleLabel);
         if (titleLabel.contains(labelPos)) {
-            int modifiers = isShiftActive ? InputEvent.SHIFT_DOWN_MASK : 0;
+            int modifiers = interactionState.getMode() == TaskInteractionState.Mode.SHIFT_DELETE
+                    ? InputEvent.SHIFT_DOWN_MASK : 0;
             MouseEvent moveEvent = new MouseEvent(titleLabel, MouseEvent.MOUSE_MOVED,
                     System.currentTimeMillis(), modifiers, labelPos.x, labelPos.y, 0, false);
             ToolTipManager.sharedInstance().mouseMoved(moveEvent);
@@ -331,8 +393,16 @@ public final class TaskItemContent extends JPanel implements Refreshable
     }
 
     private void updateCursorForModifiers(int modifiersEx) {
-        boolean isShiftDown = (modifiersEx & InputEvent.SHIFT_DOWN_MASK) != 0;
-        updateAllChildCursors(isShiftDown ? TRASH_CURSOR : DEFAULT_PANEL_CURSOR);
+        if (parentSelectionMode) return;
+        boolean shiftDelete = interactionState.getMode() == TaskInteractionState.Mode.SHIFT_DELETE;
+        updateAllChildCursors(shiftDelete ? TRASH_CURSOR : DEFAULT_PANEL_CURSOR);
+        if (!shiftDelete && interactionState.getMode() == TaskInteractionState.Mode.NORMAL) {
+            addChildButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        }
+        if (!shiftDelete && TaskHierarchyUtils.hasChildren(goal.getTasks(), task)
+                && COLLAPSED_ARROW_ICON != null) {
+            collapseArrow.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        }
     }
 
     private void updateAllChildCursors(Cursor cursor) {
@@ -341,6 +411,8 @@ public final class TaskItemContent extends JPanel implements Refreshable
         titleLabel.setCursor(cursor);
         titleEdit.setCursor(cursor);
         iconLabel.setCursor(cursor);
+        collapseArrow.setCursor(cursor);
+        addChildButton.setCursor(cursor);
         if (iconWrapper != null) {
             iconWrapper.setCursor(cursor);
         }
@@ -356,7 +428,7 @@ public final class TaskItemContent extends JPanel implements Refreshable
         // Indent level scales linearly: 0 = 0px, 1 = 12px, 2 = 24px, 3 = 36px, etc.
         int indent = level * INDENT_PER_LEVEL;
 
-        iconLabel.setIcon(iconService.get(task));
+        iconService.updateIcon(task, iconLabel);
         // Apply indent to the row instead of the label to avoid double padding
         iconLabel.setBorder(new EmptyBorder(0, 0, 0, 0));
         iconRow.setBorder(new EmptyBorder(4, indent, 0, 4));
@@ -364,13 +436,33 @@ public final class TaskItemContent extends JPanel implements Refreshable
         boolean hasChildren = TaskHierarchyUtils.hasChildren(goal.getTasks(), task);
         if (hasChildren && COLLAPSED_ARROW_ICON != null) {
             collapseArrow.setIcon(task.isCollapsed() ? COLLAPSED_ARROW_ICON : EXPANDED_ARROW_ICON);
-            collapseArrow.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            collapseArrow.setCursor(interactionState.getMode() == TaskInteractionState.Mode.SHIFT_DELETE
+                    ? TRASH_CURSOR : Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         } else {
             collapseArrow.setIcon(BLANK_ARROW_ICON);
-            collapseArrow.setCursor(DEFAULT_PANEL_CURSOR);
+            collapseArrow.setCursor(interactionState.getMode() == TaskInteractionState.Mode.SHIFT_DELETE
+                    ? TRASH_CURSOR : DEFAULT_PANEL_CURSOR);
         }
 
         revalidate();
+    }
+
+    public void onAddChild(Consumer<Task> listener)
+    {
+        this.addChildListener = listener;
+    }
+
+    public Component getAddChildButton()
+    {
+        return addChildButton;
+    }
+
+    private void setInteractionMode(TaskInteractionState.Mode mode)
+    {
+        parentSelectionMode = mode == TaskInteractionState.Mode.SET_PARENT;
+        boolean normalMode = mode == TaskInteractionState.Mode.NORMAL;
+        addChildButton.setHoverEffectsEnabled(normalMode);
+        addChildButton.setToolTipText(normalMode ? "Add child task" : null);
     }
 
     @Override

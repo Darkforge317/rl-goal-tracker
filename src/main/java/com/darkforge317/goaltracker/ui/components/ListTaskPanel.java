@@ -2,17 +2,27 @@ package com.darkforge317.goaltracker.ui.components;
 
 import com.darkforge317.goaltracker.models.ActionHistory;
 import com.darkforge317.goaltracker.models.ReorderTaskAction;
+import com.darkforge317.goaltracker.models.RemoveTasksAction;
 import com.darkforge317.goaltracker.models.enums.Status;
 import com.darkforge317.goaltracker.models.task.QuestTask;
 import com.darkforge317.goaltracker.models.task.Task;
 import com.darkforge317.goaltracker.ui.TaskItemContent;
+import com.darkforge317.goaltracker.ui.TaskInteractionState;
 import com.darkforge317.goaltracker.utils.QuestRequirements;
 import com.darkforge317.goaltracker.utils.ReorderableList;
+import com.darkforge317.goaltracker.utils.TaskHierarchyUtils;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.AWTEventListener;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 /**
@@ -22,19 +32,18 @@ import java.util.function.Consumer;
 public final class ListTaskPanel extends ListItemPanel<Task>
 {
     private TaskItemContent taskContent;
+    private final TaskInteractionState interactionState;
+    private Color parentSelectionOverlay;
 
-    private final JMenuItem indentItem = new JMenuItem("Indent");
-    private final JMenuItem unindentItem = new JMenuItem("Unindent");
-
-    private Consumer<Task> indentedListener;
-    private Consumer<Task> unindentedListener;
+    private Consumer<Task> parentChangedListener;
 
     private ActionHistory history;
 
     private final MouseAdapter shiftClickRemoveListener = new MouseAdapter() {
         @Override
         public void mouseClicked(MouseEvent e) {
-            if (e.isShiftDown() && SwingUtilities.isLeftMouseButton(e)) {
+            if (interactionState.getMode() == TaskInteractionState.Mode.SHIFT_DELETE
+                    && SwingUtilities.isLeftMouseButton(e)) {
                 removeItem.doClick();
             }
         }
@@ -52,126 +61,13 @@ public final class ListTaskPanel extends ListItemPanel<Task>
         }
     }
 
-    public ListTaskPanel(ReorderableList<Task> list, Task item, JComponent parent)
+    public ListTaskPanel(ReorderableList<Task> list, Task item, JComponent parent,
+                         TaskInteractionState interactionState)
     {
         super(list, item, parent);
+        this.interactionState = interactionState;
 
-        indentItem.addActionListener(e -> {
-            int index = list.indexOf(item);
-            int baseIndent = item.getIndentLevel();
-
-            // Collect affected tasks (item + descendants until sibling/parent)
-            java.util.List<Task> affected = new java.util.ArrayList<>();
-            java.util.List<Integer> oldIndents = new java.util.ArrayList<>();
-
-            affected.add(item);
-            oldIndents.add(baseIndent);
-            for (int i = index + 1; i < list.size(); i++) {
-                var child = list.get(i);
-                if (child.getIndentLevel() <= baseIndent) break;
-                affected.add(child);
-                oldIndents.add(child.getIndentLevel());
-            }
-
-            // Abort the entire cascade (not just the deepest item) if it would push any
-            // affected task past the max - partially applying would break the strict
-            // "child indent > parent indent" invariant the descendant-scan above relies on.
-            int violatingIndex = -1;
-            for (int i = 0; i < oldIndents.size(); i++) {
-                if (oldIndents.get(i) + 1 > Task.MAX_INDENT_LEVEL) {
-                    violatingIndex = i;
-                    break;
-                }
-            }
-            if (violatingIndex != -1) {
-                String culprit = (violatingIndex == 0) ? "This task" : "A task nested within this one";
-                JOptionPane.showMessageDialog(this,
-                        culprit + " would exceed the maximum indent level (" + Task.MAX_INDENT_LEVEL + ").",
-                        "Cannot indent",
-                        JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
-            ActionHistory.Action act = new ActionHistory.Action() {
-                @Override public void undo() {
-                    for (int i = 0; i < affected.size(); i++) {
-                        affected.get(i).setIndentLevel(oldIndents.get(i));
-                    }
-                }
-                @Override public void redo() {
-                    for (int i = 0; i < affected.size(); i++) {
-                        affected.get(i).setIndentLevel(oldIndents.get(i) + 1);
-                    }
-                }
-            };
-
-            if (history != null) {
-                act.redo();
-                history.push(act);
-            } else {
-                // Fallback: apply directly
-                for (int i = 0; i < affected.size(); i++) {
-                    affected.get(i).setIndentLevel(oldIndents.get(i) + 1);
-                }
-            }
-
-            if (this.indentedListener != null) this.indentedListener.accept(item);
-            refreshParentList();
-        });
-
-        unindentItem.addActionListener(e -> {
-            int index = list.indexOf(item);
-            int baseIndent = item.getIndentLevel();
-
-            // Collect affected tasks (item + descendants until sibling/parent)
-            java.util.List<Task> affected = new java.util.ArrayList<>();
-            java.util.List<Integer> oldIndents = new java.util.ArrayList<>();
-
-            affected.add(item);
-            oldIndents.add(baseIndent);
-            for (int i = index + 1; i < list.size(); i++) {
-                var child = list.get(i);
-                if (child.getIndentLevel() <= baseIndent) break;
-                affected.add(child);
-                oldIndents.add(child.getIndentLevel());
-            }
-
-            ActionHistory.Action act = new ActionHistory.Action() {
-                @Override public void undo() {
-                    for (int i = 0; i < affected.size(); i++) {
-                        affected.get(i).setIndentLevel(oldIndents.get(i));
-                    }
-                }
-                @Override public void redo() {
-                    for (int i = 0; i < affected.size(); i++) {
-                        affected.get(i).setIndentLevel(Math.max(0, oldIndents.get(i) - 1));
-                    }
-                }
-            };
-
-            if (history != null) {
-                act.redo();
-                history.push(act);
-            } else {
-                for (int i = 0; i < affected.size(); i++) {
-                    affected.get(i).setIndentLevel(Math.max(0, oldIndents.get(i) - 1));
-                }
-            }
-
-            if (this.unindentedListener != null) this.unindentedListener.accept(item);
-            refreshParentList();
-        });
-        // Allow shift-click to remove this item and all its indented children
-        addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (e.isShiftDown() && e.getButton() == MouseEvent.BUTTON1) {
-                    // Delegate to the Remove action (which cascades children and notifies listeners)
-                    removeItem.doClick();
-                }
-            }
-        });
-        // Apply the same shift-click removal listener to all nested components
+        // Apply Shift-delete to the row and all existing nested components.
         addShiftRemoveListenerRecursive(this);
     }
 
@@ -185,8 +81,8 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             for (var l : moveUp.getActionListeners()) moveUp.removeActionListener(l);
             moveUp.addActionListener(e -> {
                 int oldIndex = list.indexOf(item);
-                int newIndex = Math.max(0, oldIndex - 1);
-                list.moveUp(item);
+                int newIndex = moveItemTo(Math.max(0, oldIndex - 1));
+                if (newIndex < 0) return;
                 if (history != null) {
                     history.push(new ReorderTaskAction(list, item, oldIndex, newIndex));
                 }
@@ -199,8 +95,8 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             for (var l : moveDown.getActionListeners()) moveDown.removeActionListener(l);
             moveDown.addActionListener(e -> {
                 int oldIndex = list.indexOf(item);
-                int newIndex = Math.min(list.size() - 1, oldIndex + 1);
-                list.moveDown(item);
+                int newIndex = moveItemTo(Math.min(list.size() - 1, oldIndex + 1));
+                if (newIndex < 0) return;
                 if (history != null) {
                     history.push(new ReorderTaskAction(list, item, oldIndex, newIndex));
                 }
@@ -213,7 +109,8 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             for (var l : moveToTop.getActionListeners()) moveToTop.removeActionListener(l);
             moveToTop.addActionListener(e -> {
                 int oldIndex = list.indexOf(item);
-                list.moveToTop(item);
+                int newIndex = moveItemTo(0);
+                if (newIndex < 0) return;
                 if (history != null) {
                     history.push(new ReorderTaskAction(list, item, oldIndex, 0));
                 }
@@ -226,9 +123,10 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             for (var l : moveToBottom.getActionListeners()) moveToBottom.removeActionListener(l);
             moveToBottom.addActionListener(e -> {
                 int oldIndex = list.indexOf(item);
-                list.moveToBottom(item);
+                int newIndex = moveItemTo(list.size() - 1);
+                if (newIndex < 0) return;
                 if (history != null) {
-                    history.push(new ReorderTaskAction(list, item, oldIndex, list.size() - 1));
+                    history.push(new ReorderTaskAction(list, item, oldIndex, newIndex));
                 }
                 refreshParentList();
             });
@@ -239,15 +137,8 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             popupMenu.add(moveMenu);
         }
 
-        var previousItem = list.getPreviousItem(item);
-
-        if (item.isNotFullyIndented() && previousItem != null && previousItem.getIndentLevel() >= item.getIndentLevel()) {
-            popupMenu.add(indentItem);
-        }
-
-        if (item.isIndented()) {
-            popupMenu.add(unindentItem);
-        }
+        addParentMenuItems();
+        addEditMenuItem();
 
         String toggleLabel = "Mark as " + (item.getStatus() == Status.COMPLETED ? "Incomplete" : "Completed");
         JMenuItem toggleStatusItem = new JMenuItem(toggleLabel);
@@ -255,20 +146,9 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             // Determine new status for the root item
             Status newStatus = (item.getStatus() == Status.COMPLETED ? Status.NOT_STARTED : Status.COMPLETED);
 
-            // Collect affected tasks (item + descendants until sibling/parent) and their old statuses
-            java.util.List<Task> affected = new java.util.ArrayList<>();
+            java.util.List<Task> affected = TaskHierarchyUtils.getSubtree(list, item);
             java.util.List<Status> oldStatuses = new java.util.ArrayList<>();
-
-            int index = list.indexOf(item);
-            int baseIndent = item.getIndentLevel();
-            affected.add(item);
-            oldStatuses.add(item.getStatus());
-            for (int i = index + 1; i < list.size(); i++) {
-                Task child = list.get(i);
-                if (child.getIndentLevel() <= baseIndent) break;
-                affected.add(child);
-                oldStatuses.add(child.getStatus());
-            }
+            for (Task affectedTask : affected) oldStatuses.add(affectedTask.getStatus());
 
             ActionHistory.Action act = new ActionHistory.Action() {
                 @Override public void undo() {
@@ -306,12 +186,7 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             int baseIndent = item.getIndentLevel();
             // Gather existing direct/descendant children under this quest to avoid duplicates
             java.util.Set<String> existingKeys = new java.util.HashSet<>();
-            int parentIndex = list.indexOf(item);
-            for (int i = parentIndex + 1; i < list.size(); i++) {
-                var child = list.get(i);
-                if (child.getIndentLevel() <= baseIndent) {
-                    break; // stop at siblings/parents
-                }
+            for (Task child : TaskHierarchyUtils.getDescendants(list, item)) {
                 existingKeys.add(child.getClass().getName() + "|" + child.toString());
             }
             var rawPrereqs = QuestRequirements.getRequirements(questTask.getQuest(), baseIndent);
@@ -332,10 +207,7 @@ public final class ListTaskPanel extends ListItemPanel<Task>
                     if (raw != null) {
                         // Refresh existing keys in case the list changed since menu was built
                         java.util.Set<String> currentKeys = new java.util.HashSet<>();
-                        int pIndex = list.indexOf(item);
-                        for (int i = pIndex + 1; i < list.size(); i++) {
-                            var child = list.get(i);
-                            if (child.getIndentLevel() <= baseIndent) break;
+                        for (Task child : TaskHierarchyUtils.getDescendants(list, item)) {
                             currentKeys.add(child.getClass().getName() + "|" + child.toString());
                         }
                         java.util.List<Task> filtered = new java.util.ArrayList<>();
@@ -346,11 +218,13 @@ public final class ListTaskPanel extends ListItemPanel<Task>
                             }
                         }
                         if (!filtered.isEmpty()) {
+                            TaskHierarchyUtils.initializeFromIndent(filtered, baseIndent, item);
                             int index = list.indexOf(item);
                             for (Task prereq : filtered) {
                                 list.add(index + 1, prereq);
                                 index++;
                             }
+                            TaskHierarchyUtils.normalizeIndentLevels(list);
                             refreshParentList();
                         }
                     }
@@ -364,31 +238,32 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             removeItem.removeActionListener(l);
         }
         removeItem.addActionListener(e -> {
-            int removedIndex = list.indexOf(item);
-            int baseIndent = item.getIndentLevel();
-            // Remove all children more indented than this item
-            while (removedIndex + 1 < list.size() && list.get(removedIndex + 1).getIndentLevel() > baseIndent) {
-                list.remove(list.get(removedIndex + 1));
-            }
-            // Remove the item itself
-            list.remove(item);
-            // Notify listeners for Undo/Redo support
-            if (this.removedWithIndexListener != null) this.removedWithIndexListener.accept(item, removedIndex);
-            if (this.removedListener != null) this.removedListener.accept(item);
-            // Refresh UI
-            refreshParentList();
+            removeSubtree();
         });
 
         removeItem.setText("<html>Remove <span style='font-size: smaller; color: gray;'>(Shift+Left Click)</span></html>");
         popupMenu.add(removeItem);
     }
 
-    public void onIndented(Consumer<Task> indentedListener) {
-        this.indentedListener = indentedListener;
+    public void onParentChanged(Consumer<Task> listener) { this.parentChangedListener = listener; }
+
+    private void setParentSelectionOverlay(Color color)
+    {
+        parentSelectionOverlay = color;
+        repaint();
     }
 
-    public void onUnindented(Consumer<Task> unindentedListener) {
-        this.unindentedListener = unindentedListener;
+    @Override
+    public void paint(Graphics graphics)
+    {
+        super.paint(graphics);
+        if (parentSelectionOverlay != null)
+        {
+            Graphics2D overlay = (Graphics2D) graphics.create();
+            overlay.setColor(parentSelectionOverlay);
+            overlay.fillRect(0, 0, getWidth(), getHeight());
+            overlay.dispose();
+        }
     }
 
     public void setTaskContent(TaskItemContent taskContent) {
@@ -397,6 +272,13 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             addShiftRemoveListenerRecursive(taskContent);
             addMouseDragEventForwarderRecursive(taskContent);
         }
+    }
+
+    @Override
+    protected void addMouseDragEventForwarderRecursive(Component component)
+    {
+        if (taskContent != null && component == taskContent.getAddChildButton()) return;
+        super.addMouseDragEventForwarderRecursive(component);
     }
 
     public void setActionHistory(ActionHistory history) {
@@ -416,8 +298,8 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             for (var l : moveUp.getActionListeners()) moveUp.removeActionListener(l);
             moveUp.addActionListener(e -> {
                 int oldIndex = list.indexOf(item);
-                int newIndex = Math.max(0, oldIndex - 1);
-                list.moveUp(item);
+                int newIndex = moveItemTo(Math.max(0, oldIndex - 1));
+                if (newIndex < 0) return;
                 if (history != null) {
                     history.push(new ReorderTaskAction(list, item, oldIndex, newIndex));
                 }
@@ -430,8 +312,8 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             for (var l : moveDown.getActionListeners()) moveDown.removeActionListener(l);
             moveDown.addActionListener(e -> {
                 int oldIndex = list.indexOf(item);
-                int newIndex = Math.min(list.size() - 1, oldIndex + 1);
-                list.moveDown(item);
+                int newIndex = moveItemTo(Math.min(list.size() - 1, oldIndex + 1));
+                if (newIndex < 0) return;
                 if (history != null) {
                     history.push(new ReorderTaskAction(list, item, oldIndex, newIndex));
                 }
@@ -444,7 +326,8 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             for (var l : moveToTop.getActionListeners()) moveToTop.removeActionListener(l);
             moveToTop.addActionListener(e -> {
                 int oldIndex = list.indexOf(item);
-                list.moveToTop(item);
+                int newIndex = moveItemTo(0);
+                if (newIndex < 0) return;
                 if (history != null) {
                     history.push(new ReorderTaskAction(list, item, oldIndex, 0));
                 }
@@ -457,9 +340,10 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             for (var l : moveToBottom.getActionListeners()) moveToBottom.removeActionListener(l);
             moveToBottom.addActionListener(e -> {
                 int oldIndex = list.indexOf(item);
-                list.moveToBottom(item);
+                int newIndex = moveItemTo(list.size() - 1);
+                if (newIndex < 0) return;
                 if (history != null) {
-                    history.push(new ReorderTaskAction(list, item, oldIndex, list.size() - 1));
+                    history.push(new ReorderTaskAction(list, item, oldIndex, newIndex));
                 }
                 refreshParentList();
             });
@@ -470,32 +354,17 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             popupMenu.add(moveMenu);
         }
 
-        // Indent / Unindent
-        var previousItem = list.getPreviousItem(item);
-        if (item.isNotFullyIndented() && previousItem != null && previousItem.getIndentLevel() >= item.getIndentLevel()) {
-            popupMenu.add(indentItem);
-        }
-        if (item.isIndented()) {
-            popupMenu.add(unindentItem);
-        }
+        addParentMenuItems();
+        addEditMenuItem();
 
         // Toggle Completed/Incomplete for this task and its descendants
         String toggleLabel = "Mark as " + (item.getStatus() == Status.COMPLETED ? "Incomplete" : "Completed");
         JMenuItem toggleStatusItem = new JMenuItem(toggleLabel);
         toggleStatusItem.addActionListener(e -> {
             Status newStatus = (item.getStatus() == Status.COMPLETED ? Status.NOT_STARTED : Status.COMPLETED);
-            java.util.List<Task> affected = new java.util.ArrayList<>();
+            java.util.List<Task> affected = TaskHierarchyUtils.getSubtree(list, item);
             java.util.List<Status> oldStatuses = new java.util.ArrayList<>();
-            int index = list.indexOf(item);
-            int baseIndent = item.getIndentLevel();
-            affected.add(item);
-            oldStatuses.add(item.getStatus());
-            for (int i = index + 1; i < list.size(); i++) {
-                Task child = list.get(i);
-                if (child.getIndentLevel() <= baseIndent) break;
-                affected.add(child);
-                oldStatuses.add(child.getStatus());
-            }
+            for (Task affectedTask : affected) oldStatuses.add(affectedTask.getStatus());
             ActionHistory.Action act = new ActionHistory.Action() {
                 @Override public void undo() { for (int i = 0; i < affected.size(); i++) affected.get(i).setStatus(oldStatuses.get(i)); }
                 @Override public void redo() { for (Task t : affected) t.setStatus(newStatus); }
@@ -512,10 +381,7 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             QuestTask questTask = (QuestTask) item;
             int baseIndent = item.getIndentLevel();
             java.util.Set<String> existingKeys = new java.util.HashSet<>();
-            int parentIndex = list.indexOf(item);
-            for (int i = parentIndex + 1; i < list.size(); i++) {
-                var child = list.get(i);
-                if (child.getIndentLevel() <= baseIndent) break;
+            for (Task child : TaskHierarchyUtils.getDescendants(list, item)) {
                 existingKeys.add(child.getClass().getName() + "|" + child.toString());
             }
             var rawPrereqs = QuestRequirements.getRequirements(questTask.getQuest(), baseIndent);
@@ -532,10 +398,7 @@ public final class ListTaskPanel extends ListItemPanel<Task>
                     var raw = QuestRequirements.getRequirements(questTask.getQuest(), baseIndent);
                     if (raw != null) {
                         java.util.Set<String> currentKeys = new java.util.HashSet<>();
-                        int pIndex = list.indexOf(item);
-                        for (int i = pIndex + 1; i < list.size(); i++) {
-                            var child = list.get(i);
-                            if (child.getIndentLevel() <= baseIndent) break;
+                        for (Task child : TaskHierarchyUtils.getDescendants(list, item)) {
                             currentKeys.add(child.getClass().getName() + "|" + child.toString());
                         }
                         java.util.List<Task> filtered = new java.util.ArrayList<>();
@@ -544,11 +407,13 @@ public final class ListTaskPanel extends ListItemPanel<Task>
                             if (!currentKeys.contains(key)) filtered.add(t);
                         }
                         if (!filtered.isEmpty()) {
+                            TaskHierarchyUtils.initializeFromIndent(filtered, baseIndent, item);
                             int insertIndex = list.indexOf(item);
                             for (Task prereq : filtered) {
                                 list.add(insertIndex + 1, prereq);
                                 insertIndex++;
                             }
+                            TaskHierarchyUtils.normalizeIndentLevels(list);
                             refreshParentList();
                         }
                     }
@@ -559,21 +424,21 @@ public final class ListTaskPanel extends ListItemPanel<Task>
 
         // Rewire Remove to cascade children and update label
         for (var l : removeItem.getActionListeners()) removeItem.removeActionListener(l);
-        removeItem.addActionListener(e -> {
-            int removedIndex = list.indexOf(item);
-            int baseIndent = item.getIndentLevel();
-            while (removedIndex + 1 < list.size() && list.get(removedIndex + 1).getIndentLevel() > baseIndent) {
-                list.remove(list.get(removedIndex + 1));
-            }
-            list.remove(item);
-            if (this.removedWithIndexListener != null) this.removedWithIndexListener.accept(item, removedIndex);
-            if (this.removedListener != null) this.removedListener.accept(item);
-            refreshParentList();
-        });
+        removeItem.addActionListener(e -> removeSubtree());
         removeItem.setText("<html>Remove <span style='font-size: smaller; color: gray;'>(Shift+Left Click)</span></html>");
         // Ensure remove is at the bottom: remove and re-add it
         popupMenu.remove(removeItem);
         popupMenu.add(removeItem);
+    }
+
+    private void addEditMenuItem()
+    {
+        if (taskContent != null && taskContent.canEditTarget())
+        {
+            JMenuItem edit = new JMenuItem("Edit");
+            edit.addActionListener(e -> taskContent.editTarget());
+            popupMenu.add(edit);
+        }
     }
 
     private void refreshParentList()
@@ -588,6 +453,492 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             repaint();
         }
     }
+
+    private void addParentMenuItems()
+    {
+        java.util.List<Task> descendants = TaskHierarchyUtils.getDescendants(list, item);
+        java.util.List<Task> candidates = new java.util.ArrayList<>();
+        for (Task candidate : list)
+            if (candidate != item && !descendants.contains(candidate)) candidates.add(candidate);
+        JMenuItem setParent = new JMenuItem("Set parent...");
+        setParent.setEnabled(!candidates.isEmpty());
+        setParent.addActionListener(e -> startParentSelection(candidates));
+        popupMenu.add(setParent);
+        if (item.getParentTaskId() != null) {
+            JMenuItem removeParent = new JMenuItem("Remove parent");
+            removeParent.addActionListener(e -> removeParent());
+            popupMenu.add(removeParent);
+        }
+    }
+
+    void startParentSelection(List<Task> candidates)
+    {
+        if (interactionState.getMode() == TaskInteractionState.Mode.SET_PARENT) return;
+        ParentSelectionMode selection = new ParentSelectionMode(this, candidates);
+        selection.start();
+    }
+
+    String getInvalidParentReason(Task candidate)
+    {
+        if (candidate == item || java.util.Objects.equals(candidate.getTaskId(), item.getTaskId()))
+            return "Can't select itself as its parent.";
+        if (java.util.Objects.equals(candidate.getTaskId(), item.getParentTaskId()))
+            return "Already the parent.";
+        if (TaskHierarchyUtils.getDescendants(list, item).contains(candidate))
+            return "Can't make a child the parent.";
+        if (!TaskHierarchyUtils.canSetParent(list, item, candidate))
+            return "This would exceed the maximum hierarchy depth.";
+        return null;
+    }
+
+    private boolean isValidParentCandidate(Task candidate)
+    {
+        return getInvalidParentReason(candidate) == null;
+    }
+
+    static String formatParentSelectionTooltip(String status)
+    {
+        return "<html>" + status + "<br>Right click or Escape to cancel.</html>";
+    }
+
+    static BufferedImage createPlusCursorImage(int width, int height)
+    {
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = image.createGraphics();
+        int dimensionParity = Math.min(width, height) % 2;
+        int armLength = Math.min(16, Math.min(width, height) - 4);
+        if (armLength % 2 != dimensionParity) armLength--;
+        int barWidth = dimensionParity == 0 ? 4 : 3;
+        int outlineArmLength = Math.min(Math.min(width, height), armLength + 4);
+        int outlineBarWidth = Math.min(Math.min(width, height), barWidth + 4);
+        drawCenteredPlus(graphics, width, height, outlineArmLength, outlineBarWidth, new Color(20, 30, 20));
+        drawCenteredPlus(graphics, width, height, armLength, barWidth, new Color(60, 230, 90));
+        graphics.dispose();
+        return image;
+    }
+
+    private static void drawCenteredPlus(Graphics2D graphics, int width, int height,
+                                         int armLength, int barWidth, Color color)
+    {
+        graphics.setColor(color);
+        graphics.fillRect((width - barWidth) / 2, (height - armLength) / 2, barWidth, armLength);
+        graphics.fillRect((width - armLength) / 2, (height - barWidth) / 2, armLength, barWidth);
+    }
+
+    /** Temporary window-level interaction that lets the player choose a visible task as parent. */
+    private static final class ParentSelectionMode implements AWTEventListener, java.awt.KeyEventDispatcher
+    {
+        private static final Cursor ADD_CURSOR = createAddCursor();
+        private static final Cursor INVALID_CURSOR = createInvalidCursor();
+        private static final Color VALID_HIGHLIGHT = new Color(40, 200, 70, 80);
+        private static final Color INVALID_HIGHLIGHT = new Color(220, 45, 45, 85);
+
+        private final ListTaskPanel source;
+        private final List<Task> candidates;
+        private final List<ListTaskPanel> taskRows;
+        private ListTaskPanel hovered;
+        private final Map<Component, Cursor> sourceCursors;
+        private final String sourceToolTip;
+        private Map<Component, Cursor> hoveredCursors;
+        private Map<JComponent, String> hoveredToolTips;
+        private boolean active;
+        private boolean deferInteractionReset;
+        private boolean swallowRightClickRelease;
+        private ListTaskPanel pressedInvalidTarget;
+
+        private ParentSelectionMode(ListTaskPanel source, List<Task> candidates)
+        {
+            this.source = source;
+            this.candidates = new ArrayList<>(candidates);
+            this.taskRows = collectTaskRows(source);
+            this.sourceCursors = captureCursors(source);
+            this.sourceToolTip = source.getToolTipText();
+        }
+
+        private void start()
+        {
+            active = true;
+            source.interactionState.beginParentSelection(source.item);
+            taskRows.forEach(row -> row.setContextMenuSuppressed(true));
+            Toolkit.getDefaultToolkit().addAWTEventListener(this,
+                    AWTEvent.MOUSE_MOTION_EVENT_MASK | AWTEvent.MOUSE_EVENT_MASK);
+            KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(this);
+            setCursorRecursively(source, ADD_CURSOR);
+            source.setToolTipText("Choose a task to become the parent. Right-click or press Escape to cancel.");
+        }
+
+        @Override
+        public void eventDispatched(AWTEvent event)
+        {
+            if (!(event instanceof MouseEvent)) return;
+            MouseEvent mouse = (MouseEvent) event;
+            if (swallowRightClickRelease)
+            {
+                if (mouse.getID() == MouseEvent.MOUSE_PRESSED && SwingUtilities.isRightMouseButton(mouse))
+                {
+                    mouse.consume();
+                    return;
+                }
+                if (mouse.getID() == MouseEvent.MOUSE_RELEASED && SwingUtilities.isRightMouseButton(mouse))
+                {
+                    mouse.consume();
+                    swallowRightClickRelease = false;
+                    Toolkit.getDefaultToolkit().removeAWTEventListener(this);
+                    SwingUtilities.invokeLater(() -> {
+                        source.interactionState.endParentSelection();
+                        restoreContextMenus();
+                    });
+                }
+                return;
+            }
+            if (!active) return;
+            Component component = mouse.getSource() instanceof Component ? (Component) mouse.getSource() : null;
+            ListTaskPanel target = component instanceof ListTaskPanel ? (ListTaskPanel) component
+                    : component == null ? null
+                    : (ListTaskPanel) SwingUtilities.getAncestorOfClass(ListTaskPanel.class, component);
+
+            if (mouse.getID() == MouseEvent.MOUSE_MOVED || mouse.getID() == MouseEvent.MOUSE_DRAGGED)
+            {
+                if (target != null && target.list == source.list)
+                {
+                    setHovered(target);
+                }
+                else if (pressedInvalidTarget == null)
+                {
+                    setHovered(null);
+                }
+                return;
+            }
+
+            if (mouse.getID() == MouseEvent.MOUSE_RELEASED)
+            {
+                if (target != null && target.list == source.list) setHovered(target);
+                pressedInvalidTarget = null;
+                return;
+            }
+
+            if (mouse.getID() != MouseEvent.MOUSE_PRESSED) return;
+            if (SwingUtilities.isRightMouseButton(mouse))
+            {
+                mouse.consume();
+                deferInteractionReset = true;
+                swallowRightClickRelease = true;
+                finish();
+            }
+            else if (SwingUtilities.isLeftMouseButton(mouse))
+            {
+                mouse.consume();
+                if (target != null && target.list == source.list)
+                {
+                    boolean valid = candidates.contains(target.item) && source.isValidParentCandidate(target.item);
+                    setHovered(target);
+                    pressedInvalidTarget = valid ? null : target;
+                }
+                if (target != null && target.list == source.list && candidates.contains(target.item)
+                        && source.isValidParentCandidate(target.item))
+                {
+                    ListTaskPanel selected = target;
+                    deferInteractionReset = true;
+                    finish();
+                    SwingUtilities.invokeLater(() -> {
+                        source.interactionState.endParentSelection();
+                        restoreContextMenus();
+                    });
+                    source.changeParent(selected.item.getTaskId());
+                }
+            }
+        }
+
+        @Override
+        public boolean dispatchKeyEvent(KeyEvent event)
+        {
+            if (active && event.getID() == KeyEvent.KEY_PRESSED && event.getKeyCode() == KeyEvent.VK_ESCAPE)
+            {
+                event.consume();
+                cancel();
+                return true;
+            }
+            return false;
+        }
+
+        private void setHovered(ListTaskPanel next)
+        {
+            if (hovered == next) return;
+            if (hovered != null)
+            {
+                hovered.setParentSelectionOverlay(null);
+                restoreCursors(hoveredCursors);
+                restoreToolTips(hoveredToolTips);
+            }
+            hovered = next;
+            if (hovered != null)
+            {
+                String invalidReason = source.getInvalidParentReason(hovered.item);
+                boolean valid = candidates.contains(hovered.item) && invalidReason == null;
+                hovered.setParentSelectionOverlay(valid ? VALID_HIGHLIGHT : INVALID_HIGHLIGHT);
+                hoveredCursors = captureAndSetCursors(hovered, valid ? ADD_CURSOR : INVALID_CURSOR);
+                hoveredToolTips = captureAndSetToolTips(hovered,
+                        formatParentSelectionTooltip(valid ? "Valid target."
+                                : invalidReason == null ? "Not an eligible parent." : invalidReason));
+            }
+        }
+
+        private void cancel()
+        {
+            finish();
+        }
+
+        private void finish()
+        {
+            if (!active) return;
+            active = false;
+            setHovered(null);
+            if (!swallowRightClickRelease) Toolkit.getDefaultToolkit().removeAWTEventListener(this);
+            KeyboardFocusManager.getCurrentKeyboardFocusManager().removeKeyEventDispatcher(this);
+            restoreCursors(sourceCursors);
+            if (!deferInteractionReset)
+            {
+                source.interactionState.endParentSelection();
+                restoreContextMenus();
+            }
+            source.setToolTipText(sourceToolTip);
+        }
+
+        private void restoreContextMenus()
+        {
+            taskRows.forEach(row -> row.setContextMenuSuppressed(false));
+        }
+
+        private static List<ListTaskPanel> collectTaskRows(ListTaskPanel source)
+        {
+            Container listPanel = SwingUtilities.getAncestorOfClass(ListPanel.class, source);
+            List<ListTaskPanel> rows = new ArrayList<>();
+            if (listPanel != null) collectTaskRows(listPanel, rows);
+            if (!rows.contains(source)) rows.add(source);
+            return rows;
+        }
+
+        private static void collectTaskRows(Component component, List<ListTaskPanel> rows)
+        {
+            if (component instanceof ListTaskPanel) rows.add((ListTaskPanel) component);
+            if (component instanceof Container)
+                for (Component child : ((Container) component).getComponents()) collectTaskRows(child, rows);
+        }
+
+        private static Map<Component, Cursor> captureAndSetCursors(Component root, Cursor cursor)
+        {
+            Map<Component, Cursor> originals = captureCursors(root);
+            setCursorRecursively(root, cursor);
+            return originals;
+        }
+
+        private static Map<JComponent, String> captureAndSetToolTips(Component root, String toolTip)
+        {
+            Map<JComponent, String> originals = new IdentityHashMap<>();
+            setToolTipRecursively(root, toolTip, originals);
+            return originals;
+        }
+
+        private static void setToolTipRecursively(Component component, String toolTip,
+                                                  Map<JComponent, String> originals)
+        {
+            if (component instanceof JComponent)
+            {
+                JComponent swingComponent = (JComponent) component;
+                originals.put(swingComponent, swingComponent.getToolTipText());
+                swingComponent.setToolTipText(toolTip);
+            }
+            if (component instanceof Container)
+            {
+                for (Component child : ((Container) component).getComponents())
+                    setToolTipRecursively(child, toolTip, originals);
+            }
+        }
+
+        private static void restoreToolTips(Map<JComponent, String> originals)
+        {
+            if (originals == null) return;
+            originals.forEach(JComponent::setToolTipText);
+        }
+
+        private static Map<Component, Cursor> captureCursors(Component root)
+        {
+            Map<Component, Cursor> cursors = new IdentityHashMap<>();
+            captureCursors(root, cursors);
+            return cursors;
+        }
+
+        private static void captureCursors(Component component, Map<Component, Cursor> cursors)
+        {
+            cursors.put(component, component.getCursor());
+            if (component instanceof Container)
+                for (Component child : ((Container) component).getComponents()) captureCursors(child, cursors);
+        }
+
+        private static void setCursorRecursively(Component component, Cursor cursor)
+        {
+            component.setCursor(cursor);
+            if (component instanceof Container)
+                for (Component child : ((Container) component).getComponents()) setCursorRecursively(child, cursor);
+        }
+
+        private static void restoreCursors(Map<Component, Cursor> cursors)
+        {
+            if (cursors != null) cursors.forEach(Component::setCursor);
+        }
+
+        private static Cursor createAddCursor()
+        {
+            return createSymbolCursor(false);
+        }
+
+        private static Cursor createInvalidCursor()
+        {
+            return createSymbolCursor(true);
+        }
+
+        private static Cursor createSymbolCursor(boolean invalid)
+        {
+            try
+            {
+                Dimension size = Toolkit.getDefaultToolkit().getBestCursorSize(24, 24);
+                if (size.width == 0 || size.height == 0) return Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR);
+                BufferedImage image;
+                if (invalid)
+                {
+                    image = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB);
+                    Graphics2D graphics = image.createGraphics();
+                    graphics.setColor(new Color(20, 30, 20));
+                    graphics.setStroke(new BasicStroke(5, BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER));
+                    graphics.drawLine(5, 5, 18, 18);
+                    graphics.drawLine(18, 5, 5, 18);
+                    graphics.setColor(new Color(245, 55, 55));
+                    graphics.setStroke(new BasicStroke(3, BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER));
+                    graphics.drawLine(5, 5, 18, 18);
+                    graphics.drawLine(18, 5, 5, 18);
+                    graphics.dispose();
+                }
+                else
+                {
+                    image = createPlusCursorImage(size.width, size.height);
+                }
+                Point hotSpot = invalid ? new Point(12, 12)
+                        : new Point((size.width - 1) / 2, (size.height - 1) / 2);
+                return Toolkit.getDefaultToolkit().createCustomCursor(image, hotSpot,
+                        invalid ? "InvalidParentCursor" : "SetParentCursor");
+            }
+            catch (RuntimeException e)
+            {
+                return Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR);
+            }
+        }
+    }
+
+    void removeParent()
+    {
+        Task oldParent = TaskHierarchyUtils.getParent(list, item);
+        Task newParent = oldParent == null ? null : TaskHierarchyUtils.getParent(list, oldParent);
+        changeParent(newParent == null ? null : newParent.getTaskId(), oldParent, true);
+    }
+
+    void changeParent(String newParentId)
+    {
+        changeParent(newParentId, null, false);
+    }
+
+    private void changeParent(String newParentId, Task positionAnchor, boolean afterAnchorSubtree)
+    {
+        String oldParentId = item.getParentTaskId();
+        if (java.util.Objects.equals(oldParentId, newParentId)) return;
+        Task newParent = null;
+        if (newParentId != null)
+        {
+            for (Task candidate : list)
+                if (newParentId.equals(candidate.getTaskId())) { newParent = candidate; break; }
+            if (newParent == null || !isValidParentCandidate(newParent)) return;
+        }
+        final Task destinationParent = newParent;
+        java.util.List<Task> oldOrder = new java.util.ArrayList<>(list);
+        java.util.List<Task> subtree = TaskHierarchyUtils.getSubtree(list, item);
+        ActionHistory.Action action = new ActionHistory.Action() {
+            @Override public void undo() {
+                item.setParentTaskId(oldParentId);
+                list.clear();
+                list.addAll(oldOrder);
+                TaskHierarchyUtils.normalizeIndentLevels(list);
+            }
+            @Override public void redo() {
+                item.setParentTaskId(newParentId);
+                if (destinationParent != null || positionAnchor != null)
+                {
+                    list.removeAll(subtree);
+                    int insertIndex;
+                    if (afterAnchorSubtree && positionAnchor != null)
+                    {
+                        int anchorIndex = list.indexOf(positionAnchor);
+                        insertIndex = anchorIndex < 0 ? list.size() : anchorIndex + 1;
+                        for (Task descendant : TaskHierarchyUtils.getDescendants(list, positionAnchor))
+                        {
+                            insertIndex = Math.max(insertIndex, list.indexOf(descendant) + 1);
+                        }
+                    }
+                    else if (destinationParent != null)
+                    {
+                        insertIndex = list.indexOf(destinationParent) + 1;
+                        for (Task descendant : TaskHierarchyUtils.getDescendants(list, destinationParent))
+                            insertIndex = Math.max(insertIndex, list.indexOf(descendant) + 1);
+                    }
+                    else insertIndex = list.size();
+                    list.addAll(insertIndex, subtree);
+                }
+                TaskHierarchyUtils.normalizeIndentLevels(list);
+            }
+        };
+        if (history != null) { action.redo(); history.push(action); }
+        else action.redo();
+        if (parentChangedListener != null) parentChangedListener.accept(item);
+        refreshParentList();
+    }
+
+    private void removeSubtree()
+    {
+        int removedIndex = list.indexOf(item);
+        java.util.List<Task> subtree = TaskHierarchyUtils.getSubtree(list, item);
+        if (subtree.isEmpty()) return;
+
+        if (history != null)
+        {
+            RemoveTasksAction action = new RemoveTasksAction(list, subtree);
+            action.redo();
+            history.push(action);
+        }
+        else
+        {
+            for (int i = subtree.size() - 1; i >= 0; i--) list.remove(subtree.get(i));
+        }
+
+        if (this.removedWithIndexListener != null) this.removedWithIndexListener.accept(item, removedIndex);
+        if (this.removedListener != null) this.removedListener.accept(item);
+        refreshParentList();
+    }
+
+    /** Moves this row unless that would place it under a collapsed ancestor. */
+    private int moveItemTo(int requestedIndex)
+    {
+        int oldIndex = list.indexOf(item);
+        if (oldIndex < 0) return -1;
+
+        list.remove(oldIndex);
+        int newIndex = Math.max(0, Math.min(requestedIndex, list.size()));
+        list.add(newIndex, item);
+        if (TaskHierarchyUtils.hasCollapsedAncestor(list, item))
+        {
+            list.remove(newIndex);
+            list.add(oldIndex, item);
+            return -1;
+        }
+        return newIndex;
+    }
     /**
      * Programmatically add quest prerequisites using the same logic as the context menu action.
      * This lets callers (e.g., presets) trigger prereq insertion without simulating a right-click.
@@ -600,12 +951,9 @@ public final class ListTaskPanel extends ListItemPanel<Task>
         QuestTask questTask = (QuestTask) item;
         int baseIndent = item.getIndentLevel();
 
-        // Gather existing children under this task to avoid duplicates
+        // Gather existing descendants under this task to avoid duplicates
         java.util.Set<String> existingKeys = new java.util.HashSet<>();
-        int parentIndex = list.indexOf(item);
-        for (int i = parentIndex + 1; i < list.size(); i++) {
-            Task child = list.get(i);
-            if (child.getIndentLevel() <= baseIndent) break;
+        for (Task child : TaskHierarchyUtils.getDescendants(list, item)) {
             existingKeys.add(child.getClass().getName() + "|" + child.toString());
         }
 
@@ -627,11 +975,14 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             return;
         }
 
+        TaskHierarchyUtils.initializeFromIndent(filtered, baseIndent, item);
+
         // Insert directly after the parent item, preserving order from QuestRequirements
         int insertIndex = list.indexOf(item);
         for (Task prereq : filtered) {
             list.add(insertIndex + 1, prereq);
             insertIndex++;
         }
+        TaskHierarchyUtils.normalizeIndentLevels(list);
     }
 }

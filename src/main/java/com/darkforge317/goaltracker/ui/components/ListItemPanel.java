@@ -11,11 +11,15 @@ import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.MatteBorder;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.IdentityHashMap;
+import java.util.Map;
 
 /**
  * Generic panel representing a list item (Goal or Task).
@@ -23,6 +27,7 @@ import java.util.function.Consumer;
  */
 public class ListItemPanel<T> extends JPanel implements Refreshable
 {
+    private static final String POPUP_INSTALLER_KEY = ListItemPanel.class.getName() + ".popupInstallerInstalled";
     private static final int BASE_TOP = 8, BASE_LEFT = 6, BASE_BOTTOM = 8, BASE_RIGHT = 6;
     private static final int TAN_THICKNESS = 1;
     private static final int INNER_TOP = 4, INNER_LEFT = 6, INNER_BOTTOM = 4, INNER_RIGHT = 6;
@@ -49,6 +54,19 @@ public class ListItemPanel<T> extends JPanel implements Refreshable
 
     // Inner face of the goal card; only this area changes color on hover/press
     private JPanel cardBody;
+    private Map<JComponent, PopupMenuState> suppressedPopupMenus;
+
+    private static final class PopupMenuState
+    {
+        private final JPopupMenu popupMenu;
+        private final boolean inheritsPopupMenu;
+
+        private PopupMenuState(JComponent component)
+        {
+            popupMenu = component.getComponentPopupMenu();
+            inheritsPopupMenu = component.getInheritsPopupMenu();
+        }
+    }
 
     private void addClickListenerRecursive(Component c)
     {
@@ -156,6 +174,26 @@ public class ListItemPanel<T> extends JPanel implements Refreshable
         });
 
         popupMenu.setBorder(new EmptyBorder(5, 5, 5, 5));
+        popupMenu.addPopupMenuListener(new PopupMenuListener()
+        {
+            @Override
+            public void popupMenuWillBecomeVisible(PopupMenuEvent e)
+            {
+                // Status can change independently of the list row. Rebuild menu labels
+                // immediately before display so actions reflect the item's current state.
+                ListItemPanel.this.refresh();
+            }
+
+            @Override
+            public void popupMenuWillBecomeInvisible(PopupMenuEvent e)
+            {
+            }
+
+            @Override
+            public void popupMenuCanceled(PopupMenuEvent e)
+            {
+            }
+        });
         cardBody.setComponentPopupMenu(popupMenu);
         setComponentPopupMenu(popupMenu);
         // Also show context menu on press/release to handle platform differences
@@ -169,17 +207,74 @@ public class ListItemPanel<T> extends JPanel implements Refreshable
         cardBody.addContainerListener(new java.awt.event.ContainerAdapter() {
             @Override
             public void componentAdded(java.awt.event.ContainerEvent e) {
-                java.awt.Component child = e.getChild();
-                if (child instanceof JComponent) {
-                    ((JComponent) child).setComponentPopupMenu(popupMenu);
-                }
+                installPopupMenuRecursively(e.getChild());
                 if (clickListenerAdapter != null) {
-                    addClickListenerRecursive(child);
+                    addClickListenerRecursive(e.getChild());
                 }
             }
         });
 
         addMouseDragEventForwarderRecursive(this);
+    }
+
+    private void installPopupMenuRecursively(Component component)
+    {
+        if (component instanceof JComponent)
+        {
+            JComponent swingComponent = (JComponent) component;
+            swingComponent.setComponentPopupMenu(popupMenu);
+            if (!Boolean.TRUE.equals(swingComponent.getClientProperty(POPUP_INSTALLER_KEY)))
+            {
+                swingComponent.putClientProperty(POPUP_INSTALLER_KEY, Boolean.TRUE);
+                if (component instanceof Container)
+                {
+                    ((Container) component).addContainerListener(new java.awt.event.ContainerAdapter()
+                    {
+                        @Override public void componentAdded(java.awt.event.ContainerEvent e)
+                        {
+                            installPopupMenuRecursively(e.getChild());
+                        }
+                    });
+                }
+            }
+        }
+        if (component instanceof Container)
+        {
+            for (Component child : ((Container) component).getComponents()) installPopupMenuRecursively(child);
+        }
+    }
+
+    public void setContextMenuSuppressed(boolean suppressed)
+    {
+        if (suppressed)
+        {
+            if (suppressedPopupMenus != null) return;
+            suppressedPopupMenus = new IdentityHashMap<>();
+            visitComponents(this, component -> {
+                if (component instanceof JComponent)
+                {
+                    JComponent swingComponent = (JComponent) component;
+                    suppressedPopupMenus.put(swingComponent, new PopupMenuState(swingComponent));
+                    swingComponent.setComponentPopupMenu(null);
+                    swingComponent.setInheritsPopupMenu(false);
+                }
+            });
+        }
+        else if (suppressedPopupMenus != null)
+        {
+            suppressedPopupMenus.forEach((component, state) -> {
+                component.setComponentPopupMenu(state.popupMenu);
+                component.setInheritsPopupMenu(state.inheritsPopupMenu);
+            });
+            suppressedPopupMenus = null;
+        }
+    }
+
+    private static void visitComponents(Component component, Consumer<Component> visitor)
+    {
+        visitor.accept(component);
+        if (component instanceof Container)
+            for (Component child : ((Container) component).getComponents()) visitComponents(child, visitor);
     }
 
     @Override
@@ -228,7 +323,7 @@ public class ListItemPanel<T> extends JPanel implements Refreshable
             ((JComponent) comp).setBorder(new EmptyBorder(0, 0, 0, 0));
         }
         if (comp instanceof JComponent) {
-            ((JComponent) comp).setComponentPopupMenu(popupMenu);
+            installPopupMenuRecursively(comp);
         }
         // addContextMenuListenerRecursive(comp);
         if (clickListenerAdapter != null) addClickListenerRecursive(comp);

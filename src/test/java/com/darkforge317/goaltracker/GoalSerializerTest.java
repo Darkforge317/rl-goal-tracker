@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 //noinspection UnstableApiUsage
@@ -38,7 +39,7 @@ public class GoalSerializerTest {
         if (dirtyString == null) return null;
 
         // Replace and return LF line endings
-        return dirtyString.replace("\r\n", "\n").replace("\r", "\n");
+        return dirtyString.replace("\r\n", "\n").replace("\r", "\n").trim();
     }
 
     GoalSerializer serializer;
@@ -123,6 +124,46 @@ public class GoalSerializerTest {
     }
 
     @Test
+    public void deserialize_should_migrate_legacy_indentation_into_explicit_hierarchy() {
+        String legacyJson = "[{\"description\":\"Legacy\",\"items\":["
+                + "{\"description\":\"Root\",\"indent_level\":0,\"type\":\"manual\"},"
+                + "{\"description\":\"Child\",\"indent_level\":1,\"type\":\"manual\"},"
+                + "{\"description\":\"Grandchild\",\"indent_level\":2,\"type\":\"manual\"},"
+                + "{\"description\":\"Sibling\",\"indent_level\":1,\"type\":\"manual\"}]}]";
+
+        List<Goal> goals = serializer.deserialize(legacyJson);
+        Goal goal = goals.get(0);
+        ManualTask root = (ManualTask) goal.getTasks().get(0);
+        ManualTask child = (ManualTask) goal.getTasks().get(1);
+        ManualTask grandchild = (ManualTask) goal.getTasks().get(2);
+        ManualTask sibling = (ManualTask) goal.getTasks().get(3);
+
+        assertEquals(1, goal.getHierarchyVersion());
+        assertNotNull(root.getTaskId());
+        assertEquals(root.getTaskId(), child.getParentTaskId());
+        assertEquals(child.getTaskId(), grandchild.getParentTaskId());
+        assertEquals(root.getTaskId(), sibling.getParentTaskId());
+        assertEquals(0, root.getIndentLevel());
+        assertEquals(1, child.getIndentLevel());
+        assertEquals(2, grandchild.getIndentLevel());
+        assertEquals(1, sibling.getIndentLevel());
+    }
+
+    @Test
+    public void serializeAndDeserialize_should_preserveExplicitParentRelationships() {
+        ManualTask root = ManualTask.builder().description("Root").taskId("root-id").build();
+        ManualTask child = ManualTask.builder().description("Child").taskId("child-id")
+                .parentTaskId("root-id").indentLevel(1).build();
+        Goal goal = Goal.builder().description("Hierarchy")
+                .tasks(ReorderableList.from(Arrays.asList(root, child))).build();
+
+        Goal restored = serializer.deserialize(serializer.serialize(Arrays.asList(goal))).get(0);
+        assertEquals("root-id", restored.getTasks().get(0).getTaskId());
+        assertEquals("root-id", restored.getTasks().get(1).getParentTaskId());
+        assertEquals(1, restored.getTasks().get(1).getIndentLevel());
+    }
+
+    @Test
     public void serialize_should_convert_goals_to_json() throws IOException {
         //noinspection UnstableApiUsage
         String expectedJson = Resources.toString(Resources.getResource("data.json"), Charset.defaultCharset());
@@ -132,7 +173,8 @@ public class GoalSerializerTest {
                 .description("My Goal")
                 .tasks(ReorderableList.from(Arrays.asList(
                     ManualTask.builder()
-                        .description("Do all the things!")
+                    .description("Do all the things!")
+                        .taskId("task-1")
                         .status(Status.COMPLETED)
                         .notified(true)
                         .indentLevel(0)
@@ -157,11 +199,14 @@ public class GoalSerializerTest {
                         .tasks(ReorderableList.from(Arrays.asList(
                                 ManualTask.builder()
                                         .description("Do all the things!")
+                                        .taskId("task-1")
                                         .status(Status.COMPLETED)
                                         .notified(true)
                                         .indentLevel(0)
                                         .build(),
                                 SkillLevelTask.builder()
+                                        .taskId("task-2")
+                                        .parentTaskId("task-1")
                                         .status(Status.IN_PROGRESS)
                                         .notified(false)
                                         .indentLevel(1)
@@ -169,6 +214,8 @@ public class GoalSerializerTest {
                                         .skill(Skill.ATTACK)
                                         .build(),
                                 SkillXpTask.builder()
+                                        .taskId("task-3")
+                                        .parentTaskId("task-2")
                                         .status(Status.NOT_STARTED)
                                         .notified(false)
                                         .indentLevel(2)
@@ -176,12 +223,15 @@ public class GoalSerializerTest {
                                         .skill(Skill.ATTACK)
                                         .build(),
                                 QuestTask.builder()
+                                        .taskId("task-4")
+                                        .parentTaskId("task-1")
                                         .status(Status.NOT_STARTED)
                                         .notified(false)
                                         .indentLevel(1)
                                         .quest(Quest.ANIMAL_MAGNETISM)
                                         .build(),
                                 ItemTask.builder()
+                                        .taskId("task-5")
                                         .status(Status.NOT_STARTED)
                                         .notified(false)
                                         .indentLevel(0)

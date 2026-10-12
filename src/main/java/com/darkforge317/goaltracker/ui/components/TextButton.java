@@ -17,6 +17,13 @@ import java.util.function.Consumer;
 public final class TextButton extends JLabel
 {
     private Color mainColor = ColorScheme.PROGRESS_COMPLETE_COLOR;
+    private boolean hoverEffectsEnabled = true;
+
+    public void setHoverEffectsEnabled(boolean enabled)
+    {
+        hoverEffectsEnabled = enabled;
+        if (!enabled) setForeground(mainColor);
+    }
 
     public TextButton(String text, Color mainColor)
     {
@@ -54,12 +61,13 @@ public final class TextButton extends JLabel
             @Override
             public void mousePressed(MouseEvent e)
             {
-                clickListener.accept(e);
+                if (SwingUtilities.isLeftMouseButton(e)) clickListener.accept(e);
             }
 
             @Override
             public void mouseEntered(MouseEvent e)
             {
+                if (!hoverEffectsEnabled) return;
                 setForeground(mainColor.darker());
                 setCursor(new Cursor(Cursor.HAND_CURSOR));
             }
@@ -67,6 +75,7 @@ public final class TextButton extends JLabel
             @Override
             public void mouseExited(MouseEvent e)
             {
+                if (!hoverEffectsEnabled) return;
                 setForeground(mainColor);
                 setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
             }

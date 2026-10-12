@@ -24,6 +24,10 @@ import java.util.stream.Collectors;
 public final class Goal
 {
     @Builder.Default
+    @SerializedName("hierarchy_version")
+    private int hierarchyVersion = 1;
+
+    @Builder.Default
     private String description = "New goal";
 
     @Builder.Default
