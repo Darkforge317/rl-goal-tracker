@@ -2,6 +2,7 @@ package com.darkforge317.goaltracker.models.task;
 
 import com.darkforge317.goaltracker.models.enums.TaskType;
 import net.runelite.api.Skill;
+import net.runelite.http.api.RuneLiteAPI;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -20,7 +21,7 @@ class SkillXpTaskTest {
             SkillXpTask task = SkillXpTask.builder().skill(Skill.FISHING)
                 .targetSkillXp(com.darkforge317.goaltracker.ui.components.SkillTargetFields.xpForLevel(level))
                 .targetLevel(level).build();
-            com.google.gson.Gson gson = new com.google.gson.Gson();
+            com.google.gson.Gson gson = RuneLiteAPI.GSON;
             SkillXpTask restored = gson.fromJson(gson.toJson(task), SkillXpTask.class);
             String title = java.math.BigDecimal.valueOf(level).stripTrailingZeros().toPlainString() + " Fishing";
             assertEquals(title, restored.toString());

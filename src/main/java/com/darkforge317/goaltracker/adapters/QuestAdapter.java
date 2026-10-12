@@ -1,24 +1,33 @@
 package com.darkforge317.goaltracker.adapters;
 
 import com.google.gson.*;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
+import com.google.gson.stream.JsonWriter;
 import net.runelite.api.Quest;
 
-import java.lang.reflect.Type;
+import java.io.IOException;
 import java.util.Arrays;
 
 /**
  * Gson adapter for RuneLite Quests.
  * Serializes/deserializes quests by their unique ID.
  */
-public final class QuestAdapter implements JsonSerializer<Quest>, JsonDeserializer<Quest> {
+public final class QuestAdapter extends TypeAdapter<Quest> {
 
     @Override
-    public JsonElement serialize(Quest src, Type typeOfSrc, JsonSerializationContext context) {
-        return context.serialize(src.getId());
+    public void write(JsonWriter out, Quest src) throws IOException {
+        if (src == null) out.nullValue();
+        else out.value(src.getId());
     }
 
     @Override
-    public Quest deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException  {
-        return Arrays.stream(Quest.values()).filter((quest) -> quest.getId() == json.getAsInt()).findFirst().orElse(null);
+    public Quest read(JsonReader in) throws IOException {
+        if (in.peek() == JsonToken.NULL) {
+            in.nextNull();
+            return null;
+        }
+        int id = in.nextInt();
+        return Arrays.stream(Quest.values()).filter(quest -> quest.getId() == id).findFirst().orElse(null);
     }
 }

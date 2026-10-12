@@ -15,6 +15,7 @@ import com.darkforge317.goaltracker.utils.TaskHierarchyUtils;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.awt.event.AWTEventListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
@@ -537,8 +538,9 @@ public final class ListTaskPanel extends ListItemPanel<Task>
     }
 
     /** Temporary window-level interaction that lets the player choose a visible task as parent. */
-    private static final class ParentSelectionMode implements AWTEventListener, java.awt.KeyEventDispatcher
+    private static final class ParentSelectionMode implements AWTEventListener
     {
+        private static final String ESCAPE_ACTION_KEY = "goaltracker.cancelParentSelection";
         private static final Cursor ADD_CURSOR = createAddCursor();
         private static final Cursor INVALID_CURSOR = createInvalidCursor();
         private static final Color VALID_HIGHLIGHT = new Color(40, 200, 70, 80);
@@ -556,6 +558,12 @@ public final class ListTaskPanel extends ListItemPanel<Task>
         private boolean deferInteractionReset;
         private boolean swallowRightClickRelease;
         private ListTaskPanel pressedInvalidTarget;
+        private InputMap escapeInputMap;
+        private ActionMap escapeActionMap;
+        private Object previousEscapeBinding;
+        private Action previousEscapeAction;
+        private boolean hadLocalEscapeBinding;
+        private boolean hadLocalEscapeAction;
 
         private ParentSelectionMode(ListTaskPanel source, List<Task> candidates)
         {
@@ -573,7 +581,7 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             taskRows.forEach(row -> row.setContextMenuSuppressed(true));
             Toolkit.getDefaultToolkit().addAWTEventListener(this,
                     AWTEvent.MOUSE_MOTION_EVENT_MASK | AWTEvent.MOUSE_EVENT_MASK);
-            KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(this);
+            installEscapeBinding();
             setCursorRecursively(source, ADD_CURSOR);
             source.setToolTipText("Choose a task to become the parent. Right-click or press Escape to cancel.");
         }
@@ -660,16 +668,38 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             }
         }
 
-        @Override
-        public boolean dispatchKeyEvent(KeyEvent event)
+        private void installEscapeBinding()
         {
-            if (active && event.getID() == KeyEvent.KEY_PRESSED && event.getKeyCode() == KeyEvent.VK_ESCAPE)
+            escapeInputMap = source.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+            escapeActionMap = source.getActionMap();
+            KeyStroke escape = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0);
+            hadLocalEscapeBinding = escapeInputMap.keys() != null
+                    && java.util.Arrays.asList(escapeInputMap.keys()).contains(escape);
+            previousEscapeBinding = escapeInputMap.get(escape);
+            hadLocalEscapeAction = escapeActionMap.keys() != null
+                    && java.util.Arrays.asList(escapeActionMap.keys()).contains(ESCAPE_ACTION_KEY);
+            previousEscapeAction = escapeActionMap.get(ESCAPE_ACTION_KEY);
+            escapeInputMap.put(escape, ESCAPE_ACTION_KEY);
+            escapeActionMap.put(ESCAPE_ACTION_KEY, new AbstractAction()
             {
-                event.consume();
-                cancel();
-                return true;
-            }
-            return false;
+                @Override
+                public void actionPerformed(ActionEvent event)
+                {
+                    cancel();
+                }
+            });
+        }
+
+        private void removeEscapeBinding()
+        {
+            if (escapeInputMap == null) return;
+            KeyStroke escape = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0);
+            if (hadLocalEscapeBinding) escapeInputMap.put(escape, previousEscapeBinding);
+            else escapeInputMap.remove(escape);
+            if (hadLocalEscapeAction) escapeActionMap.put(ESCAPE_ACTION_KEY, previousEscapeAction);
+            else escapeActionMap.remove(ESCAPE_ACTION_KEY);
+            escapeInputMap = null;
+            escapeActionMap = null;
         }
 
         private void setHovered(ListTaskPanel next)
@@ -705,7 +735,7 @@ public final class ListTaskPanel extends ListItemPanel<Task>
             active = false;
             setHovered(null);
             if (!swallowRightClickRelease) Toolkit.getDefaultToolkit().removeAWTEventListener(this);
-            KeyboardFocusManager.getCurrentKeyboardFocusManager().removeKeyEventDispatcher(this);
+            removeEscapeBinding();
             restoreCursors(sourceCursors);
             if (!deferInteractionReset)
             {

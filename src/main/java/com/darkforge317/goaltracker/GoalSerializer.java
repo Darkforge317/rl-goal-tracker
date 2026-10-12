@@ -21,8 +21,13 @@ import java.util.List;
  */
 public final class GoalSerializer
 {	
+    private final Gson gson;
+
     @Inject
-	private Gson gson;
+    public GoalSerializer(Gson gson)
+    {
+        this.gson = gson;
+    }
 
     public ReorderableList<Goal> deserialize(String serialized)
     {
@@ -61,7 +66,6 @@ public final class GoalSerializer
     private Gson getBuilder(boolean prettyPrinting) {
         var builder = gson.newBuilder()
             .setFieldNamingStrategy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
-            .registerTypeAdapter(Task.class, new TaskAdapter())
             .registerTypeAdapter(Skill.class, new SkillAdapter())
             .registerTypeAdapter(Quest.class, new QuestAdapter());
 
@@ -69,6 +73,9 @@ public final class GoalSerializer
             builder.setPrettyPrinting();
         }
 
-        return builder.create();
+        Gson taskGson = builder.create();
+        return taskGson.newBuilder()
+            .registerTypeAdapter(Task.class, new TaskAdapter(taskGson))
+            .create();
     }
 }

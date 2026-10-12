@@ -1,7 +1,8 @@
 package com.darkforge317.goaltracker;
 
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import net.runelite.api.Client;
 import net.runelite.api.Item;
 import net.runelite.client.game.ItemManager;
@@ -9,6 +10,7 @@ import net.runelite.client.game.ItemManager;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.HashMap;
+import java.util.Map.Entry;
 import java.util.Map;
 
 @Singleton
@@ -45,29 +47,37 @@ public final class ItemCache
 
     public void load()
     {
-        Map<Integer, Item[]> savedInventories = gson
-            .fromJson(config.goalTrackerItemCache(), new TypeToken<Map<Integer, Item[]>>()
-            {
-            }.getType());
-
-        if (savedInventories != null) {
-            inventories = savedInventories;
-        } else {
-            inventories = new HashMap<>();
-        }
-
-        Map<Integer, Integer> savedItemNoteMap = gson
-            .fromJson(config.goalTrackerItemNoteMapCache(), new TypeToken<Map<Integer, Integer>>()
-            {
-            }.getType());
-
-        if (savedItemNoteMap != null) {
-            itemNoteMap = savedItemNoteMap;
-        } else {
-            itemNoteMap = new HashMap<>();
-        }
+        inventories = readInventories(config.goalTrackerItemCache());
+        itemNoteMap = readIntegerMap(config.goalTrackerItemNoteMapCache());
 
         calculateItemTotals();
+    }
+
+    private Map<Integer, Item[]> readInventories(String serialized)
+    {
+        Map<Integer, Item[]> result = new HashMap<>();
+        JsonElement root = gson.fromJson(serialized, JsonElement.class);
+        if (root == null || !root.isJsonObject()) return result;
+
+        for (Entry<String, JsonElement> entry : root.getAsJsonObject().entrySet())
+        {
+            result.put(Integer.parseInt(entry.getKey()), gson.fromJson(entry.getValue(), Item[].class));
+        }
+        return result;
+    }
+
+    private Map<Integer, Integer> readIntegerMap(String serialized)
+    {
+        Map<Integer, Integer> result = new HashMap<>();
+        JsonElement root = gson.fromJson(serialized, JsonElement.class);
+        if (root == null || !root.isJsonObject()) return result;
+
+        JsonObject object = root.getAsJsonObject();
+        for (Entry<String, JsonElement> entry : object.entrySet())
+        {
+            result.put(Integer.parseInt(entry.getKey()), entry.getValue().getAsInt());
+        }
+        return result;
     }
 
     public void calculateItemTotals()

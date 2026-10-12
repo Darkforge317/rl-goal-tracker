@@ -18,16 +18,18 @@ import lombok.extern.slf4j.XSlf4j;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.PluginPanel;
+import net.runelite.client.util.Filepath;
 
 
 import javax.inject.Inject;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 import java.util.function.Consumer;
+import java.nio.file.StandardOpenOption;
 
 @Slf4j
 /**
@@ -363,25 +365,23 @@ public final class GoalTrackerPanel extends JPanel implements Refreshable
 
     private void exportGoalsToFile()
     {
-        JFileChooser chooser = new JFileChooser();
-        chooser.setAcceptAllFileFilterUsed(false);
-        chooser.setMultiSelectionEnabled(false);
-        chooser.setFileFilter(new FileNameExtensionFilter("JSON files (*.json)", "json"));
-        chooser.setDialogTitle("Export goals to JSON");
-        chooser.setSelectedFile(new java.io.File("goals.json"));
-        int res = chooser.showSaveDialog(this);
-        if (res != JFileChooser.APPROVE_OPTION) { return; }
-        java.io.File file = chooser.getSelectedFile();
-        if (!file.getName().toLowerCase().endsWith(".json"))
-        {
-            file = new java.io.File(file.getParentFile(), file.getName() + ".json");
-        }
+        Filepath.Chooser chooser = new Filepath.Chooser()
+            .setAcceptsFiles()
+            .setIsSave()
+            .setDialogTitle("Export goals to JSON")
+            .setFileName("goals.json")
+            .setDefaultExtension("json")
+            .addExtensionFilter("JSON files (*.json)", "json");
+        List<Filepath> selectedFiles = chooser.showDialog(this);
+        if (selectedFiles == null || selectedFiles.isEmpty()) return;
+        Filepath file = selectedFiles.get(0);
+
         // Confirm overwrite if file already exists
         if (file.exists())
         {
             int confirm = JOptionPane.showConfirmDialog(
                 this,
-                "File already exists:\n" + file.getAbsolutePath() + "\n\nOverwrite it?",
+                "File already exists:\n" + file + "\n\nOverwrite it?",
                 "Confirm Overwrite",
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.WARNING_MESSAGE
@@ -392,12 +392,11 @@ public final class GoalTrackerPanel extends JPanel implements Refreshable
             }
         }
 
-        try (java.io.FileWriter fw = new java.io.FileWriter(file))
+        try
         {
             String json = goalManager.exportJson(true);
-            fw.write(json);
-            fw.flush();
-            JOptionPane.showMessageDialog(this, "Exported " + goalManager.getGoals().size() + " goal(s) to\n" + file.getAbsolutePath(), "Export Complete", JOptionPane.INFORMATION_MESSAGE);
+            file.write(json, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            JOptionPane.showMessageDialog(this, "Exported " + goalManager.getGoals().size() + " goal(s) to\n" + file, "Export Complete", JOptionPane.INFORMATION_MESSAGE);
         }
         catch (Exception ex)
         {
@@ -407,17 +406,27 @@ public final class GoalTrackerPanel extends JPanel implements Refreshable
 
     private void importGoalsFromFile()
     {
-        JFileChooser chooser = new JFileChooser();
-        chooser.setAcceptAllFileFilterUsed(false);
-        chooser.setMultiSelectionEnabled(false);
-        chooser.setFileFilter(new FileNameExtensionFilter("JSON files (*.json)", "json"));
-        chooser.setDialogTitle("Import goals from JSON");
-        int res = chooser.showOpenDialog(this);
-        if (res != JFileChooser.APPROVE_OPTION) { return; }
-        java.io.File file = chooser.getSelectedFile();
+        Filepath.Chooser chooser = new Filepath.Chooser()
+            .setAcceptsFiles()
+            .setIsOpen()
+            .setDialogTitle("Import goals from JSON")
+            .addExtensionFilter("JSON files (*.json)", "json");
+        List<Filepath> selectedFiles = chooser.showDialog(this);
+        if (selectedFiles == null || selectedFiles.isEmpty()) return;
+        Filepath file = selectedFiles.get(0);
         try
         {
-            String json = new String(java.nio.file.Files.readAllBytes(file.toPath()));
+            StringBuilder contents = new StringBuilder();
+            try (java.io.BufferedReader reader = file.openBufferedReader())
+            {
+                String line;
+                while ((line = reader.readLine()) != null)
+                {
+                    if (contents.length() > 0) contents.append('\n');
+                    contents.append(line);
+                }
+            }
+            String json = contents.toString();
 
             Object[] options = {"Overwrite", "Merge", "Cancel"};
             int choice = JOptionPane.showOptionDialog(
@@ -449,7 +458,7 @@ public final class GoalTrackerPanel extends JPanel implements Refreshable
                 repaint();
             }
 
-            JOptionPane.showMessageDialog(this, "Imported goals from\n" + file.getAbsolutePath(), "Import Complete", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Imported goals from\n" + file, "Import Complete", JOptionPane.INFORMATION_MESSAGE);
         }
         catch (Exception ex)
         {

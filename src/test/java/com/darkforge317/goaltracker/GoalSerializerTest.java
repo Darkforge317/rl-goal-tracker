@@ -10,14 +10,13 @@ import com.darkforge317.goaltracker.models.enums.Status;
 import com.darkforge317.goaltracker.models.enums.TaskType;
 import com.darkforge317.goaltracker.utils.ReorderableList;
 import com.google.common.io.Resources;
-import com.google.gson.Gson;
 import net.runelite.api.Quest;
 import net.runelite.api.Skill;
+import net.runelite.http.api.RuneLiteAPI;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
@@ -45,11 +44,8 @@ public class GoalSerializerTest {
     GoalSerializer serializer;
 
     @BeforeEach
-    void setUp() throws Exception {
-        serializer = new GoalSerializer();
-        Field gsonField = GoalSerializer.class.getDeclaredField("gson");
-        gsonField.setAccessible(true);
-        gsonField.set(serializer, new Gson());
+    void setUp() {
+        serializer = new GoalSerializer(RuneLiteAPI.GSON);
     }
 
     @Test
