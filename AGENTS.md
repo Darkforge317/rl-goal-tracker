@@ -35,6 +35,11 @@
 - Developer improvements can be discovered and completed within a PR; they do not need to originate from a GitHub issue.
 - Record Dev Todo List work after it is implemented, not while it is still planned.
 
+## GitHub Issue Completion
+
+- After merging a PR that resolves GitHub issue(s), add the `Next Release` label to each related issue.
+- Add a short comment to each issue summarizing the resolution and linking the merged PR, then close the issue if it is not already closed automatically.
+
 ## Reviewable Changes
 
 - Keep changes focused on the requested behavior.
