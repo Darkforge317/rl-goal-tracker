@@ -103,6 +103,9 @@ public final class NewTaskPanel extends JPanel
         moreOptionsPanel.add(new SkillTaskInput(plugin, goal).onSubmit((task) -> this.listener.accept(task)), constraints);
         constraints.gridy++;
 
+        moreOptionsPanel.add(new CombatLevelTaskInput(plugin, goal).onSubmit((task) -> this.listener.accept(task)), constraints);
+        constraints.gridy++;
+
         moreOptionsPanel.add(new QuestTaskInput(plugin, goal).onSubmit((task) -> this.listener.accept(task)), constraints);
         constraints.gridy++;
 

@@ -4,6 +4,7 @@ package com.darkforge317.goaltracker;
 import com.darkforge317.goaltracker.models.enums.TaskType;
 import com.darkforge317.goaltracker.models.Goal;
 import com.darkforge317.goaltracker.models.task.ItemTask;
+import com.darkforge317.goaltracker.models.task.CombatLevelTask;
 import com.darkforge317.goaltracker.models.task.QuestTask;
 import com.darkforge317.goaltracker.models.task.SkillLevelTask;
 import com.darkforge317.goaltracker.models.task.SkillXpTask;
@@ -80,7 +81,8 @@ public final class GoalTrackerPlugin extends Plugin
     }
 
     GoalTrackerPlugin(Client client, ClientThread clientThread, ChatMessageManager chatMessageManager,
-                      GoalTrackerConfig config, GoalManager goalManager, TaskUIStatusManager uiStatusManager)
+                      GoalTrackerConfig config, GoalManager goalManager, TaskUIStatusManager uiStatusManager,
+                      TaskUpdateService taskUpdateService)
     {
         this.client = client;
         this.clientThread = clientThread;
@@ -88,6 +90,7 @@ public final class GoalTrackerPlugin extends Plugin
         this.config = config;
         this.goalManager = goalManager;
         this.uiStatusManager = uiStatusManager;
+        this.taskUpdateService = taskUpdateService;
     }
 
     public static final int[] PLAYER_INVENTORIES = {
@@ -408,6 +411,8 @@ public final class GoalTrackerPlugin extends Plugin
             }
         }
 
+        anyTaskChanged |= refreshCombatLevelTasks();
+
         // Save once if any status changes occurred
         if (anyTaskChanged) {
             goalManager.save();
@@ -430,6 +435,10 @@ public final class GoalTrackerPlugin extends Plugin
                 refreshQuestTasks();
                 refreshSkillLevelTasks();
                 refreshSkillXpTasks();
+                if (refreshCombatLevelTasks())
+                {
+                    goalManager.save();
+                }
 
                 // Container contents (bank/inventory/equipment/etc.) can differ from what was
                 // cached at plugin startup, e.g. on character switch - rebuild all caches, then
@@ -885,6 +894,7 @@ public final class GoalTrackerPlugin extends Plugin
             {
                 if (task instanceof SkillLevelTask) ((SkillLevelTask) task).refreshStatus(client);
                 else if (task instanceof SkillXpTask) ((SkillXpTask) task).refreshStatus(client);
+                else if (task instanceof CombatLevelTask) taskUpdateService.update((CombatLevelTask) task);
                 else if (task instanceof ItemTask)
                 {
                     ItemTask item = (ItemTask) task;
@@ -929,6 +939,7 @@ public final class GoalTrackerPlugin extends Plugin
                 refreshSkillLevelTasks();
                 refreshQuestTasks();
                 refreshSkillXpTasks();
+                refreshCombatLevelTasks();
                 refreshItemTasks();
             }
 
@@ -988,6 +999,25 @@ public final class GoalTrackerPlugin extends Plugin
                 notifyTask(task);
             }
         }
+    }
+
+    /** Refreshes incomplete combat-level tasks from the local player's cached combat level. */
+    private boolean refreshCombatLevelTasks()
+    {
+        if (goalManager == null || client == null) return false;
+        boolean anyTaskChanged = false;
+        List<CombatLevelTask> combatLevelTasks = goalManager.getIncompleteTasksByType(TaskType.COMBAT_LEVEL);
+        for (CombatLevelTask task : combatLevelTasks)
+        {
+            if (!taskUpdateService.update(task)) continue;
+            anyTaskChanged = true;
+            uiStatusManager.refresh(task);
+            if (task.getStatus().isCompleted())
+            {
+                notifyTask(task);
+            }
+        }
+        return anyTaskChanged;
     }
 
     @Provides

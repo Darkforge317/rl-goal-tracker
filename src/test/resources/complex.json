@@ -59,6 +59,16 @@
         "indent_level": 0,
         "collapsed": false,
         "type": "item"
+      },
+      {
+        "combat_level": 90.5,
+        "current_combat_level": 85.25,
+        "task_id": "task-6",
+        "status": "not_started",
+        "has_been_notified": false,
+        "indent_level": 0,
+        "collapsed": false,
+        "type": "combat_level"
       }
     ]
   }

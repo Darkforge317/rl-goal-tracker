@@ -3,6 +3,7 @@ package com.darkforge317.goaltracker;
 import com.darkforge317.goaltracker.models.enums.Status;
 import com.darkforge317.goaltracker.models.enums.TaskType;
 import com.darkforge317.goaltracker.models.task.ItemTask;
+import com.darkforge317.goaltracker.models.task.CombatLevelTask;
 import com.darkforge317.goaltracker.models.task.QuestTask;
 import com.darkforge317.goaltracker.models.task.SkillLevelTask;
 import com.darkforge317.goaltracker.models.task.SkillXpTask;
@@ -14,6 +15,7 @@ import net.runelite.api.QuestState;
 import net.runelite.api.gameval.InventoryID;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.chat.ChatMessageManager;
+import com.darkforge317.goaltracker.services.TaskUpdateService;
 import org.junit.jupiter.api.Test;
 
 import java.awt.Color;
@@ -52,6 +54,7 @@ class GoalTrackerPluginValidationTest
                 .targetSkillXp(400_000)
                 .build();
         QuestTask questTask = QuestTask.builder().quest(quest).build();
+        CombatLevelTask combatTask = CombatLevelTask.builder().targetCombatLevel(85).build();
         ItemTask itemTask = ItemTask.builder()
                 .itemId(314)
                 .itemName("Feather")
@@ -64,6 +67,14 @@ class GoalTrackerPluginValidationTest
         when(goalManager.getIncompleteTasksByType(TaskType.SKILL_XP)).thenReturn(List.of(xpTask));
         when(goalManager.getIncompleteTasksByType(TaskType.QUEST)).thenReturn(List.of(questTask));
         when(goalManager.getIncompleteTasksByType(TaskType.ITEM)).thenReturn(List.of(itemTask));
+        when(goalManager.getIncompleteTasksByType(TaskType.COMBAT_LEVEL)).thenReturn(List.of(combatTask));
+        TaskUpdateService taskUpdateService = mock(TaskUpdateService.class);
+        doAnswer(invocation -> {
+            CombatLevelTask task = invocation.getArgument(0);
+            task.setCurrentCombatLevel(90);
+            task.setStatus(Status.COMPLETED);
+            return true;
+        }).when(taskUpdateService).update(combatTask);
         doAnswer(invocation -> {
             ((Runnable) invocation.getArgument(0)).run();
             return null;
@@ -75,7 +86,8 @@ class GoalTrackerPluginValidationTest
                 chatMessageManager,
                 config,
                 goalManager,
-                uiStatusManager);
+                uiStatusManager,
+                taskUpdateService);
 
         plugin.refreshAllTasks(null);
 
@@ -83,6 +95,8 @@ class GoalTrackerPluginValidationTest
         assertEquals(Status.COMPLETED, xpTask.getStatus());
         assertEquals(Status.COMPLETED, questTask.getStatus());
         assertEquals(Status.COMPLETED, itemTask.getStatus());
+        assertEquals(Status.COMPLETED, combatTask.getStatus());
+        assertEquals(90, combatTask.getCurrentCombatLevel());
         assertEquals(3, itemTask.getAcquired());
     }
 }

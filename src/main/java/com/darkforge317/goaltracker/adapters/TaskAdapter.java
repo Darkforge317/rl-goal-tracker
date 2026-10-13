@@ -2,6 +2,7 @@ package com.darkforge317.goaltracker.adapters;
 
 import com.darkforge317.goaltracker.models.enums.TaskType;
 import com.darkforge317.goaltracker.models.task.ItemTask;
+import com.darkforge317.goaltracker.models.task.CombatLevelTask;
 import com.darkforge317.goaltracker.models.task.ManualTask;
 import com.darkforge317.goaltracker.models.task.QuestTask;
 import com.darkforge317.goaltracker.models.task.SkillLevelTask;
@@ -66,6 +67,8 @@ public final class TaskAdapter extends TypeAdapter<Task>
                 return gson.fromJson(json, QuestTask.class);
             case SKILL_LEVEL:
                 return gson.fromJson(json, SkillLevelTask.class);
+            case COMBAT_LEVEL:
+                return gson.fromJson(json, CombatLevelTask.class);
             default:
                 log.error("Unknown task type: " + taskType);
                 return null;
