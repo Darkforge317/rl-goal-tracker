@@ -25,7 +25,8 @@ class EditedTaskRefreshTest
         GoalTrackerConfig config = mock(GoalTrackerConfig.class);
         when(config.completionMessageColor()).thenReturn(Color.WHITE);
         GoalTrackerPlugin plugin = new GoalTrackerPlugin(client, thread, messages, config,
-            mock(GoalManager.class), mock(TaskUIStatusManager.class));
+            mock(GoalManager.class), mock(TaskUIStatusManager.class),
+            mock(com.darkforge317.goaltracker.services.TaskUpdateService.class));
         // Run client work synchronously to exercise the edit completion check.
         doAnswer(call -> {
             Runnable work = call.getArgument(0);

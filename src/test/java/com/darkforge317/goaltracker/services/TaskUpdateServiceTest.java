@@ -6,6 +6,7 @@ import com.darkforge317.goaltracker.models.task.SkillXpTask;
 import com.darkforge317.goaltracker.models.task.QuestTask;
 import com.darkforge317.goaltracker.models.task.ItemTask;
 import com.darkforge317.goaltracker.models.task.ManualTask;
+import com.darkforge317.goaltracker.models.task.CombatLevelTask;
 
 import com.darkforge317.goaltracker.ItemCache;
 import com.darkforge317.goaltracker.models.enums.Status;
@@ -34,6 +35,9 @@ class TaskUpdateServiceTest {
     private Client client;
 
     @Mock
+    private Player player;
+
+    @Mock
     private StatChanged statChangedEvent;
 
     @InjectMocks
@@ -52,6 +56,53 @@ class TaskUpdateServiceTest {
         assertTrue(service.update((Task) SkillXpTask.builder().skill(Skill.ATTACK).targetSkillXp(1234).build()));
         assertTrue(service.update((Task) QuestTask.builder().quest(quest).build()));
         assertTrue(service.update((Task) ItemTask.builder().itemId(314).acquired(0).quantity(100).build()));
+    }
+
+    @Test
+    void update_combatLevelTask_shouldCacheLevelAndCompleteTarget()
+    {
+        when(client.getGameState()).thenReturn(GameState.LOGGED_IN);
+        when(client.isClientThread()).thenReturn(true);
+        when(client.getLocalPlayer()).thenReturn(player);
+        when(client.getRealSkillLevel(Skill.ATTACK)).thenReturn(80);
+        when(client.getRealSkillLevel(Skill.STRENGTH)).thenReturn(80);
+        when(client.getRealSkillLevel(Skill.DEFENCE)).thenReturn(80);
+        when(client.getRealSkillLevel(Skill.HITPOINTS)).thenReturn(80);
+        when(client.getRealSkillLevel(Skill.MAGIC)).thenReturn(80);
+        when(client.getRealSkillLevel(Skill.RANGED)).thenReturn(80);
+        when(client.getRealSkillLevel(Skill.PRAYER)).thenReturn(80);
+        double currentCombatLevel = Experience.getCombatLevelPrecise(80, 80, 80, 80, 80, 80, 80);
+        CombatLevelTask task = CombatLevelTask.builder().targetCombatLevel(currentCombatLevel).build();
+
+        assertTrue(service.update((Task) task));
+        assertEquals(currentCombatLevel, task.getCurrentCombatLevel(), 0.000001);
+        assertEquals(Status.COMPLETED, task.getStatus());
+    }
+
+    @Test
+    void update_combatLevelTask_shouldSaveProgressChangesBeforeCompletion()
+    {
+        CombatLevelTask task = CombatLevelTask.builder().targetCombatLevel(100)
+            .currentCombatLevel(83).status(Status.NOT_STARTED).build();
+
+        assertTrue(service.update(task, 84.75));
+        assertEquals(84.75, task.getCurrentCombatLevel(), 0.000001);
+        assertEquals(Status.NOT_STARTED, task.getStatus());
+        assertFalse(service.update(task, 84.75));
+    }
+
+    @Test
+    void update_combatLevelTask_shouldKeepCachedLevelWhenPlayerIsUnavailable()
+    {
+        when(client.getGameState()).thenReturn(GameState.LOGGED_IN);
+        when(client.isClientThread()).thenReturn(true);
+        when(client.getLocalPlayer()).thenReturn(null);
+        CombatLevelTask task = CombatLevelTask.builder().targetCombatLevel(85)
+            .currentCombatLevel(84).status(Status.NOT_STARTED).build();
+
+        assertFalse(service.update(task));
+        assertEquals(84, task.getCurrentCombatLevel());
+        assertEquals(Status.NOT_STARTED, task.getStatus());
     }
 
     @Test

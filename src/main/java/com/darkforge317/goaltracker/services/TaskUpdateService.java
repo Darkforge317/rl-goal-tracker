@@ -2,10 +2,13 @@ package com.darkforge317.goaltracker.services;
 
 import com.darkforge317.goaltracker.ItemCache;
 import com.darkforge317.goaltracker.models.enums.Status;
-import com.darkforge317.goaltracker.models.task.*;
+import com.darkforge317.goaltracker.models.task.CombatLevelTask;
 import com.darkforge317.goaltracker.models.task.*;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
+import net.runelite.api.Player;
+import net.runelite.api.Experience;
+import net.runelite.api.Skill;
 import net.runelite.api.events.StatChanged;
 
 import javax.inject.Inject;
@@ -29,6 +32,7 @@ public final class TaskUpdateService
         {
             case SKILL_LEVEL: return update((SkillLevelTask) task);
             case SKILL_XP:    return update((SkillXpTask) task);
+            case COMBAT_LEVEL: return update((CombatLevelTask) task);
             case QUEST:       return update((QuestTask) task);
             case ITEM:        return update((ItemTask) task);
             default:          return false;
@@ -36,6 +40,39 @@ public final class TaskUpdateService
     }
 
     // -------------------- Skill Level --------------------
+
+    /** Returns true if the cached combat level or task status changed. */
+    public boolean update(CombatLevelTask task)
+    {
+        if (client.getGameState() != GameState.LOGGED_IN || !client.isClientThread())
+        {
+            return false;
+        }
+        Player player = client.getLocalPlayer();
+        if (player == null)
+        {
+            return false;
+        }
+        double combatLevel = Experience.getCombatLevelPrecise(
+            client.getRealSkillLevel(Skill.ATTACK),
+            client.getRealSkillLevel(Skill.STRENGTH),
+            client.getRealSkillLevel(Skill.DEFENCE),
+            client.getRealSkillLevel(Skill.HITPOINTS),
+            client.getRealSkillLevel(Skill.MAGIC),
+            client.getRealSkillLevel(Skill.RANGED),
+            client.getRealSkillLevel(Skill.PRAYER));
+        return update(task, combatLevel);
+    }
+
+    /** Update from a combat level already read on the client thread. */
+    public boolean update(CombatLevelTask task, double combatLevel)
+    {
+        double oldCombatLevel = task.getCurrentCombatLevel();
+        Status oldStatus = task.getStatus();
+        task.setCurrentCombatLevel(combatLevel);
+        task.setStatus(task.wouldReachTargetLevel(combatLevel) ? Status.COMPLETED : Status.NOT_STARTED);
+        return oldCombatLevel != task.getCurrentCombatLevel() || oldStatus != task.getStatus();
+    }
 
     /** Returns true if an update has occurred. */
     public boolean update(SkillLevelTask task)

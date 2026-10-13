@@ -6,6 +6,7 @@ import com.darkforge317.goaltracker.models.task.SkillLevelTask;
 import com.darkforge317.goaltracker.models.task.SkillXpTask;
 import com.darkforge317.goaltracker.models.task.QuestTask;
 import com.darkforge317.goaltracker.models.task.ItemTask;
+import com.darkforge317.goaltracker.models.task.CombatLevelTask;
 import com.darkforge317.goaltracker.models.enums.Status;
 import com.darkforge317.goaltracker.models.enums.TaskType;
 import com.darkforge317.goaltracker.utils.ReorderableList;
@@ -80,7 +81,7 @@ public class GoalSerializerTest {
         assertEquals(1, goals.size());
         assertEquals("My Goal", goals.get(0).getDescription());
         assertEquals(-1, goals.get(0).getDisplayOrder());
-        assertEquals(5, goals.get(0).getTasks().size());
+        assertEquals(6, goals.get(0).getTasks().size());
 
         assertEquals(ManualTask.class, goals.get(0).getTasks().get(0).getClass());
         assertEquals(0, goals.get(0).getTasks().get(0).getIndentLevel());
@@ -117,6 +118,12 @@ public class GoalSerializerTest {
         assertEquals(10, itemTask.getQuantity());
         assertEquals("Feather", itemTask.getItemName());
         assertEquals(0, itemTask.getIndentLevel());
+
+        assertEquals(CombatLevelTask.class, goals.get(0).getTasks().get(5).getClass());
+        CombatLevelTask combatTask = (CombatLevelTask) goals.get(0).getTasks().get(5);
+        assertEquals(TaskType.COMBAT_LEVEL, combatTask.getType());
+        assertEquals(90.5, combatTask.getTargetCombatLevel(), 0.000001);
+        assertEquals(85.25, combatTask.getCurrentCombatLevel(), 0.000001);
     }
 
     @Test
@@ -235,6 +242,13 @@ public class GoalSerializerTest {
                                         .acquired(4)
                                         .itemId(314)
                                         .itemName("Feather")
+                                        .build(),
+                                CombatLevelTask.builder()
+                                        .taskId("task-6")
+                                        .status(Status.NOT_STARTED)
+                                        .indentLevel(0)
+                                        .targetCombatLevel(90.5)
+                                        .currentCombatLevel(85.25)
                                         .build()
                         ))).build()
         );

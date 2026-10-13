@@ -1,6 +1,7 @@
 package com.darkforge317.goaltracker.utils;
 
 import com.darkforge317.goaltracker.models.task.QuestTask;
+import com.darkforge317.goaltracker.models.task.CombatLevelTask;
 import com.darkforge317.goaltracker.models.task.SkillLevelTask;
 import com.darkforge317.goaltracker.models.task.Task;
 import net.runelite.api.Quest;
@@ -803,7 +804,7 @@ public final class QuestRequirements
                 Quest.DREAM_MENTOR,
                 Arrays.asList(
                         QuestTask.builder().quest(Quest.LUNAR_DIPLOMACY).build(),
-                        SkillLevelTask.builder().skill(Skill.DEFENCE).targetSkillLevel(85).build(),
+                        CombatLevelTask.builder().targetCombatLevel(85).build(),
                         SkillLevelTask.builder().skill(Skill.HITPOINTS).targetSkillLevel(65).build(),
                         SkillLevelTask.builder().skill(Skill.WOODCUTTING).targetSkillLevel(55).build(),
                         SkillLevelTask.builder().skill(Skill.MINING).targetSkillLevel(60).build(),
@@ -1339,6 +1340,15 @@ public final class QuestRequirements
             return SkillLevelTask.builder()
                     .skill(st.getSkill())
                     .targetSkillLevel(st.getTargetSkillLevel())
+                    .indentLevel(indentLevel)
+                    .build();
+        }
+        if (task instanceof CombatLevelTask) {
+            CombatLevelTask combatTask = (CombatLevelTask) task;
+            return CombatLevelTask.builder()
+                    .targetCombatLevel(combatTask.getTargetCombatLevel())
+                    .currentCombatLevel(combatTask.getCurrentCombatLevel())
+                    .status(combatTask.getStatus())
                     .indentLevel(indentLevel)
                     .build();
         }

@@ -23,13 +23,29 @@ class TaskTargetEditorTest
         assertTrue(back.isCollapsed());
     }
 
-    @Test void onlySkillAndItemGoalsSupportEditing()
+    @Test void supportedTaskTypesAllowEditing()
     {
         assertTrue(TaskTargetEditor.supports(SkillLevelTask.builder().build()));
         assertTrue(TaskTargetEditor.supports(SkillXpTask.builder().build()));
         assertTrue(TaskTargetEditor.supports(ItemTask.builder().build()));
+        assertTrue(TaskTargetEditor.supports(CombatLevelTask.builder().build()));
         assertFalse(TaskTargetEditor.supports(ManualTask.builder().build()));
         assertFalse(TaskTargetEditor.supports(QuestTask.builder().build()));
+    }
+
+    @Test void combatLevelEditorEnforcesThreeTo126()
+    {
+        javax.swing.JSpinner spinner = TaskTargetEditor.createCombatLevelSpinner(85);
+        javax.swing.SpinnerNumberModel model = (javax.swing.SpinnerNumberModel) spinner.getModel();
+        assertEquals(85.0, spinner.getValue());
+        assertEquals(3.0, model.getMinimum());
+        assertEquals(126.0, model.getMaximum());
+        assertEquals(0.25, model.getStepSize());
+        assertThrows(IllegalArgumentException.class, () -> spinner.setValue(2));
+        assertThrows(IllegalArgumentException.class, () -> spinner.setValue(127));
+        spinner.setValue(85.25);
+        assertEquals(85.25, spinner.getValue());
+        assertThrows(IllegalArgumentException.class, () -> spinner.setValue(85.257));
     }
 
     @Test void quantityArrowsRespectBoundsAndAcceptSuffixes() throws Exception

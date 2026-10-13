@@ -2,6 +2,7 @@ package com.darkforge317.goaltracker.utils;
 
 import com.darkforge317.goaltracker.models.task.QuestTask;
 import com.darkforge317.goaltracker.models.task.SkillLevelTask;
+import com.darkforge317.goaltracker.models.task.CombatLevelTask;
 import com.darkforge317.goaltracker.models.task.Task;
 import net.runelite.api.Quest;
 import net.runelite.api.Skill;
@@ -57,5 +58,17 @@ public class QuestRequirementsTest
             assertEquals(first.get(i).getClass(), second.get(i).getClass(), "Classes should match between calls");
             assertEquals(first.get(i).getIndentLevel(), second.get(i).getIndentLevel(), "Indent levels should match between calls");
         }
+    }
+
+    @Test
+    void dreamMentorRequirements_useCombatLevelInsteadOfDefence()
+    {
+        List<Task> requirements = QuestRequirements.getRequirements(Quest.DREAM_MENTOR, 0);
+
+        assertTrue(requirements.stream().anyMatch(task -> task instanceof CombatLevelTask
+            && ((CombatLevelTask) task).getTargetCombatLevel() == 85));
+        assertFalse(requirements.stream().anyMatch(task -> task instanceof SkillLevelTask
+            && ((SkillLevelTask) task).getSkill() == Skill.DEFENCE
+            && ((SkillLevelTask) task).getTargetSkillLevel() == 85));
     }
 }

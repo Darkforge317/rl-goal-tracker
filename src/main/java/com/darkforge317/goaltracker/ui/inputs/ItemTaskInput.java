@@ -6,6 +6,7 @@ import com.darkforge317.goaltracker.models.task.ItemTask;
 import com.darkforge317.goaltracker.ui.components.TextButton;
 import net.runelite.api.GameState;
 import net.runelite.api.ItemComposition;
+import net.runelite.client.game.chatbox.ChatboxItemSearch;
 import net.runelite.client.ui.ColorScheme;
 
 import javax.swing.*;
@@ -23,6 +24,7 @@ public final class ItemTaskInput extends TaskInput
     private final JPanel selectedItemPanel = new JPanel(new BorderLayout());
     private boolean searchOpen;
     private ItemComposition selectedItem;
+    private Window hiddenDialogForSearch;
 
     public ItemTaskInput(GoalTrackerPlugin plugin, Goal goal)
     {
@@ -40,13 +42,22 @@ public final class ItemTaskInput extends TaskInput
             }
             searchOpen = true;
             searchItemButton.setText("Close");
-            plugin.getItemSearch()
+            hideDialogForSearch();
+            ChatboxItemSearch itemSearch = plugin.getItemSearch();
+            itemSearch
                 .tooltipText("Choose an item")
                 .onItemSelected(this::setSelectedItem)
-                .onClose(() -> SwingUtilities.invokeLater(this::searchClosed))
+                .onClose(() -> SwingUtilities.invokeLater(() -> {
+                    searchClosed();
+                    restoreDialogAfterSearch();
+                }))
                 .build();
-            // Chatbox input receives keys from the game canvas, not the sidebar.
-            plugin.getClient().getCanvas().requestFocusInWindow();
+            // Chatbox input opens asynchronously on the client thread. Request canvas focus
+            // after RuneLite has processed that open request; unlike the standard Add Task
+            // form, Add Child is in a separate dialog which is hidden while searching.
+            plugin.getClientThread().invokeLater(() -> {
+                SwingUtilities.invokeLater(() -> plugin.getClient().getCanvas().requestFocusInWindow());
+            });
         });
         getInputRow().add(searchItemButton, BorderLayout.WEST);
 
@@ -106,6 +117,36 @@ public final class ItemTaskInput extends TaskInput
     {
         searchOpen = false;
         searchItemButton.setText("Search...");
+    }
+
+    private void hideDialogForSearch()
+    {
+        Window ancestor = SwingUtilities.getWindowAncestor(this);
+        if (ancestor instanceof JDialog && ancestor.isVisible())
+        {
+            hiddenDialogForSearch = ancestor;
+            ancestor.setVisible(false);
+        }
+    }
+
+    private void restoreDialogAfterSearch()
+    {
+        Window dialog = hiddenDialogForSearch;
+        hiddenDialogForSearch = null;
+        if (dialog != null && dialog.isDisplayable())
+        {
+            dialog.setVisible(true);
+        }
+    }
+
+    public void closeSearch()
+    {
+        if (!searchOpen)
+        {
+            return;
+        }
+        plugin.getChatboxPanelManager().close();
+        searchClosed();
     }
 
     private void setSelectedItem(Integer rawId)

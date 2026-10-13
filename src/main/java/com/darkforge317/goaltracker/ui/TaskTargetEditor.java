@@ -16,7 +16,8 @@ final class TaskTargetEditor
 {
     static boolean supports(Task task)
     {
-        return task instanceof SkillLevelTask || task instanceof SkillXpTask || task instanceof ItemTask;
+        return task instanceof SkillLevelTask || task instanceof SkillXpTask || task instanceof ItemTask
+            || task instanceof CombatLevelTask;
     }
 
     static int parseTarget(String value, int maximum)
@@ -91,6 +92,42 @@ final class TaskTargetEditor
         return spinner;
     }
 
+    static JSpinner createCombatLevelSpinner(int value)
+    {
+        return createCombatLevelSpinner((double) value);
+    }
+
+    static JSpinner createCombatLevelSpinner(double value)
+    {
+        double boundedValue = Math.max(3, Math.min(126, value));
+        SpinnerNumberModel model = new SpinnerNumberModel(boundedValue, 3.0, 126.0, 0.25)
+        {
+            @Override public void setValue(Object value)
+            {
+                if (!(value instanceof Number))
+                {
+                    throw new IllegalArgumentException("Combat level must be between 3 and 126.");
+                }
+                Number number = (Number) value;
+                double target = number.doubleValue();
+                if (!Double.isFinite(target) || target < 3 || target > 126
+                    || Math.abs(target * 100 - Math.rint(target * 100)) > 0.000001)
+                {
+                    throw new IllegalArgumentException("Combat level must be between 3 and 126, with at most two decimal places.");
+                }
+                super.setValue(target);
+            }
+        };
+        JSpinner spinner = new JSpinner(model);
+        JSpinner.NumberEditor editor = new JSpinner.NumberEditor(spinner, "0.00");
+        editor.getTextField().setColumns(5);
+        editor.getTextField().setHorizontalAlignment(SwingConstants.LEFT);
+        editor.getTextField().getAccessibleContext().setAccessibleName("Target combat level");
+        editor.getTextField().setToolTipText("Combat level 3–126; up to two decimal places");
+        spinner.setEditor(editor);
+        return spinner;
+    }
+
     static void open(Component parent, GoalTrackerPlugin plugin, Goal goal, Task task)
     {
         if (!supports(task)) return;
@@ -99,19 +136,30 @@ final class TaskTargetEditor
         fields.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
         boolean level = task instanceof SkillLevelTask;
         ItemTask item = task instanceof ItemTask ? (ItemTask) task : null;
+        CombatLevelTask combat = task instanceof CombatLevelTask ? (CombatLevelTask) task : null;
         int target = item != null ? item.getQuantity()
+            : combat != null ? 1
             : level ? ((SkillLevelTask) task).getTargetSkillLevel() : ((SkillXpTask) task).getTargetSkillXp();
         String name = item != null ? item.getItemName()
+            : combat != null ? "Combat"
             : (level ? ((SkillLevelTask) task).getSkill() : ((SkillXpTask) task).getSkill()).getName();
         fields.add(new JLabel(name), BorderLayout.NORTH);
         SkillTargetFields skillTarget = new SkillTargetFields();
         JSpinner quantity = createQuantitySpinner(item == null ? 1 : target);
+        JSpinner combatTarget = combat == null ? null : createCombatLevelSpinner(combat.getTargetCombatLevel());
         if (item != null)
         {
             JPanel quantityRow = new JPanel(new BorderLayout(8, 0));
             quantityRow.add(new JLabel("Quantity"), BorderLayout.WEST);
             quantityRow.add(quantity, BorderLayout.CENTER);
             fields.add(quantityRow, BorderLayout.CENTER);
+        }
+        else if (combat != null)
+        {
+            JPanel combatRow = new JPanel(new BorderLayout(8, 0));
+            combatRow.add(new JLabel("Combat level (3–126)"), BorderLayout.WEST);
+            combatRow.add(combatTarget, BorderLayout.CENTER);
+            fields.add(combatRow, BorderLayout.CENTER);
         }
         else
         {
@@ -133,15 +181,17 @@ final class TaskTargetEditor
             try
             {
                 if (item != null) quantity.commitEdit();
+                if (combat != null) combatTarget.commitEdit();
                 value = item != null ? (Integer) quantity.getValue()
                     : skillTarget.isLevelTarget() ? skillTarget.getTargetLevel() : skillTarget.getTargetXp();
             }
             catch (IllegalArgumentException | ArithmeticException | java.text.ParseException ex)
             {
-                JOptionPane.showMessageDialog(dialog, item != null
+                String message = item != null
                     ? "Enter a whole number from 1 to " + Integer.MAX_VALUE + ". You can use k or m."
-                    : "Enter a level from 1 to 127 (up to two decimal places) or XP from 0 to 200M (k/m allowed).",
-                    "Invalid target", JOptionPane.ERROR_MESSAGE);
+                    : combat != null ? "Enter a combat level from 3 to 126, with up to two decimal places."
+                    : "Enter a level from 1 to 127 (up to two decimal places) or XP from 0 to 200M (k/m allowed).";
+                JOptionPane.showMessageDialog(dialog, message, "Invalid target", JOptionPane.ERROR_MESSAGE);
                 return;
             }
             if (!goal.getTasks().contains(task) || !plugin.getGoalManager().getGoals().contains(goal))
@@ -155,8 +205,13 @@ final class TaskTargetEditor
                 item.setQuantity(value);
                 item.recomputeFromCount(item.getAcquired());
             }
+            else if (combat != null)
+            {
+                combat.setTargetCombatLevel(((Number) combatTarget.getValue()).doubleValue());
+                combat.setStatus(combat.hasReachedTargetLevel() ? Status.COMPLETED : Status.NOT_STARTED);
+            }
             Task savedTask = task;
-            if (item == null)
+            if (item == null && combat == null)
             {
                 savedTask = retargetSkill(task, skillTarget.isLevelTarget(), value);
                 if (savedTask instanceof SkillXpTask)

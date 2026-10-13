@@ -26,6 +26,7 @@ public final class TaskIconService
     public static final ImageIcon QUEST_ICON;
     public static final ImageIcon QUEST_COMPLETE_ICON;
     public static final ImageIcon UNKNOWN_ICON;
+    private static final BufferedImage COMBAT_LEVEL_IMAGE;
 
     static
     {
@@ -44,6 +45,7 @@ public final class TaskIconService
         UNKNOWN_ICON = new ImageIcon(
             ImageUtil.loadImageResource(GoalTrackerPlugin.class, "/question_mark.png")
         );
+        COMBAT_LEVEL_IMAGE = ImageUtil.loadImageResource(GoalTrackerPlugin.class, "/combat_level_icon.png");
     }
 
     @Inject private ItemManager itemManager;
@@ -72,6 +74,10 @@ public final class TaskIconService
         else if (task instanceof ItemTask)
         {
             image = get((ItemTask) task);
+        }
+        else if (task instanceof CombatLevelTask)
+        {
+            image = COMBAT_LEVEL_IMAGE;
         }
 
         if (image != null)
