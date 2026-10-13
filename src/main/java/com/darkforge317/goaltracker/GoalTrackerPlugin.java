@@ -203,6 +203,7 @@ public final class GoalTrackerPlugin extends Plugin
     // are relatively expensive and the same IDs repeat across containers/tasks/events.
     private final Map<Integer, String> itemNameCache = new HashMap<>();
 
+    private static final Pattern TRAILING_CHARGES_PATTERN = Pattern.compile("\\s*\\([0-9]+\\)$");
     private static final Pattern TRAILING_NUMBER_PATTERN = Pattern.compile("\\s[0-9]{1,3}$");
     private static final Pattern MULTI_SPACE_PATTERN = Pattern.compile("\\s+");
 
@@ -799,7 +800,7 @@ public final class GoalTrackerPlugin extends Plugin
         return itemNameCache.computeIfAbsent(itemId, id -> {
             try
             {
-                return normalizeBarrowsName(itemManager.getItemComposition(id).getName());
+                return normalizeItemNameVariants(itemManager.getItemComposition(id).getName());
             }
             catch (Exception ex)
             {
@@ -848,7 +849,7 @@ public final class GoalTrackerPlugin extends Plugin
             return idCounts == null ? 0 : idCounts.getOrDefault(targetItemId, 0);
         }
 
-        final String baseName = normalizeBarrowsName(targetItemName);
+        final String baseName = normalizeItemNameVariants(targetItemName);
         final Map<String, Integer> nameCounts = containerNameCounts.get(inventoryId);
         int total = nameCounts == null ? 0 : nameCounts.getOrDefault(baseName, 0);
         // Name counts already include the exact ID when its name matches. Only
@@ -865,17 +866,18 @@ public final class GoalTrackerPlugin extends Plugin
     }
 
     /**
-     * Normalize Barrows item names so that degraded variants (e.g., "Torag's platelegs 100/75/50/25/0")
-     * all map to the same base string (e.g., "Torag's platelegs").
+     * Normalize item variant names so charged items and degraded Barrows variants
+     * map to their shared base name.
      */
-    private static String normalizeBarrowsName(final String raw)
+    private static String normalizeItemNameVariants(final String raw)
     {
         if (raw == null)
         {
             return "";
         }
-        // Strip trailing space+digits (e.g., " 100") and collapse double spaces
-        String s = TRAILING_NUMBER_PATTERN.matcher(raw).replaceAll("").trim();
+        // Strip charged item suffixes (e.g., " (6)") and Barrows degradation suffixes (e.g., " 100").
+        String s = TRAILING_CHARGES_PATTERN.matcher(raw).replaceAll("").trim();
+        s = TRAILING_NUMBER_PATTERN.matcher(s).replaceAll("").trim();
         s = MULTI_SPACE_PATTERN.matcher(s).replaceAll(" ");
         return s;
     }
