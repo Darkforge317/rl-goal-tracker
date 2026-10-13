@@ -45,6 +45,7 @@ public final class GoalPanel extends JPanel implements Refreshable
     private ActionBarButton undoButton;
     private ActionBarButton redoButton;
     private ActionBarButton prereqsButton;
+    private JDialog addChildDialog;
 
     public GoalPanel(GoalTrackerPlugin plugin, Goal goal, Runnable closeListener)
     {
@@ -312,14 +313,36 @@ public final class GoalPanel extends JPanel implements Refreshable
             return;
         }
 
+        if (addChildDialog != null && addChildDialog.isDisplayable())
+        {
+            addChildDialog.toFront();
+            return;
+        }
+
         Window owner = SwingUtilities.getWindowAncestor(this);
-        JDialog dialog = new JDialog(owner, "Add child task", Dialog.ModalityType.APPLICATION_MODAL);
+        JDialog dialog = new JDialog(owner, "Add child task for " + parentTask, Dialog.ModalityType.MODELESS);
+        addChildDialog = dialog;
         dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         dialog.setLayout(new BorderLayout(0, 8));
 
         NewTaskPanel childTaskPanel = new NewTaskPanel(plugin, goal);
         childTaskPanel.onTaskAdded(child -> {
+            if (!goal.getTasks().contains(parentTask))
+            {
+                goal.getTasks().remove(child);
+                if (goalUpdatedListener != null) goalUpdatedListener.accept(goal);
+                plugin.getUiStatusManager().refresh(goal);
+                refreshTaskList();
+                JOptionPane.showMessageDialog(this,
+                    "The parent task was removed before the child could be added.",
+                    "Cannot add child",
+                    JOptionPane.WARNING_MESSAGE);
+                childTaskPanel.closeItemSearch();
+                dialog.dispose();
+                return;
+            }
             addChildTask(parentTask, child);
+            childTaskPanel.closeItemSearch();
             dialog.dispose();
         });
         childTaskPanel.expandMoreOptions();
@@ -334,10 +357,28 @@ public final class GoalPanel extends JPanel implements Refreshable
         dialog.add(childTaskScrollPane, BorderLayout.CENTER);
 
         JButton cancelButton = new JButton("Cancel");
-        cancelButton.addActionListener(e -> dialog.dispose());
+        cancelButton.addActionListener(e -> {
+            childTaskPanel.closeItemSearch();
+            dialog.dispose();
+        });
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttonPanel.add(cancelButton);
         dialog.add(buttonPanel, BorderLayout.SOUTH);
+        dialog.addWindowListener(new java.awt.event.WindowAdapter()
+        {
+            @Override public void windowClosing(java.awt.event.WindowEvent event)
+            {
+                childTaskPanel.closeItemSearch();
+            }
+
+            @Override public void windowClosed(java.awt.event.WindowEvent event)
+            {
+                if (addChildDialog == dialog)
+                {
+                    addChildDialog = null;
+                }
+            }
+        });
 
         dialog.pack();
         dialog.setLocationRelativeTo(this);

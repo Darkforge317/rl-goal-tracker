@@ -23,6 +23,7 @@ public final class NewTaskPanel extends JPanel
     private final Goal goal;
 
     private JPanel moreOptionsPanel;
+    private ItemTaskInput itemTaskInput;
     private Consumer<Task> listener;
 
     NewTaskPanel(GoalTrackerPlugin plugin, Goal goal)
@@ -109,8 +110,17 @@ public final class NewTaskPanel extends JPanel
         moreOptionsPanel.add(new QuestTaskInput(plugin, goal).onSubmit((task) -> this.listener.accept(task)), constraints);
         constraints.gridy++;
 
-        moreOptionsPanel.add(new ItemTaskInput(plugin, goal).onSubmit((task) -> this.listener.accept(task)), constraints);
+        itemTaskInput = new ItemTaskInput(plugin, goal);
+        moreOptionsPanel.add(itemTaskInput.onSubmit((task) -> this.listener.accept(task)), constraints);
         constraints.gridy++;
+    }
+
+    void closeItemSearch()
+    {
+        if (itemTaskInput != null)
+        {
+            itemTaskInput.closeSearch();
+        }
     }
 
     public void onTaskAdded(Consumer<Task> listener)
