@@ -43,7 +43,7 @@ public final class CombatLevelTask extends Task
 
     public boolean hasReachedTargetLevel()
     {
-        return currentCombatLevel >= targetCombatLevel;
+        return wouldReachTargetLevel(currentCombatLevel);
     }
 
     public boolean wouldReachTargetLevel(double combatLevel)
