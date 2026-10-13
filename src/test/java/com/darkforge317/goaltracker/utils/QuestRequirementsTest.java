@@ -9,6 +9,8 @@ import net.runelite.api.Skill;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -70,5 +72,47 @@ public class QuestRequirementsTest
         assertFalse(requirements.stream().anyMatch(task -> task instanceof SkillLevelTask
             && ((SkillLevelTask) task).getSkill() == Skill.DEFENCE
             && ((SkillLevelTask) task).getTargetSkillLevel() == 85));
+    }
+
+    @Test
+    void bloodMoonRisesRequirements_matchWikiQuestHierarchyAndSkillLevels()
+    {
+        List<Task> requirements = QuestRequirements.getRequirements(Quest.THE_BLOOD_MOON_RISES, 0);
+        Map<Quest, Integer> actualQuestIndentLevels = new HashMap<>();
+        requirements.stream()
+            .filter(QuestTask.class::isInstance)
+            .map(QuestTask.class::cast)
+            .forEach(task -> actualQuestIndentLevels.put(task.getQuest(), task.getIndentLevel()));
+
+        Map<Quest, Integer> expectedQuestIndentLevels = new HashMap<>();
+        expectedQuestIndentLevels.put(Quest.A_NIGHT_AT_THE_THEATRE, 1);
+        expectedQuestIndentLevels.put(Quest.SINS_OF_THE_FATHER, 1);
+        expectedQuestIndentLevels.put(Quest.VAMPYRE_SLAYER, 2);
+        expectedQuestIndentLevels.put(Quest.A_TASTE_OF_HOPE, 2);
+        expectedQuestIndentLevels.put(Quest.DARKNESS_OF_HALLOWVALE, 3);
+        expectedQuestIndentLevels.put(Quest.IN_AID_OF_THE_MYREQUE, 4);
+        expectedQuestIndentLevels.put(Quest.IN_SEARCH_OF_THE_MYREQUE, 5);
+        expectedQuestIndentLevels.put(Quest.NATURE_SPIRIT, 6);
+        expectedQuestIndentLevels.put(Quest.PRIEST_IN_PERIL, 7);
+        expectedQuestIndentLevels.put(Quest.THE_RESTLESS_GHOST, 7);
+        assertEquals(expectedQuestIndentLevels, actualQuestIndentLevels);
+
+        Map<Skill, Integer> expectedSkillLevels = new HashMap<>();
+        expectedSkillLevels.put(Skill.SLAYER, 74);
+        expectedSkillLevels.put(Skill.WOODCUTTING, 74);
+        expectedSkillLevels.put(Skill.SMITHING, 72);
+        expectedSkillLevels.put(Skill.COOKING, 72);
+        expectedSkillLevels.put(Skill.FLETCHING, 70);
+        expectedSkillLevels.put(Skill.MINING, 66);
+        expectedSkillLevels.put(Skill.HUNTER, 65);
+        expectedSkillLevels.put(Skill.CRAFTING, 64);
+        expectedSkillLevels.put(Skill.HERBLORE, 64);
+        expectedSkillLevels.put(Skill.MAGIC, 57);
+        Map<Skill, Integer> actualSkillLevels = new HashMap<>();
+        requirements.stream()
+            .filter(task -> task instanceof SkillLevelTask && task.getIndentLevel() == 1)
+            .map(SkillLevelTask.class::cast)
+            .forEach(task -> actualSkillLevels.put(task.getSkill(), task.getTargetSkillLevel()));
+        assertEquals(expectedSkillLevels, actualSkillLevels);
     }
 }

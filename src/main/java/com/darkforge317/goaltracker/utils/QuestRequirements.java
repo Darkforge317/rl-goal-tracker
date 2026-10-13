@@ -1062,6 +1062,7 @@ public final class QuestRequirements
         REQUIREMENT_MAP.put(
                 Quest.SINS_OF_THE_FATHER,
                 Arrays.asList(
+                        QuestTask.builder().quest(Quest.VAMPYRE_SLAYER).build(),
                         QuestTask.builder().quest(Quest.A_TASTE_OF_HOPE).build(),
                         SkillLevelTask.builder().skill(Skill.WOODCUTTING).targetSkillLevel(62).build(),
                         SkillLevelTask.builder().skill(Skill.FLETCHING).targetSkillLevel(60).build(),
@@ -1295,6 +1296,24 @@ public final class QuestRequirements
                         QuestTask.builder().quest(Quest.THE_FINAL_DAWN).build()
                 )
         );
+
+        REQUIREMENT_MAP.put(
+                Quest.THE_BLOOD_MOON_RISES,
+                Arrays.asList(
+                        QuestTask.builder().quest(Quest.A_NIGHT_AT_THE_THEATRE).build(),
+                        QuestTask.builder().quest(Quest.SINS_OF_THE_FATHER).build(),
+                        SkillLevelTask.builder().skill(Skill.SLAYER).targetSkillLevel(74).build(),
+                        SkillLevelTask.builder().skill(Skill.WOODCUTTING).targetSkillLevel(74).build(),
+                        SkillLevelTask.builder().skill(Skill.SMITHING).targetSkillLevel(72).build(),
+                        SkillLevelTask.builder().skill(Skill.COOKING).targetSkillLevel(72).build(),
+                        SkillLevelTask.builder().skill(Skill.FLETCHING).targetSkillLevel(70).build(),
+                        SkillLevelTask.builder().skill(Skill.MINING).targetSkillLevel(66).build(),
+                        SkillLevelTask.builder().skill(Skill.HUNTER).targetSkillLevel(65).build(),
+                        SkillLevelTask.builder().skill(Skill.CRAFTING).targetSkillLevel(64).build(),
+                        SkillLevelTask.builder().skill(Skill.HERBLORE).targetSkillLevel(64).build(),
+                        SkillLevelTask.builder().skill(Skill.MAGIC).targetSkillLevel(57).build()
+                )
+        );
     }
 
     /**
@@ -1305,6 +1324,11 @@ public final class QuestRequirements
      */
     public static List<Task> getRequirements(Quest quest, int indentLevel)
     {
+        return getRequirements(quest, indentLevel, new HashSet<>());
+    }
+
+    private static List<Task> getRequirements(Quest quest, int indentLevel, Set<String> includedRequirements)
+    {
         List<Task> tasks = new ArrayList<>();
         if (indentLevel >= MAX_INDENT_LEVEL) {
             // Respect Task.java's max indent level
@@ -1314,11 +1338,21 @@ public final class QuestRequirements
         List<Task> directRequirements = REQUIREMENT_MAP.getOrDefault(quest, Collections.emptyList());
         for (Task task : directRequirements) {
             Task withIndent = copyWithIndent(task, indentLevel + 1);
+            String key = withIndent.getClass().getName() + "|" + withIndent.toString();
+            if (!includedRequirements.add(key)) {
+                continue;
+            }
             tasks.add(withIndent);
 
             if (withIndent instanceof QuestTask) {
                 Quest subQuest = ((QuestTask) withIndent).getQuest();
-                List<Task> subRequirements = getRequirements(subQuest, indentLevel + 1);
+                // The Blood Moon wiki groups the shared Taste of Hope chain under Sins of the Father.
+                // A Night at the Theatre also requires that chain, but don't display it a second time
+                // beneath A Night in this combined prerequisite list.
+                if (quest == Quest.THE_BLOOD_MOON_RISES && subQuest == Quest.A_NIGHT_AT_THE_THEATRE) {
+                    continue;
+                }
+                List<Task> subRequirements = getRequirements(subQuest, indentLevel + 1, includedRequirements);
                 tasks.addAll(subRequirements);
             }
         }
