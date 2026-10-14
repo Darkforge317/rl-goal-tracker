@@ -263,10 +263,7 @@ final class TaskTargetEditor
     static JSpinner createQuestPointsSpinner(int value)
     {
         JSpinner spinner = QuestPointsTaskInput.createTargetSpinner(value);
-        JSpinner.NumberEditor editor = new JSpinner.NumberEditor(spinner, "0");
-        editor.getTextField().setColumns(5);
-        editor.getTextField().setHorizontalAlignment(SwingConstants.LEFT);
-        spinner.setEditor(editor);
+        QuestPointsTaskInput.configureEditor(spinner);
         return spinner;
     }
 }
