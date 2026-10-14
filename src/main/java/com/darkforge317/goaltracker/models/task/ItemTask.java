@@ -3,6 +3,7 @@ package com.darkforge317.goaltracker.models.task;
 import com.google.gson.annotations.SerializedName;
 import com.darkforge317.goaltracker.models.enums.Status;
 import com.darkforge317.goaltracker.models.enums.TaskType;
+import com.darkforge317.goaltracker.utils.ItemNameNormalizer;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -103,21 +104,22 @@ public final class ItemTask extends Task
     @Override
     public String toString()
     {
+        final String displayItemName = ItemNameNormalizer.normalizeItemNameVariants(itemName);
         if (quantity == 1) {
-            return itemName;
+            return displayItemName;
         }
 
         if (acquired > 0 && acquired < quantity) {
-            return String.format("%d/%d x %s", acquired, quantity, itemName);
+            return String.format("%d/%d x %s", acquired, quantity, displayItemName);
         }
 
-        return String.format("%d x %s", quantity, itemName);
+        return String.format("%d x %s", quantity, displayItemName);
     }
 
     @Override
     public String getDisplayName()
     {
-        return itemName;
+        return ItemNameNormalizer.normalizeItemNameVariants(itemName);
     }
 
     @Override

@@ -31,6 +31,14 @@ class ItemTaskTest {
     }
 
     @Test
+    void toString_shouldDisplayBaseNameForChargedItemVariants() {
+        ItemTask task = ItemTask.builder().acquired(94).quantity(100).itemName("Super Energy(4)").build();
+
+        assertEquals("94/100 x Super Energy", task.toString());
+        assertEquals("Super Energy", task.getDisplayName());
+    }
+
+    @Test
     void toString_shouldSupportTheAcquiredItemsExceedingTheQuantity() {
         ItemTask task = ItemTask.builder().acquired(150).quantity(100).itemName("Feather").build();
 

@@ -229,6 +229,19 @@ class ItemCountingTest
     }
 
     @Test
+    void includesChargedItemVariantsAndUnchargedBase()
+    {
+        itemName(100, "Amulet of glory (6)");
+        itemName(101, "Amulet of glory (4)");
+        itemName(102, "Amulet of glory");
+        container(InventoryID.WORN, new Item(100, 1));
+        container(InventoryID.BANK, new Item(101, 1));
+        container(InventoryID.INV, new Item(102, 2));
+
+        assertEquals(4, count(100, "Amulet of glory (6)"));
+    }
+
+    @Test
     void retainsExactIdFallbackForMissingOrDifferentNames()
     {
         itemName(100, "Maple logs");
