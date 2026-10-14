@@ -23,16 +23,20 @@ import java.util.stream.Collectors;
  */
 public final class GoalManager
 {
-    @Inject
-    private GoalTrackerConfig config;
-
-    @Inject
-    private GoalSerializer goalSerializer;
+    private final GoalTrackerConfig config;
+    private final GoalSerializer goalSerializer;
 
     @Getter
     private final ReorderableList<Goal> goals = new ReorderableList<>();
 
     private final List<Runnable> goalsChangedListeners = new ArrayList<>();
+
+    @Inject
+    public GoalManager(GoalTrackerConfig config, GoalSerializer goalSerializer)
+    {
+        this.config = config;
+        this.goalSerializer = goalSerializer;
+    }
 
     public Goal createGoal()
     {
@@ -83,8 +87,16 @@ public final class GoalManager
     {
         try
         {
+            String serialized = config.goalTrackerData();
+            if (serialized == null)
+            {
+                log.warn("No saved goal data is available; preserving the current goal list");
+                return;
+            }
+
+            ReorderableList<Goal> loadedGoals = goalSerializer.deserialize(serialized);
             this.goals.clear();
-            this.goals.addAll(goalSerializer.deserialize(config.goalTrackerData()));
+            this.goals.addAll(loadedGoals);
             notifyGoalsChanged();
             log.info("Loaded " + this.goals.size() + " goals");
         }

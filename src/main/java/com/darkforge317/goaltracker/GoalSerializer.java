@@ -31,6 +31,11 @@ public final class GoalSerializer
 
     public ReorderableList<Goal> deserialize(String serialized)
     {
+        if (serialized == null || serialized.trim().isEmpty())
+        {
+            return new ReorderableList<>();
+        }
+
         ReorderableList<Goal> goals = ReorderableList.from(this.getBuilder().fromJson(serialized, Goal[].class));
         for (Goal goal : goals)
         {
