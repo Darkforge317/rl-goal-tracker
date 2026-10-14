@@ -13,6 +13,7 @@ import com.darkforge317.goaltracker.ui.components.ActionBarButton;
 import com.darkforge317.goaltracker.ui.components.ListItemPanel;
 import com.darkforge317.goaltracker.ui.components.ListPanel;
 import com.darkforge317.goaltracker.utils.ReorderableList;
+import com.darkforge317.goaltracker.utils.ScrollSpeedUtils;
 import lombok.extern.slf4j.Slf4j;
 import lombok.extern.slf4j.XSlf4j;
 import net.runelite.client.ui.ColorScheme;
@@ -145,6 +146,7 @@ public final class GoalTrackerPanel extends JPanel implements Refreshable
             panel.onRemovedWithIndex(this::recordGoalRemoval);
             return panel;
         });
+        ScrollSpeedUtils.configure(goalListPanel, plugin.getConfig());
         goalListPanel.setGap(0);
         goalListPanel.setBorder(new EmptyBorder(0, 0, 0, 0));
         JTextArea placeholder = new JTextArea("No goals yet.\nClick + Add goal above to create your first one.");
@@ -489,7 +491,9 @@ public final class GoalTrackerPanel extends JPanel implements Refreshable
         JPanel panel = new JPanel(new BorderLayout(6,6));
         panel.add(new JLabel("Choose a preset:"), BorderLayout.NORTH);
         panel.add(combo, BorderLayout.CENTER);
-        panel.add(new JScrollPane(details), BorderLayout.SOUTH);
+        JScrollPane detailsScrollPane = new JScrollPane(details);
+        ScrollSpeedUtils.configure(detailsScrollPane, plugin.getConfig());
+        panel.add(detailsScrollPane, BorderLayout.SOUTH);
 
         int res = JOptionPane.showConfirmDialog(this, panel, "Add from Preset…", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         if (res != JOptionPane.OK_OPTION) { return; }

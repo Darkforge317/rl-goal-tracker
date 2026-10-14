@@ -15,6 +15,7 @@ import com.darkforge317.goaltracker.services.PanelService;
 import com.darkforge317.goaltracker.services.TaskIconService;
 import com.darkforge317.goaltracker.services.TaskUpdateService;
 import com.darkforge317.goaltracker.utils.ItemNameNormalizer;
+import com.darkforge317.goaltracker.utils.ScrollSpeedUtils;
 import com.google.inject.Provides;
 import lombok.Getter;
 import lombok.Setter;
@@ -37,6 +38,7 @@ import net.runelite.client.callback.ClientThread;
 import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.chat.QueuedMessage;
 import net.runelite.client.config.ConfigManager;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.SessionOpen;
 import net.runelite.client.game.ItemManager;
@@ -223,6 +225,20 @@ public final class GoalTrackerPlugin extends Plugin
         }
         catch (Exception ex) {
             log.warn("notifyTask failed", ex);
+        }
+    }
+
+    @Subscribe
+    public void onConfigChanged(ConfigChanged event)
+    {
+        if (!"goaltracker".equals(event.getGroup()))
+        {
+            return;
+        }
+
+        if ("horizontalScrollSpeed".equals(event.getKey()) || "verticalScrollSpeed".equals(event.getKey()))
+        {
+            SwingUtilities.invokeLater(ScrollSpeedUtils::refreshAll);
         }
     }
 
