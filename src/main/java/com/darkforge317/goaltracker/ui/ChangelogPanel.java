@@ -4,6 +4,7 @@ import com.darkforge317.goaltracker.GoalTrackerPlugin;
 import com.darkforge317.goaltracker.services.ChangelogService;
 import com.darkforge317.goaltracker.services.PanelService;
 import com.darkforge317.goaltracker.utils.ChangelogMarkdownRenderer;
+import com.darkforge317.goaltracker.utils.ScrollSpeedUtils;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.util.LinkBrowser;
@@ -152,6 +153,7 @@ public class ChangelogPanel extends JPanel
         scrollPane.getViewport().setBackground(ColorScheme.DARK_GRAY_COLOR);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        ScrollSpeedUtils.configure(scrollPane, plugin.getConfig());
 
         add(topSection, BorderLayout.NORTH);
         add(scrollPane, BorderLayout.CENTER);

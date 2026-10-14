@@ -49,7 +49,7 @@ public class PanelService extends PluginPanel {
     public void showChangelogListPanel()
     {
         removeAll();
-        ChangelogListPanel panel = new ChangelogListPanel(this);
+        ChangelogListPanel panel = new ChangelogListPanel(this, plugin);
         add(panel, BorderLayout.CENTER);
         revalidate();
         repaint();

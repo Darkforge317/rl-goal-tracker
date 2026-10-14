@@ -1,6 +1,7 @@
 package com.darkforge317.goaltracker.ui;
 
 import com.darkforge317.goaltracker.GoalTrackerPlugin;
+import com.darkforge317.goaltracker.utils.ScrollSpeedUtils;
 import com.darkforge317.goaltracker.services.ChangelogService;
 import com.darkforge317.goaltracker.services.ChangelogService.ChangelogEntry;
 import com.darkforge317.goaltracker.services.PanelService;
@@ -46,7 +47,7 @@ public class ChangelogListPanel extends JPanel
     private ChangelogService changelogService = new ChangelogService();
     private List<ChangelogService.ChangelogEntry> changelogEntries = changelogService.getAllEntries();
 
-    public ChangelogListPanel(PanelService panelService)
+    public ChangelogListPanel(PanelService panelService, GoalTrackerPlugin plugin)
     {
         super(new BorderLayout());
         this.panelService = panelService;
@@ -118,11 +119,11 @@ public class ChangelogListPanel extends JPanel
         scrollPane.getViewport().setBackground(ColorScheme.DARK_GRAY_COLOR);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        ScrollSpeedUtils.configure(scrollPane, plugin.getConfig());
 
         add(topSection, BorderLayout.NORTH);
         add(scrollPane, BorderLayout.CENTER);
     }
-
 
     private void onChangelogEntryClicked(ChangelogEntry entry)
     {

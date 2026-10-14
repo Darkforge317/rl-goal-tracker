@@ -6,6 +6,7 @@ import com.darkforge317.goaltracker.models.Goal;
 import com.darkforge317.goaltracker.models.enums.TaskType;
 import com.darkforge317.goaltracker.models.task.Task;
 import com.darkforge317.goaltracker.utils.ReorderableList;
+import com.darkforge317.goaltracker.utils.ScrollSpeedUtils;
 import com.darkforge317.goaltracker.utils.TaskHierarchyUtils;
 import com.darkforge317.goaltracker.ui.components.*;
 import com.darkforge317.goaltracker.ui.components.*;
@@ -195,6 +196,7 @@ public final class GoalPanel extends JPanel implements Refreshable
                 return fallback;
             }
         });
+        ScrollSpeedUtils.configure(taskListPanel, plugin.getConfig());
         taskListPanel.setGap(0);
         taskListPanel.setPlaceholder("No tasks added yet");
         taskListPanel.onReordered((oldOrder, newOrder) -> {
@@ -269,10 +271,7 @@ public final class GoalPanel extends JPanel implements Refreshable
                 )
         );
 
-        // Increase default scroll speeds
-        // TODO: Add scroll sensitivity setting in plugin configuration UI.
-        taskListScrollPane.getHorizontalScrollBar().setUnitIncrement(12);
-        taskListScrollPane.getVerticalScrollBar().setUnitIncrement(12);
+        ScrollSpeedUtils.configure(taskListScrollPane, plugin.getConfig());
 
         // Mount the scroll window to the center
         add(taskListScrollPane, BorderLayout.CENTER);
@@ -352,6 +351,7 @@ public final class GoalPanel extends JPanel implements Refreshable
                 ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
                 ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         childTaskScrollPane.setBorder(BorderFactory.createEmptyBorder());
+        ScrollSpeedUtils.configure(childTaskScrollPane, plugin.getConfig());
         childTaskScrollPane.getViewport().setBackground(ColorScheme.DARK_GRAY_COLOR);
         childTaskScrollPane.setPreferredSize(new Dimension(320, childPanelSize.height));
         dialog.add(childTaskScrollPane, BorderLayout.CENTER);

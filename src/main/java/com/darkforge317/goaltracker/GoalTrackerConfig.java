@@ -4,6 +4,7 @@ import net.runelite.client.config.Alpha;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
+import net.runelite.client.config.Range;
 
 import java.awt.*;
 
@@ -14,6 +15,10 @@ import java.awt.*;
 @ConfigGroup("goaltracker")
 public interface GoalTrackerConfig extends Config
 {
+    int MIN_SCROLL_SPEED = 1;
+    int MAX_SCROLL_SPEED = 100;
+    int DEFAULT_SCROLL_SPEED = 12;
+
     @ConfigItem(keyName = "goalTrackerData", name = "", description = "", hidden = true)
     default String goalTrackerData()
     {
@@ -49,6 +54,28 @@ public interface GoalTrackerConfig extends Config
 
     @ConfigItem(keyName = "highestChangelogVersionSeen", name = "", description = "", hidden = true)
     void highestChangelogVersionSeen(String str);
+
+    @ConfigItem(
+        keyName = "horizontalScrollSpeed",
+        name = "Horizontal Scroll Speed",
+        description = "Controls horizontal scrolling speed throughout the plugin. (1-100)"
+    )
+    @Range(min = MIN_SCROLL_SPEED, max = MAX_SCROLL_SPEED)
+    default int horizontalScrollSpeed()
+    {
+        return DEFAULT_SCROLL_SPEED;
+    }
+
+    @ConfigItem(
+        keyName = "verticalScrollSpeed",
+        name = "Vertical Scroll Speed",
+        description = "Controls vertical scrolling speed throughout the plugin. (1-100)"
+    )
+    @Range(min = MIN_SCROLL_SPEED, max = MAX_SCROLL_SPEED)
+    default int verticalScrollSpeed()
+    {
+        return DEFAULT_SCROLL_SPEED;
+    }
 
     @ConfigItem(
         keyName = "completionMessageColor",
