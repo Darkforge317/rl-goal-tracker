@@ -9,6 +9,7 @@ import net.runelite.api.GameState;
 import net.runelite.api.Player;
 import net.runelite.api.Experience;
 import net.runelite.api.Skill;
+import net.runelite.api.VarPlayer;
 import net.runelite.api.events.StatChanged;
 
 import javax.inject.Inject;
@@ -33,6 +34,7 @@ public final class TaskUpdateService
             case SKILL_LEVEL: return update((SkillLevelTask) task);
             case SKILL_XP:    return update((SkillXpTask) task);
             case COMBAT_LEVEL: return update((CombatLevelTask) task);
+            case QUEST_POINTS: return update((QuestPointsTask) task);
             case QUEST:       return update((QuestTask) task);
             case ITEM:        return update((ItemTask) task);
             default:          return false;
@@ -72,6 +74,29 @@ public final class TaskUpdateService
         task.setCurrentCombatLevel(combatLevel);
         task.setStatus(task.wouldReachTargetLevel(combatLevel) ? Status.COMPLETED : Status.NOT_STARTED);
         return oldCombatLevel != task.getCurrentCombatLevel() || oldStatus != task.getStatus();
+    }
+
+    /** Read the current Quest point total from the logged-in client. */
+    @SuppressWarnings("deprecation")
+    public boolean update(QuestPointsTask task)
+    {
+        if (client.getGameState() != GameState.LOGGED_IN || !client.isClientThread())
+        {
+            return false;
+        }
+        return update(task, client.getVarpValue(VarPlayer.QUEST_POINTS));
+    }
+
+    /** Update from the Quest point total already read on the client thread. */
+    public boolean update(QuestPointsTask task, int questPoints)
+    {
+        int oldQuestPoints = task.getCurrentQuestPoints();
+        Status oldStatus = task.getStatus();
+        task.setCurrentQuestPoints(Math.max(0, questPoints));
+        task.setStatus(task.wouldReachTarget(task.getCurrentQuestPoints())
+            ? Status.COMPLETED
+            : (task.getCurrentQuestPoints() > 0 ? Status.IN_PROGRESS : Status.NOT_STARTED));
+        return oldQuestPoints != task.getCurrentQuestPoints() || oldStatus != task.getStatus();
     }
 
     /** Returns true if an update has occurred. */

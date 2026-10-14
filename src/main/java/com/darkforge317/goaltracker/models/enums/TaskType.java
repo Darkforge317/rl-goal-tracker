@@ -20,6 +20,8 @@ public enum TaskType
     SKILL_XP("skill_xp"),
     @SerializedName("combat_level")
     COMBAT_LEVEL("combat_level"),
+    @SerializedName("quest_points")
+    QUEST_POINTS("quest_points"),
     @SerializedName("quest")
     QUEST("quest"),
     @SerializedName("item")

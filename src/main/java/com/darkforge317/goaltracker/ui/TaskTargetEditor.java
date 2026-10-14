@@ -6,6 +6,7 @@ import com.darkforge317.goaltracker.models.enums.Status;
 import com.darkforge317.goaltracker.models.task.*;
 import net.runelite.api.Skill;
 import com.darkforge317.goaltracker.ui.components.SkillTargetFields;
+import com.darkforge317.goaltracker.ui.inputs.QuestPointsTaskInput;
 
 import javax.swing.*;
 import java.awt.*;
@@ -17,7 +18,7 @@ final class TaskTargetEditor
     static boolean supports(Task task)
     {
         return task instanceof SkillLevelTask || task instanceof SkillXpTask || task instanceof ItemTask
-            || task instanceof CombatLevelTask;
+            || task instanceof CombatLevelTask || task instanceof QuestPointsTask;
     }
 
     static int parseTarget(String value, int maximum)
@@ -137,16 +138,20 @@ final class TaskTargetEditor
         boolean level = task instanceof SkillLevelTask;
         ItemTask item = task instanceof ItemTask ? (ItemTask) task : null;
         CombatLevelTask combat = task instanceof CombatLevelTask ? (CombatLevelTask) task : null;
+        QuestPointsTask questPoints = task instanceof QuestPointsTask ? (QuestPointsTask) task : null;
         int target = item != null ? item.getQuantity()
             : combat != null ? 1
+            : questPoints != null ? questPoints.getTargetQuestPoints()
             : level ? ((SkillLevelTask) task).getTargetSkillLevel() : ((SkillXpTask) task).getTargetSkillXp();
         String name = item != null ? item.getItemName()
             : combat != null ? "Combat"
+            : questPoints != null ? "Quest points"
             : (level ? ((SkillLevelTask) task).getSkill() : ((SkillXpTask) task).getSkill()).getName();
         fields.add(new JLabel(name), BorderLayout.NORTH);
         SkillTargetFields skillTarget = new SkillTargetFields();
         JSpinner quantity = createQuantitySpinner(item == null ? 1 : target);
         JSpinner combatTarget = combat == null ? null : createCombatLevelSpinner(combat.getTargetCombatLevel());
+        JSpinner questPointsTarget = questPoints == null ? null : createQuestPointsSpinner(target);
         if (item != null)
         {
             JPanel quantityRow = new JPanel(new BorderLayout(8, 0));
@@ -160,6 +165,13 @@ final class TaskTargetEditor
             combatRow.add(new JLabel("Combat level (3–126)"), BorderLayout.WEST);
             combatRow.add(combatTarget, BorderLayout.CENTER);
             fields.add(combatRow, BorderLayout.CENTER);
+        }
+        else if (questPoints != null)
+        {
+            JPanel questPointsRow = new JPanel(new BorderLayout(8, 0));
+            questPointsRow.add(new JLabel("Target quest points"), BorderLayout.WEST);
+            questPointsRow.add(questPointsTarget, BorderLayout.CENTER);
+            fields.add(questPointsRow, BorderLayout.CENTER);
         }
         else
         {
@@ -182,13 +194,16 @@ final class TaskTargetEditor
             {
                 if (item != null) quantity.commitEdit();
                 if (combat != null) combatTarget.commitEdit();
+                if (questPoints != null) questPointsTarget.commitEdit();
                 value = item != null ? (Integer) quantity.getValue()
+                    : questPoints != null ? (Integer) questPointsTarget.getValue()
                     : skillTarget.isLevelTarget() ? skillTarget.getTargetLevel() : skillTarget.getTargetXp();
             }
             catch (IllegalArgumentException | ArithmeticException | java.text.ParseException ex)
             {
                 String message = item != null
                     ? "Enter a whole number from 1 to " + Integer.MAX_VALUE + ". You can use k or m."
+                    : questPoints != null ? "Enter a whole number from " + QuestPointsTask.MIN_QUEST_POINTS + " to " + QuestPointsTask.MAX_QUEST_POINTS + "."
                     : combat != null ? "Enter a combat level from 3 to 126, with up to two decimal places."
                     : "Enter a level from 1 to 127 (up to two decimal places) or XP from 0 to 200M (k/m allowed).";
                 JOptionPane.showMessageDialog(dialog, message, "Invalid target", JOptionPane.ERROR_MESSAGE);
@@ -205,13 +220,19 @@ final class TaskTargetEditor
                 item.setQuantity(value);
                 item.recomputeFromCount(item.getAcquired());
             }
+            else if (questPoints != null)
+            {
+                questPoints.setTargetQuestPoints(value);
+                questPoints.setStatus(questPoints.hasReachedTarget() ? Status.COMPLETED
+                    : questPoints.getCurrentQuestPoints() > 0 ? Status.IN_PROGRESS : Status.NOT_STARTED);
+            }
             else if (combat != null)
             {
                 combat.setTargetCombatLevel(((Number) combatTarget.getValue()).doubleValue());
                 combat.setStatus(combat.hasReachedTargetLevel() ? Status.COMPLETED : Status.NOT_STARTED);
             }
             Task savedTask = task;
-            if (item == null && combat == null)
+            if (item == null && combat == null && questPoints == null)
             {
                 savedTask = retargetSkill(task, skillTarget.isLevelTarget(), value);
                 if (savedTask instanceof SkillXpTask)
@@ -237,5 +258,15 @@ final class TaskTargetEditor
         dialog.pack();
         dialog.setLocationRelativeTo(parent);
         dialog.setVisible(true);
+    }
+
+    static JSpinner createQuestPointsSpinner(int value)
+    {
+        JSpinner spinner = QuestPointsTaskInput.createTargetSpinner(value);
+        JSpinner.NumberEditor editor = new JSpinner.NumberEditor(spinner, "0");
+        editor.getTextField().setColumns(5);
+        editor.getTextField().setHorizontalAlignment(SwingConstants.LEFT);
+        spinner.setEditor(editor);
+        return spinner;
     }
 }

@@ -79,6 +79,10 @@ public final class TaskIconService
         {
             image = COMBAT_LEVEL_IMAGE;
         }
+        else if (task instanceof QuestPointsTask)
+        {
+            return QUEST_ICON;
+        }
 
         if (image != null)
         {

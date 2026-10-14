@@ -7,6 +7,7 @@ import com.darkforge317.goaltracker.models.task.SkillXpTask;
 import com.darkforge317.goaltracker.models.task.QuestTask;
 import com.darkforge317.goaltracker.models.task.ItemTask;
 import com.darkforge317.goaltracker.models.task.CombatLevelTask;
+import com.darkforge317.goaltracker.models.task.QuestPointsTask;
 import com.darkforge317.goaltracker.models.enums.Status;
 import com.darkforge317.goaltracker.models.enums.TaskType;
 import com.darkforge317.goaltracker.utils.ReorderableList;
@@ -124,6 +125,28 @@ public class GoalSerializerTest {
         assertEquals(TaskType.COMBAT_LEVEL, combatTask.getType());
         assertEquals(90.5, combatTask.getTargetCombatLevel(), 0.000001);
         assertEquals(85.25, combatTask.getCurrentCombatLevel(), 0.000001);
+    }
+
+    @Test
+    void serialization_shouldPreserveQuestPointTaskTargetAndCachedProgress()
+    {
+        Goal goal = Goal.builder().description("Quest cape").build();
+        goal.getTasks().add(QuestPointsTask.builder()
+            .targetQuestPoints(300)
+            .currentQuestPoints(175)
+            .status(Status.IN_PROGRESS)
+            .build());
+
+        List<Goal> loaded = serializer.deserialize(serializer.serialize(Arrays.asList(goal)));
+
+        assertEquals(1, loaded.size());
+        assertEquals(1, loaded.get(0).getTasks().size());
+        assertTrue(loaded.get(0).getTasks().get(0) instanceof QuestPointsTask);
+        QuestPointsTask task = (QuestPointsTask) loaded.get(0).getTasks().get(0);
+        assertEquals(300, task.getTargetQuestPoints());
+        assertEquals(175, task.getCurrentQuestPoints());
+        assertEquals(Status.IN_PROGRESS, task.getStatus());
+        assertEquals(TaskType.QUEST_POINTS, task.getType());
     }
 
     @Test

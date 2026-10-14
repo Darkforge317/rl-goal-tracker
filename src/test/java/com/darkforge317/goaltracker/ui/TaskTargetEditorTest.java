@@ -29,6 +29,7 @@ class TaskTargetEditorTest
         assertTrue(TaskTargetEditor.supports(SkillXpTask.builder().build()));
         assertTrue(TaskTargetEditor.supports(ItemTask.builder().build()));
         assertTrue(TaskTargetEditor.supports(CombatLevelTask.builder().build()));
+        assertTrue(TaskTargetEditor.supports(QuestPointsTask.builder().build()));
         assertFalse(TaskTargetEditor.supports(ManualTask.builder().build()));
         assertFalse(TaskTargetEditor.supports(QuestTask.builder().build()));
     }
@@ -46,6 +47,21 @@ class TaskTargetEditorTest
         spinner.setValue(85.25);
         assertEquals(85.25, spinner.getValue());
         assertThrows(IllegalArgumentException.class, () -> spinner.setValue(85.257));
+    }
+
+    @Test void questPointEditorUsesDynamicPositiveIntegerRange()
+    {
+        javax.swing.JSpinner spinner = TaskTargetEditor.createQuestPointsSpinner(200);
+        javax.swing.SpinnerNumberModel model = (javax.swing.SpinnerNumberModel) spinner.getModel();
+        assertEquals(200, spinner.getValue());
+        assertEquals(QuestPointsTask.MIN_QUEST_POINTS, model.getMinimum());
+        assertEquals(QuestPointsTask.MAX_QUEST_POINTS, model.getMaximum());
+        spinner.setValue(QuestPointsTask.MIN_QUEST_POINTS);
+        assertNull(spinner.getPreviousValue());
+        spinner.setValue(QuestPointsTask.MAX_QUEST_POINTS);
+        assertNull(spinner.getNextValue());
+        assertThrows(IllegalArgumentException.class, () -> spinner.setValue(QuestPointsTask.MIN_QUEST_POINTS - 1));
+        assertThrows(IllegalArgumentException.class, () -> spinner.setValue(QuestPointsTask.MAX_QUEST_POINTS + 1));
     }
 
     @Test void quantityArrowsRespectBoundsAndAcceptSuffixes() throws Exception

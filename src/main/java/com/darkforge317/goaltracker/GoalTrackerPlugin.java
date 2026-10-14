@@ -6,6 +6,7 @@ import com.darkforge317.goaltracker.models.Goal;
 import com.darkforge317.goaltracker.models.task.ItemTask;
 import com.darkforge317.goaltracker.models.task.CombatLevelTask;
 import com.darkforge317.goaltracker.models.task.QuestTask;
+import com.darkforge317.goaltracker.models.task.QuestPointsTask;
 import com.darkforge317.goaltracker.models.task.SkillLevelTask;
 import com.darkforge317.goaltracker.models.task.SkillXpTask;
 import com.darkforge317.goaltracker.models.task.Task;
@@ -26,6 +27,7 @@ import net.runelite.api.GameState;
 import net.runelite.api.Item;
 import net.runelite.api.ItemContainer;
 import net.runelite.api.Skill;
+import net.runelite.api.VarPlayer;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.events.StatChanged;
@@ -446,6 +448,7 @@ public final class GoalTrackerPlugin extends Plugin
 
                 // Refresh tasks now that player data exists
                 refreshQuestTasks();
+                refreshQuestPointsTasks();
                 refreshSkillLevelTasks();
                 refreshSkillXpTasks();
                 if (refreshCombatLevelTasks())
@@ -477,8 +480,17 @@ public final class GoalTrackerPlugin extends Plugin
     private volatile boolean questRefreshPending = false;
 
     @Subscribe
+    @SuppressWarnings("deprecation")
     public void onVarbitChanged(VarbitChanged event)
     {
+        if (event.getVarpId() == VarPlayer.QUEST_POINTS)
+        {
+            if (refreshQuestPointTasks(event.getValue()))
+            {
+                goalManager.save();
+            }
+        }
+
         // Quest progress often updates via varbits/varps. Bank UI (and other interfaces)
         // also fire unrelated varbit changes frequently, so without this guard a burst of
         // rapid, unrelated varbit changes would queue many redundant refreshQuestTasks()
@@ -937,6 +949,7 @@ public final class GoalTrackerPlugin extends Plugin
                 refreshQuestTasks();
                 refreshSkillXpTasks();
                 refreshCombatLevelTasks();
+                refreshQuestPointsTasks();
                 refreshItemTasks();
             }
 
@@ -1007,6 +1020,44 @@ public final class GoalTrackerPlugin extends Plugin
         for (CombatLevelTask task : combatLevelTasks)
         {
             if (!taskUpdateService.update(task)) continue;
+            anyTaskChanged = true;
+            uiStatusManager.refresh(task);
+            if (task.getStatus().isCompleted())
+            {
+                notifyTask(task);
+            }
+        }
+        return anyTaskChanged;
+    }
+
+    /** Refresh incomplete Quest point tasks from the logged-in client's current total. */
+    private boolean refreshQuestPointsTasks()
+    {
+        if (goalManager == null || client == null) return false;
+        boolean anyTaskChanged = false;
+        List<QuestPointsTask> tasks = goalManager.getIncompleteTasksByType(TaskType.QUEST_POINTS);
+        for (QuestPointsTask task : tasks)
+        {
+            if (!taskUpdateService.update(task)) continue;
+            anyTaskChanged = true;
+            uiStatusManager.refresh(task);
+            if (task.getStatus().isCompleted())
+            {
+                notifyTask(task);
+            }
+        }
+        return anyTaskChanged;
+    }
+
+    /** Apply a Quest point total delivered by the corresponding varp change event. */
+    private boolean refreshQuestPointTasks(int questPoints)
+    {
+        if (goalManager == null) return false;
+        boolean anyTaskChanged = false;
+        List<QuestPointsTask> tasks = goalManager.getIncompleteTasksByType(TaskType.QUEST_POINTS);
+        for (QuestPointsTask task : tasks)
+        {
+            if (!taskUpdateService.update(task, questPoints)) continue;
             anyTaskChanged = true;
             uiStatusManager.refresh(task);
             if (task.getStatus().isCompleted())

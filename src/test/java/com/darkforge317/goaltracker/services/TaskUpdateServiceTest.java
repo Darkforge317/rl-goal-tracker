@@ -7,6 +7,7 @@ import com.darkforge317.goaltracker.models.task.QuestTask;
 import com.darkforge317.goaltracker.models.task.ItemTask;
 import com.darkforge317.goaltracker.models.task.ManualTask;
 import com.darkforge317.goaltracker.models.task.CombatLevelTask;
+import com.darkforge317.goaltracker.models.task.QuestPointsTask;
 
 import com.darkforge317.goaltracker.ItemCache;
 import com.darkforge317.goaltracker.models.enums.Status;
@@ -102,6 +103,32 @@ class TaskUpdateServiceTest {
 
         assertFalse(service.update(task));
         assertEquals(84, task.getCurrentCombatLevel());
+        assertEquals(Status.NOT_STARTED, task.getStatus());
+    }
+
+    @Test
+    void update_questPointsTask_shouldCacheProgressAndCompleteTheTarget()
+    {
+        QuestPointsTask task = QuestPointsTask.builder().targetQuestPoints(200)
+            .currentQuestPoints(50).status(Status.IN_PROGRESS).build();
+
+        assertTrue(service.update(task, 199));
+        assertEquals(199, task.getCurrentQuestPoints());
+        assertEquals(Status.IN_PROGRESS, task.getStatus());
+        assertFalse(service.update(task, 199));
+
+        assertTrue(service.update(task, 200));
+        assertEquals(Status.COMPLETED, task.getStatus());
+    }
+
+    @Test
+    void update_questPointsTask_shouldNotRetainNegativeProgress()
+    {
+        QuestPointsTask task = QuestPointsTask.builder().targetQuestPoints(200)
+            .currentQuestPoints(10).status(Status.IN_PROGRESS).build();
+
+        assertTrue(service.update(task, -1));
+        assertEquals(0, task.getCurrentQuestPoints());
         assertEquals(Status.NOT_STARTED, task.getStatus());
     }
 
