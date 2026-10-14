@@ -58,7 +58,7 @@ public interface GoalTrackerConfig extends Config
     @ConfigItem(
         keyName = "horizontalScrollSpeed",
         name = "Horizontal Scroll Speed",
-        description = "Controls horizontal scrolling speed throughout the plugin"
+        description = "Controls horizontal scrolling speed throughout the plugin. (1-100)"
     )
     @Range(min = MIN_SCROLL_SPEED, max = MAX_SCROLL_SPEED)
     default int horizontalScrollSpeed()
@@ -69,7 +69,7 @@ public interface GoalTrackerConfig extends Config
     @ConfigItem(
         keyName = "verticalScrollSpeed",
         name = "Vertical Scroll Speed",
-        description = "Controls vertical scrolling speed throughout the plugin"
+        description = "Controls vertical scrolling speed throughout the plugin. (1-100)"
     )
     @Range(min = MIN_SCROLL_SPEED, max = MAX_SCROLL_SPEED)
     default int verticalScrollSpeed()
