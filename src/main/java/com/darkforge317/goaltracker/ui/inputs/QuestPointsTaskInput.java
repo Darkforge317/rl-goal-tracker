@@ -11,6 +11,7 @@ import javax.swing.SpinnerNumberModel;
 import javax.swing.text.DefaultFormatter;
 import javax.swing.text.DefaultFormatterFactory;
 import java.awt.BorderLayout;
+import java.text.ParseException;
 
 /** Input for creating a Quest point goal. */
 public final class QuestPointsTaskInput extends TaskInput
