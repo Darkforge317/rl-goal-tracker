@@ -14,6 +14,7 @@ import com.darkforge317.goaltracker.services.KeyInputService;
 import com.darkforge317.goaltracker.services.PanelService;
 import com.darkforge317.goaltracker.services.TaskIconService;
 import com.darkforge317.goaltracker.services.TaskUpdateService;
+import com.darkforge317.goaltracker.utils.ItemNameNormalizer;
 import com.google.inject.Provides;
 import lombok.Getter;
 import lombok.Setter;
@@ -58,7 +59,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 @Slf4j
 @PluginDescriptor(name = "Goal Tracker", description = "Keep track of your goals and complete them automatically")
@@ -202,10 +202,6 @@ public final class GoalTrackerPlugin extends Plugin
     // Cached normalized display name per item ID, since ItemManager composition lookups
     // are relatively expensive and the same IDs repeat across containers/tasks/events.
     private final Map<Integer, String> itemNameCache = new HashMap<>();
-
-    private static final Pattern TRAILING_CHARGES_PATTERN = Pattern.compile("\\s*\\([0-9]+\\)$");
-    private static final Pattern TRAILING_NUMBER_PATTERN = Pattern.compile("\\s[0-9]{1,3}$");
-    private static final Pattern MULTI_SPACE_PATTERN = Pattern.compile("\\s+");
 
     private void notifyTask(Task task)
     {
@@ -800,7 +796,7 @@ public final class GoalTrackerPlugin extends Plugin
         return itemNameCache.computeIfAbsent(itemId, id -> {
             try
             {
-                return normalizeItemNameVariants(itemManager.getItemComposition(id).getName());
+                return ItemNameNormalizer.normalizeItemNameVariants(itemManager.getItemComposition(id).getName());
             }
             catch (Exception ex)
             {
@@ -849,7 +845,7 @@ public final class GoalTrackerPlugin extends Plugin
             return idCounts == null ? 0 : idCounts.getOrDefault(targetItemId, 0);
         }
 
-        final String baseName = normalizeItemNameVariants(targetItemName);
+        final String baseName = ItemNameNormalizer.normalizeItemNameVariants(targetItemName);
         final Map<String, Integer> nameCounts = containerNameCounts.get(inventoryId);
         int total = nameCounts == null ? 0 : nameCounts.getOrDefault(baseName, 0);
         // Name counts already include the exact ID when its name matches. Only
@@ -863,23 +859,6 @@ public final class GoalTrackerPlugin extends Plugin
             }
         }
         return total;
-    }
-
-    /**
-     * Normalize item variant names so charged items and degraded Barrows variants
-     * map to their shared base name.
-     */
-    private static String normalizeItemNameVariants(final String raw)
-    {
-        if (raw == null)
-        {
-            return "";
-        }
-        // Strip charged item suffixes (e.g., " (6)") and Barrows degradation suffixes (e.g., " 100").
-        String s = TRAILING_CHARGES_PATTERN.matcher(raw).replaceAll("").trim();
-        s = TRAILING_NUMBER_PATTERN.matcher(s).replaceAll("").trim();
-        s = MULTI_SPACE_PATTERN.matcher(s).replaceAll(" ");
-        return s;
     }
 
     /** Recheck an edited target, including targets that were previously completed. */
