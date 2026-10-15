@@ -98,6 +98,7 @@ public class QuestRequirementsTest
         assertHasSkillLevel(legends, Skill.MAGIC, 56);
         assertHasSkillLevel(legends, Skill.SMITHING, 50);
         assertHasQuest(legends, Quest.WATERFALL_QUEST);
+        assertHasQuest(legends, Quest.SHILO_VILLAGE);
         assertFalse(hasSkillLevel(legends, Skill.FISHING, 50));
 
         List<Task> dragonSlayerTwo = QuestRequirements.getRequirements(Quest.DRAGON_SLAYER_II, 0);
@@ -111,9 +112,21 @@ public class QuestRequirementsTest
         assertHasQuest(dragonSlayerTwo, Quest.GHOSTS_AHOY);
         assertHasQuest(dragonSlayerTwo, Quest.CLIENT_OF_KOUREND);
         assertFalse(hasSkillLevel(dragonSlayerTwo, Skill.HUNTER, 60));
+        assertEquals(2, dragonSlayerTwo.stream()
+                .filter(QuestTask.class::isInstance)
+                .map(QuestTask.class::cast)
+                .filter(task -> task.getQuest() == Quest.SHILO_VILLAGE)
+                .count());
+        assertTrue(dragonSlayerTwo.stream().filter(QuestTask.class::isInstance)
+                .map(QuestTask.class::cast)
+                .anyMatch(task -> task.getQuest() == Quest.SHILO_VILLAGE && task.getIndentLevel() == 2));
+        assertTrue(dragonSlayerTwo.stream().filter(QuestTask.class::isInstance)
+                .map(QuestTask.class::cast)
+                .anyMatch(task -> task.getQuest() == Quest.SHILO_VILLAGE && task.getIndentLevel() == 3));
 
         List<Task> dreamMentor = QuestRequirements.getRequirements(Quest.DREAM_MENTOR, 0);
         assertHasQuest(dreamMentor, Quest.EADGARS_RUSE);
+        assertHasQuest(dreamMentor, Quest.SHILO_VILLAGE);
         assertTrue(dreamMentor.stream().anyMatch(t -> t instanceof CombatLevelTask
                 && ((CombatLevelTask) t).getTargetCombatLevel() == 85));
     }

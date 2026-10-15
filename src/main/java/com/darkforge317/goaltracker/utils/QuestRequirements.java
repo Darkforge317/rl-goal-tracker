@@ -684,6 +684,9 @@ public final class QuestRequirements
                 Quest.LUNAR_DIPLOMACY,
                 Arrays.asList(
                         QuestTask.builder().quest(Quest.THE_FREMENNIK_TRIALS).build(),
+                        QuestTask.builder().quest(Quest.LOST_CITY).build(),
+                        QuestTask.builder().quest(Quest.RUNE_MYSTERIES).build(),
+                        QuestTask.builder().quest(Quest.SHILO_VILLAGE).build(),
                         SkillLevelTask.builder().skill(Skill.WOODCUTTING).targetSkillLevel(55).build(),
                         SkillLevelTask.builder().skill(Skill.MINING).targetSkillLevel(60).build(),
                         SkillLevelTask.builder().skill(Skill.HERBLORE).targetSkillLevel(5).build(),
@@ -1471,37 +1474,55 @@ public final class QuestRequirements
      */
     public static List<Task> getRequirements(Quest quest, int indentLevel)
     {
-        return getRequirements(quest, indentLevel, new HashSet<>());
+        return getRequirements(quest, indentLevel, new HashSet<>(), new HashSet<>());
     }
 
-    private static List<Task> getRequirements(Quest quest, int indentLevel, Set<String> includedRequirements)
+    private static List<Task> getRequirements(
+            Quest quest,
+            int indentLevel,
+            Set<String> includedRequirements,
+            Set<Quest> activeQuestPath)
     {
         List<Task> tasks = new ArrayList<>();
-        if (indentLevel >= MAX_INDENT_LEVEL) {
+        if (indentLevel >= MAX_INDENT_LEVEL || !activeQuestPath.add(quest)) {
             // Respect Task.java's max indent level
             return tasks;
         }
 
-        List<Task> directRequirements = REQUIREMENT_MAP.getOrDefault(quest, Collections.emptyList());
-        for (Task task : directRequirements) {
-            Task withIndent = copyWithIndent(task, indentLevel + 1);
-            String key = withIndent.getClass().getName() + "|" + withIndent.toString();
-            if (!includedRequirements.add(key)) {
-                continue;
-            }
-            tasks.add(withIndent);
-
-            if (withIndent instanceof QuestTask) {
-                Quest subQuest = ((QuestTask) withIndent).getQuest();
-                // The Blood Moon wiki groups the shared Taste of Hope chain under Sins of the Father.
-                // A Night at the Theatre also requires that chain, but don't display it a second time
-                // beneath A Night in this combined prerequisite list.
-                if (quest == Quest.THE_BLOOD_MOON_RISES && subQuest == Quest.A_NIGHT_AT_THE_THEATRE) {
+        try {
+            Set<String> directRequirementsSeen = new HashSet<>();
+            List<Task> directRequirements = REQUIREMENT_MAP.getOrDefault(quest, Collections.emptyList());
+            for (Task task : directRequirements) {
+                Task withIndent = copyWithIndent(task, indentLevel + 1);
+                String key = withIndent.getClass().getName() + "|" + withIndent.toString();
+                if (!directRequirementsSeen.add(key)) {
                     continue;
                 }
-                List<Task> subRequirements = getRequirements(subQuest, indentLevel + 1, includedRequirements);
-                tasks.addAll(subRequirements);
+
+                if (withIndent instanceof QuestTask) {
+                    Quest subQuest = ((QuestTask) withIndent).getQuest();
+                    if (activeQuestPath.contains(subQuest)) {
+                        continue;
+                    }
+                    tasks.add(withIndent);
+                    // The Blood Moon wiki groups the shared Taste of Hope chain under Sins of the Father.
+                    // A Night at the Theatre also requires that chain, but don't display it a second time
+                    // beneath A Night in this combined prerequisite list.
+                    if (quest == Quest.THE_BLOOD_MOON_RISES && subQuest == Quest.A_NIGHT_AT_THE_THEATRE) {
+                        continue;
+                    }
+                    List<Task> subRequirements = getRequirements(
+                            subQuest, indentLevel + 1, includedRequirements, activeQuestPath);
+                    tasks.addAll(subRequirements);
+                } else {
+                    if (!includedRequirements.add(key)) {
+                        continue;
+                    }
+                    tasks.add(withIndent);
+                }
             }
+        } finally {
+            activeQuestPath.remove(quest);
         }
 
         return tasks;
