@@ -203,6 +203,17 @@ public class QuestRequirementsTest
             .map(QuestTask.class::cast)
             .forEach(task -> actualQuestIndentLevels.put(task.getQuest(), task.getIndentLevel()));
 
+        assertEquals(2, requirements.stream()
+            .filter(QuestTask.class::isInstance)
+            .map(QuestTask.class::cast)
+            .filter(task -> task.getQuest() == Quest.A_TASTE_OF_HOPE)
+            .count());
+        assertEquals(2, requirements.stream()
+            .filter(QuestTask.class::isInstance)
+            .map(QuestTask.class::cast)
+            .filter(task -> task.getQuest() == Quest.DARKNESS_OF_HALLOWVALE)
+            .count());
+
         Map<Quest, Integer> expectedQuestIndentLevels = new HashMap<>();
         expectedQuestIndentLevels.put(Quest.A_NIGHT_AT_THE_THEATRE, 1);
         expectedQuestIndentLevels.put(Quest.SINS_OF_THE_FATHER, 1);

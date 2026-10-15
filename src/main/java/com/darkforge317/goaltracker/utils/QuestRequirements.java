@@ -1505,12 +1505,6 @@ public final class QuestRequirements
                         continue;
                     }
                     tasks.add(withIndent);
-                    // The Blood Moon wiki groups the shared Taste of Hope chain under Sins of the Father.
-                    // A Night at the Theatre also requires that chain, but don't display it a second time
-                    // beneath A Night in this combined prerequisite list.
-                    if (quest == Quest.THE_BLOOD_MOON_RISES && subQuest == Quest.A_NIGHT_AT_THE_THEATRE) {
-                        continue;
-                    }
                     List<Task> subRequirements = getRequirements(
                             subQuest, indentLevel + 1, includedRequirements, activeQuestPath);
                     tasks.addAll(subRequirements);
