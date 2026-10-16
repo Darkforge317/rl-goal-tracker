@@ -2,6 +2,7 @@ package com.darkforge317.goaltracker.utils;
 
 import com.darkforge317.goaltracker.models.task.QuestTask;
 import com.darkforge317.goaltracker.models.task.CombatLevelTask;
+import com.darkforge317.goaltracker.models.task.ItemTask;
 import com.darkforge317.goaltracker.models.task.ManualTask;
 import com.darkforge317.goaltracker.models.task.QuestPointsTask;
 import com.darkforge317.goaltracker.models.task.SkillLevelTask;
@@ -61,16 +62,12 @@ public final class QuestRequirements
 
         REQUIREMENT_MAP.put(
                 Quest.BIOHAZARD,
-                Arrays.asList(
-                        QuestTask.builder().quest(Quest.PLAGUE_CITY).build()
-                )
+                Collections.singletonList(QuestTask.builder().quest(Quest.PLAGUE_CITY).build())
         );
 
         REQUIREMENT_MAP.put(
                 Quest.EAGLES_PEAK,
-                Arrays.asList(
-                        SkillLevelTask.builder().skill(Skill.HUNTER).targetSkillLevel(27).build()
-                )
+                Collections.singletonList(SkillLevelTask.builder().skill(Skill.HUNTER).targetSkillLevel(27).build())
         );
 
         REQUIREMENT_MAP.put(
@@ -84,23 +81,20 @@ public final class QuestRequirements
 
         REQUIREMENT_MAP.put(
                 Quest.FISHING_CONTEST,
-                Arrays.asList(
-                        SkillLevelTask.builder().skill(Skill.FISHING).targetSkillLevel(10).build()
-                )
+                Collections.singletonList(SkillLevelTask.builder().skill(Skill.FISHING).targetSkillLevel(10).build())
         );
 
         REQUIREMENT_MAP.put(
                 Quest.RECRUITMENT_DRIVE,
-                Collections.singletonList(
-                        QuestTask.builder().quest(Quest.BLACK_KNIGHTS_FORTRESS).build()
+                Arrays.asList(
+                        QuestTask.builder().quest(Quest.BLACK_KNIGHTS_FORTRESS).build(),
+                        QuestTask.builder().quest(Quest.DRUIDIC_RITUAL).build()
                 )
         );
 
         REQUIREMENT_MAP.put(
                 Quest.TOWER_OF_LIFE,
-                Arrays.asList(
-                        SkillLevelTask.builder().skill(Skill.CONSTRUCTION).targetSkillLevel(10).build()
-                )
+                Collections.singletonList(SkillLevelTask.builder().skill(Skill.CONSTRUCTION).targetSkillLevel(10).build())
         );
 
         REQUIREMENT_MAP.put(
@@ -130,8 +124,8 @@ public final class QuestRequirements
         REQUIREMENT_MAP.put(
                 Quest.BIG_CHOMPY_BIRD_HUNTING,
                 Arrays.asList(
-                        SkillLevelTask.builder().skill(Skill.COOKING).targetSkillLevel(30).build(),
                         SkillLevelTask.builder().skill(Skill.FLETCHING).targetSkillLevel(5).build(),
+                        SkillLevelTask.builder().skill(Skill.COOKING).targetSkillLevel(30).build(),
                         SkillLevelTask.builder().skill(Skill.RANGED).targetSkillLevel(30).build()
                 )
         );
@@ -143,13 +137,16 @@ public final class QuestRequirements
                         SkillLevelTask.builder().skill(Skill.CONSTRUCTION).targetSkillLevel(34).build(),
                         SkillLevelTask.builder().skill(Skill.CRAFTING).targetSkillLevel(30).build(),
                         SkillLevelTask.builder().skill(Skill.HUNTER).targetSkillLevel(10).build(),
-                        SkillLevelTask.builder().skill(Skill.THIEVING).targetSkillLevel(15).build()
+                        SkillLevelTask.builder().skill(Skill.THIEVING).targetSkillLevel(15).build(),
+                        ManualTask.builder().description("Access to a Crafting Table 3  in a POH").build()
                 )
         );
 
         REQUIREMENT_MAP.put(
                 Quest.CREATURE_OF_FENKENSTRAIN,
                 Arrays.asList(
+                        QuestTask.builder().quest(Quest.PRIEST_IN_PERIL).build(),
+                        QuestTask.builder().quest(Quest.THE_RESTLESS_GHOST).build(),
                         SkillLevelTask.builder().skill(Skill.CRAFTING).targetSkillLevel(20).build(),
                         SkillLevelTask.builder().skill(Skill.THIEVING).targetSkillLevel(25).build()
                 )
@@ -221,7 +218,6 @@ public final class QuestRequirements
                         QuestTask.builder().quest(Quest.WATERFALL_QUEST).build(),
                         QuestTask.builder().quest(Quest.THE_EYES_OF_GLOUPHRIE).build(),
                         QuestTask.builder().quest(Quest.TREE_GNOME_VILLAGE).build(),
-                        QuestTask.builder().quest(Quest.THE_GRAND_TREE).build(),
                         SkillLevelTask.builder().skill(Skill.STRENGTH).targetSkillLevel(60).build(),
                         SkillLevelTask.builder().skill(Skill.SLAYER).targetSkillLevel(56).build(),
                         SkillLevelTask.builder().skill(Skill.THIEVING).targetSkillLevel(56).build(),
@@ -232,9 +228,7 @@ public final class QuestRequirements
 
         REQUIREMENT_MAP.put(
                 Quest.THE_FEUD,
-                Arrays.asList(
-                        SkillLevelTask.builder().skill(Skill.THIEVING).targetSkillLevel(30).build()
-                )
+                Collections.singletonList(SkillLevelTask.builder().skill(Skill.THIEVING).targetSkillLevel(30).build())
         );
 
         REQUIREMENT_MAP.put(
@@ -259,6 +253,7 @@ public final class QuestRequirements
                 Quest.GHOSTS_AHOY,
                 Arrays.asList(
                         QuestTask.builder().quest(Quest.PRIEST_IN_PERIL).build(),
+                        QuestTask.builder().quest(Quest.THE_RESTLESS_GHOST).build(),
                         SkillLevelTask.builder().skill(Skill.AGILITY).targetSkillLevel(25).build(),
                         SkillLevelTask.builder().skill(Skill.COOKING).targetSkillLevel(20).build()
                 )
@@ -300,9 +295,7 @@ public final class QuestRequirements
 
         REQUIREMENT_MAP.put(
                 Quest.ICTHLARINS_LITTLE_HELPER,
-                Arrays.asList(
-                        QuestTask.builder().quest(Quest.PRINCE_ALI_RESCUE).build()
-                )
+                Collections.singletonList(QuestTask.builder().quest(Quest.PRINCE_ALI_RESCUE).build())
         );
 
         REQUIREMENT_MAP.put(
@@ -326,33 +319,32 @@ public final class QuestRequirements
 
         REQUIREMENT_MAP.put(
                 Quest.THE_KNIGHTS_SWORD,
-                Arrays.asList(
-                        SkillLevelTask.builder().skill(Skill.MINING).targetSkillLevel(10).build()
-                )
+                Collections.singletonList(SkillLevelTask.builder().skill(Skill.MINING).targetSkillLevel(10).build())
         );
 
         REQUIREMENT_MAP.put(
                 Quest.THE_LOST_TRIBE,
                 Arrays.asList(
                         QuestTask.builder().quest(Quest.GOBLIN_DIPLOMACY).build(),
+                        QuestTask.builder().quest(Quest.RUNE_MYSTERIES).build(),
                         SkillLevelTask.builder().skill(Skill.AGILITY).targetSkillLevel(13).build(),
-                        SkillLevelTask.builder().skill(Skill.MINING).targetSkillLevel(17).build(),
-                        SkillLevelTask.builder().skill(Skill.THIEVING).targetSkillLevel(13).build()
-                )
+                        SkillLevelTask.builder().skill(Skill.THIEVING).targetSkillLevel(13).build(),
+                        SkillLevelTask.builder().skill(Skill.MINING).targetSkillLevel(17).build()
+
+                        )
         );
 
         REQUIREMENT_MAP.put(
                 Quest.MAKING_HISTORY,
                 Arrays.asList(
-                        QuestTask.builder().quest(Quest.PRIEST_IN_PERIL).build()
+                        QuestTask.builder().quest(Quest.PRIEST_IN_PERIL).build(),
+                        QuestTask.builder().quest(Quest.THE_RESTLESS_GHOST).build()
                 )
         );
 
         REQUIREMENT_MAP.put(
                 Quest.MOUNTAIN_DAUGHTER,
-                Arrays.asList(
-                        SkillLevelTask.builder().skill(Skill.AGILITY).targetSkillLevel(20).build()
-                )
+                Collections.singletonList(SkillLevelTask.builder().skill(Skill.AGILITY).targetSkillLevel(20).build())
         );
 
         REQUIREMENT_MAP.put(
@@ -362,13 +354,15 @@ public final class QuestRequirements
                         QuestTask.builder().quest(Quest.EADGARS_RUSE).build(),
                         QuestTask.builder().quest(Quest.THE_FEUD).build(),
                         SkillLevelTask.builder().skill(Skill.FARMING).targetSkillLevel(29).build(),
-                        SkillLevelTask.builder().skill(Skill.WOODCUTTING).targetSkillLevel(10).build()
+                        SkillLevelTask.builder().skill(Skill.WOODCUTTING).targetSkillLevel(10).build(),
+                        ManualTask.builder().description("60% favour in the Tai Bwo Wannai Cleanup minigame").build()
                 )
         );
 
         REQUIREMENT_MAP.put(
                 Quest.OLAFS_QUEST,
                 Arrays.asList(
+                        QuestTask.builder().quest(Quest.THE_FREMENNIK_TRIALS).build(),
                         SkillLevelTask.builder().skill(Skill.FIREMAKING).targetSkillLevel(40).build(),
                         SkillLevelTask.builder().skill(Skill.WOODCUTTING).targetSkillLevel(50).build()
                 )
@@ -378,7 +372,7 @@ public final class QuestRequirements
                 Quest.RATCATCHERS,
                 Arrays.asList(
                         QuestTask.builder().quest(Quest.ICTHLARINS_LITTLE_HELPER).build(),
-                        QuestTask.builder().quest(Quest.GERTRUDES_CAT).build()
+                        ManualTask.builder().description("Access to Keldagrim").build()
                 )
         );
 
@@ -392,18 +386,17 @@ public final class QuestRequirements
 
         REQUIREMENT_MAP.put(
                 Quest.SEA_SLUG,
-                Arrays.asList(
-                        SkillLevelTask.builder().skill(Skill.FIREMAKING).targetSkillLevel(30).build()
-                )
+                Collections.singletonList(SkillLevelTask.builder().skill(Skill.FIREMAKING).targetSkillLevel(30).build())
         );
 
         REQUIREMENT_MAP.put(
                 Quest.SHADES_OF_MORTTON,
                 Arrays.asList(
+                        QuestTask.builder().quest(Quest.PRIEST_IN_PERIL).build(),
                         SkillLevelTask.builder().skill(Skill.CRAFTING).targetSkillLevel(20).build(),
                         SkillLevelTask.builder().skill(Skill.HERBLORE).targetSkillLevel(15).build(),
                         SkillLevelTask.builder().skill(Skill.FIREMAKING).targetSkillLevel(5).build(),
-                        QuestTask.builder().quest(Quest.PRIEST_IN_PERIL).build()
+                        ManualTask.builder().description("Access to Mort'ton").build()
                 )
         );
 
@@ -424,7 +417,9 @@ public final class QuestRequirements
                         SkillLevelTask.builder().skill(Skill.RUNECRAFT).targetSkillLevel(30).build(),
                         SkillLevelTask.builder().skill(Skill.CRAFTING).targetSkillLevel(30).build(),
                         SkillLevelTask.builder().skill(Skill.SLAYER).targetSkillLevel(30).build(),
-                        SkillLevelTask.builder().skill(Skill.THIEVING).targetSkillLevel(30).build()
+                        SkillLevelTask.builder().skill(Skill.THIEVING).targetSkillLevel(30).build(),
+                        // We eventually need to figure out how to get the item names dynamically from within QuestRequirements
+                        ItemTask.builder().itemId(6635).itemName("Commorb").build()
                 )
         );
 
@@ -441,6 +436,7 @@ public final class QuestRequirements
         REQUIREMENT_MAP.put(
                 Quest.TAI_BWO_WANNAI_TRIO,
                 Arrays.asList(
+                        QuestTask.builder().quest(Quest.JUNGLE_POTION).build(),
                         SkillLevelTask.builder().skill(Skill.AGILITY).targetSkillLevel(15).build(),
                         SkillLevelTask.builder().skill(Skill.COOKING).targetSkillLevel(30).build(),
                         SkillLevelTask.builder().skill(Skill.FISHING).targetSkillLevel(5).build()
@@ -449,9 +445,7 @@ public final class QuestRequirements
 
         REQUIREMENT_MAP.put(
                 Quest.A_TAIL_OF_TWO_CATS,
-                Arrays.asList(
-                        QuestTask.builder().quest(Quest.ICTHLARINS_LITTLE_HELPER).build()
-                )
+                Collections.singletonList(QuestTask.builder().quest(Quest.ICTHLARINS_LITTLE_HELPER).build())
         );
 
         REQUIREMENT_MAP.put(
@@ -459,9 +453,9 @@ public final class QuestRequirements
                 Arrays.asList(
                         QuestPointsTask.builder().targetQuestPoints(43).build(),
                         SkillLevelTask.builder().skill(Skill.CRAFTING).targetSkillLevel(20).build(),
-                        SkillLevelTask.builder().skill(Skill.FIREMAKING).targetSkillLevel(49).build(),
-                        SkillLevelTask.builder().skill(Skill.MINING).targetSkillLevel(20).build()
-                )
+                        SkillLevelTask.builder().skill(Skill.MINING).targetSkillLevel(20).build(),
+                        SkillLevelTask.builder().skill(Skill.FIREMAKING).targetSkillLevel(49).build()
+                        )
         );
 
         REQUIREMENT_MAP.put(
@@ -474,9 +468,7 @@ public final class QuestRequirements
 
         REQUIREMENT_MAP.put(
                 Quest.TRIBAL_TOTEM,
-                Arrays.asList(
-                        SkillLevelTask.builder().skill(Skill.THIEVING).targetSkillLevel(21).build()
-                )
+                Collections.singletonList(SkillLevelTask.builder().skill(Skill.THIEVING).targetSkillLevel(21).build())
         );
 
         REQUIREMENT_MAP.put(
@@ -547,8 +539,10 @@ public final class QuestRequirements
                 Quest.DEVIOUS_MINDS,
                 Arrays.asList(
                         QuestTask.builder().quest(Quest.WANTED).build(),
-                        SkillLevelTask.builder().skill(Skill.RUNECRAFT).targetSkillLevel(50).build(),
+                        QuestTask.builder().quest(Quest.TROLL_STRONGHOLD).build(),
+                        QuestTask.builder().quest(Quest.DORICS_QUEST).build(),
                         SkillLevelTask.builder().skill(Skill.SMITHING).targetSkillLevel(65).build(),
+                        SkillLevelTask.builder().skill(Skill.RUNECRAFT).targetSkillLevel(50).build(),
                         SkillLevelTask.builder().skill(Skill.FLETCHING).targetSkillLevel(50).build()
                 )
         );
@@ -568,7 +562,8 @@ public final class QuestRequirements
                         SkillLevelTask.builder().skill(Skill.CRAFTING).targetSkillLevel(50).build(),
                         SkillLevelTask.builder().skill(Skill.FIREMAKING).targetSkillLevel(45).build(),
                         SkillLevelTask.builder().skill(Skill.MAGIC).targetSkillLevel(39).build(),
-                        SkillLevelTask.builder().skill(Skill.PRAYER).targetSkillLevel(43).build()
+                        SkillLevelTask.builder().skill(Skill.PRAYER).targetSkillLevel(43).build(),
+                        ManualTask.builder().description("Must be on the standard spellbook").build()
                 )
         );
 
@@ -602,9 +597,7 @@ public final class QuestRequirements
 
         REQUIREMENT_MAP.put(
                 Quest.THE_GRAND_TREE,
-                Arrays.asList(
-                        SkillLevelTask.builder().skill(Skill.AGILITY).targetSkillLevel(25).build()
-                )
+                Collections.singletonList(SkillLevelTask.builder().skill(Skill.AGILITY).targetSkillLevel(25).build())
         );
 
         REQUIREMENT_MAP.put(
@@ -623,13 +616,15 @@ public final class QuestRequirements
                 Quest.HAUNTED_MINE,
                 Arrays.asList(
                         QuestTask.builder().quest(Quest.PRIEST_IN_PERIL).build(),
-                        SkillLevelTask.builder().skill(Skill.CRAFTING).targetSkillLevel(35).build()
+                        SkillLevelTask.builder().skill(Skill.CRAFTING).targetSkillLevel(35).build(),
+                        ManualTask.builder().description("Access to Abandoned Mine").build()
                 )
         );
 
         REQUIREMENT_MAP.put(
                 Quest.HEROES_QUEST,
                 Arrays.asList(
+                        QuestPointsTask.builder().targetQuestPoints(55).build(),
                         QuestTask.builder().quest(Quest.SHIELD_OF_ARRAV).build(),
                         QuestTask.builder().quest(Quest.DRAGON_SLAYER_I).build(),
                         QuestTask.builder().quest(Quest.MERLINS_CRYSTAL).build(),
@@ -637,14 +632,15 @@ public final class QuestRequirements
                         SkillLevelTask.builder().skill(Skill.COOKING).targetSkillLevel(53).build(),
                         SkillLevelTask.builder().skill(Skill.HERBLORE).targetSkillLevel(25).build(),
                         SkillLevelTask.builder().skill(Skill.FISHING).targetSkillLevel(53).build(),
-                        QuestPointsTask.builder().targetQuestPoints(55).build(),
-                        SkillLevelTask.builder().skill(Skill.MINING).targetSkillLevel(50).build()
+                        SkillLevelTask.builder().skill(Skill.MINING).targetSkillLevel(50).build(),
+                        ManualTask.builder().description("A partner in the opposite gang as you").build()
                 )
         );
 
         REQUIREMENT_MAP.put(
                 Quest.HORROR_FROM_THE_DEEP,
                 Arrays.asList(
+                        QuestTask.builder().quest(Quest.ALFRED_GRIMHANDS_BARCRAWL).build(),
                         SkillLevelTask.builder().skill(Skill.AGILITY).targetSkillLevel(35).build()
                 )
         );
@@ -655,6 +651,7 @@ public final class QuestRequirements
                         QuestTask.builder().quest(Quest.BLACK_KNIGHTS_FORTRESS).build(),
                         QuestTask.builder().quest(Quest.HOLY_GRAIL).build(),
                         QuestTask.builder().quest(Quest.MURDER_MYSTERY).build(),
+                        QuestTask.builder().quest(Quest.ONE_SMALL_FAVOUR).build(),
                         SkillLevelTask.builder().skill(Skill.DEFENCE).targetSkillLevel(65).build(),
                         SkillLevelTask.builder().skill(Skill.MAGIC).targetSkillLevel(45).build()
                 )
@@ -688,6 +685,8 @@ public final class QuestRequirements
         REQUIREMENT_MAP.put(
                 Quest.ONE_SMALL_FAVOUR,
                 Arrays.asList(
+                        QuestTask.builder().quest(Quest.RUNE_MYSTERIES).build(),
+                        QuestTask.builder().quest(Quest.SHILO_VILLAGE).build(),
                         SkillLevelTask.builder().skill(Skill.AGILITY).targetSkillLevel(36).build(),
                         SkillLevelTask.builder().skill(Skill.CRAFTING).targetSkillLevel(25).build(),
                         SkillLevelTask.builder().skill(Skill.HERBLORE).targetSkillLevel(18).build(),
@@ -786,7 +785,8 @@ public final class QuestRequirements
                         SkillLevelTask.builder().skill(Skill.THIEVING).targetSkillLevel(53).build(),
                         SkillLevelTask.builder().skill(Skill.MAGIC).targetSkillLevel(50).build(),
                         SkillLevelTask.builder().skill(Skill.FIREMAKING).targetSkillLevel(50).build(),
-                        SkillLevelTask.builder().skill(Skill.SLAYER).targetSkillLevel(10).build()
+                        SkillLevelTask.builder().skill(Skill.SLAYER).targetSkillLevel(10).build(),
+                        ManualTask.builder().description("Access to the Morytania Graveyard").build()
                 )
         );
 
@@ -814,12 +814,12 @@ public final class QuestRequirements
         REQUIREMENT_MAP.put(
                 Quest.LEGENDS_QUEST,
                 Arrays.asList(
+                        QuestPointsTask.builder().targetQuestPoints(107).build(),
                         QuestTask.builder().quest(Quest.FAMILY_CREST).build(),
-                        QuestTask.builder().quest(Quest.SHILO_VILLAGE).build(),
                         QuestTask.builder().quest(Quest.HEROES_QUEST).build(),
+                        QuestTask.builder().quest(Quest.SHILO_VILLAGE).build(),
                         QuestTask.builder().quest(Quest.UNDERGROUND_PASS).build(),
                         QuestTask.builder().quest(Quest.WATERFALL_QUEST).build(),
-                        QuestPointsTask.builder().targetQuestPoints(107).build(),
                         SkillLevelTask.builder().skill(Skill.AGILITY).targetSkillLevel(50).build(),
                         SkillLevelTask.builder().skill(Skill.THIEVING).targetSkillLevel(50).build(),
                         SkillLevelTask.builder().skill(Skill.CRAFTING).targetSkillLevel(50).build(),
@@ -854,16 +854,12 @@ public final class QuestRequirements
 
         REQUIREMENT_MAP.put(
                 Quest.MOURNINGS_END_PART_II,
-                Arrays.asList(
-                        QuestTask.builder().quest(Quest.MOURNINGS_END_PART_I).build()
-                )
+                Collections.singletonList(QuestTask.builder().quest(Quest.MOURNINGS_END_PART_I).build())
         );
 
         REQUIREMENT_MAP.put(
                 Quest.RECIPE_FOR_DISASTER,
-                Arrays.asList(
-                        QuestTask.builder().quest(Quest.COOKS_ASSISTANT).build()
-                )
+                Collections.singletonList(QuestTask.builder().quest(Quest.COOKS_ASSISTANT).build())
         );
 
         REQUIREMENT_MAP.put(
@@ -943,12 +939,14 @@ public final class QuestRequirements
         REQUIREMENT_MAP.put(
                 Quest.RECIPE_FOR_DISASTER__SIR_AMIK_VARZE,
                 Arrays.asList(
+                        QuestPointsTask.builder().targetQuestPoints(107).build(),
                         QuestTask.builder().quest(Quest.FAMILY_CREST).build(),
                         QuestTask.builder().quest(Quest.HEROES_QUEST).build(),
                         QuestTask.builder().quest(Quest.RECIPE_FOR_DISASTER__ANOTHER_COOKS_QUEST).build(),
                         QuestTask.builder().quest(Quest.SHILO_VILLAGE).build(),
                         QuestTask.builder().quest(Quest.UNDERGROUND_PASS).build(),
-                        QuestTask.builder().quest(Quest.WATERFALL_QUEST).build()
+                        QuestTask.builder().quest(Quest.WATERFALL_QUEST).build(),
+                        ManualTask.builder().description("Access to the Kharazi Jungle").build()
                 )
         );
 
@@ -983,7 +981,8 @@ public final class QuestRequirements
                 Quest.ROVING_ELVES,
                 Arrays.asList(
                         QuestTask.builder().quest(Quest.REGICIDE).build(),
-                        QuestTask.builder().quest(Quest.WATERFALL_QUEST).build()
+                        QuestTask.builder().quest(Quest.WATERFALL_QUEST).build(),
+                        SkillLevelTask.builder().skill(Skill.AGILITY).targetSkillLevel(56).build()
                 )
         );
 
@@ -1020,7 +1019,8 @@ public final class QuestRequirements
                         SkillLevelTask.builder().skill(Skill.CONSTRUCTION).targetSkillLevel(50).build(),
                         SkillLevelTask.builder().skill(Skill.HITPOINTS).targetSkillLevel(50).build(),
                         SkillLevelTask.builder().skill(Skill.THIEVING).targetSkillLevel(60).build(),
-                        SkillLevelTask.builder().skill(Skill.MAGIC).targetSkillLevel(75).build()
+                        SkillLevelTask.builder().skill(Skill.MAGIC).targetSkillLevel(75).build(),
+                        ManualTask.builder().description("Started the pyre ship portion of the Barbarian Training miniquest").build()
                 )
         );
 
@@ -1029,7 +1029,6 @@ public final class QuestRequirements
                 Arrays.asList(
                         QuestTask.builder().quest(Quest.ENLIGHTENED_JOURNEY).build(),
                         QuestTask.builder().quest(Quest.THE_EYES_OF_GLOUPHRIE).build(),
-                        QuestTask.builder().quest(Quest.THE_GRAND_TREE).build(),
                         QuestTask.builder().quest(Quest.RECIPE_FOR_DISASTER__KING_AWOWOGEI).build(),
                         QuestTask.builder().quest(Quest.TROLL_STRONGHOLD).build(),
                         QuestTask.builder().quest(Quest.WATCHTOWER).build(),
@@ -1047,6 +1046,7 @@ public final class QuestRequirements
                 Arrays.asList(
                         QuestTask.builder().quest(Quest.MOURNINGS_END_PART_II).build(),
                         QuestTask.builder().quest(Quest.MAKING_HISTORY).build(),
+                        QuestTask.builder().quest(Quest.DRUIDIC_RITUAL).build(),
                         SkillLevelTask.builder().skill(Skill.AGILITY).targetSkillLevel(70).build(),
                         SkillLevelTask.builder().skill(Skill.CONSTRUCTION).targetSkillLevel(70).build(),
                         SkillLevelTask.builder().skill(Skill.FARMING).targetSkillLevel(70).build(),
@@ -1088,8 +1088,6 @@ public final class QuestRequirements
         REQUIREMENT_MAP.put(
                 Quest.A_KINGDOM_DIVIDED,
                 Arrays.asList(
-                        QuestTask.builder().quest(Quest.CLIENT_OF_KOUREND).build(),
-                        QuestTask.builder().quest(Quest.X_MARKS_THE_SPOT).build(),
                         QuestTask.builder().quest(Quest.THE_DEPTHS_OF_DESPAIR).build(),
                         QuestTask.builder().quest(Quest.THE_QUEEN_OF_THIEVES).build(),
                         QuestTask.builder().quest(Quest.THE_ASCENT_OF_ARCEUUS).build(),
@@ -1107,9 +1105,7 @@ public final class QuestRequirements
 
         REQUIREMENT_MAP.put(
                 Quest.A_NIGHT_AT_THE_THEATRE,
-                Arrays.asList(
-                        QuestTask.builder().quest(Quest.A_TASTE_OF_HOPE).build()
-                )
+                Collections.singletonList(QuestTask.builder().quest(Quest.A_TASTE_OF_HOPE).build())
         );
 
         REQUIREMENT_MAP.put(
@@ -1131,21 +1127,20 @@ public final class QuestRequirements
         REQUIREMENT_MAP.put(
                 Quest.BONE_VOYAGE,
                 Arrays.asList(
-                        QuestTask.builder().quest(Quest.THE_DIG_SITE).build()
+                        QuestTask.builder().quest(Quest.THE_DIG_SITE).build(),
+                        ManualTask.builder().description("100 Kudos").build()
                 )
         );
 
         REQUIREMENT_MAP.put(
                 Quest.SLEEPING_GIANTS,
-                Arrays.asList(
-                        SkillLevelTask.builder().skill(Skill.SMITHING).targetSkillLevel(15).build()
-                )
+                Collections.singletonList(SkillLevelTask.builder().skill(Skill.SMITHING).targetSkillLevel(15).build())
         );
 
         REQUIREMENT_MAP.put(
                 Quest.TEMPLE_OF_THE_EYE,
                 Arrays.asList(
-                        QuestTask.builder().quest(Quest.RUNE_MYSTERIES).build(),
+                        QuestTask.builder().quest(Quest.ENTER_THE_ABYSS).build(),
                         SkillLevelTask.builder().skill(Skill.RUNECRAFT).targetSkillLevel(10).build()
                 )
         );
@@ -1154,6 +1149,7 @@ public final class QuestRequirements
                 Quest.LAND_OF_THE_GOBLINS,
                 Arrays.asList(
                         QuestTask.builder().quest(Quest.ANOTHER_SLICE_OF_HAM).build(),
+                        QuestTask.builder().quest(Quest.FISHING_CONTEST).build(),
                         SkillLevelTask.builder().skill(Skill.AGILITY).targetSkillLevel(38).build(),
                         SkillLevelTask.builder().skill(Skill.FISHING).targetSkillLevel(40).build(),
                         SkillLevelTask.builder().skill(Skill.THIEVING).targetSkillLevel(45).build(),
@@ -1175,15 +1171,8 @@ public final class QuestRequirements
                 Quest.SECRETS_OF_THE_NORTH,
                 Arrays.asList(
                         QuestTask.builder().quest(Quest.MAKING_FRIENDS_WITH_MY_ARM).build(),
-                        QuestTask.builder().quest(Quest.SWAN_SONG).build(),
-                        QuestTask.builder().quest(Quest.GARDEN_OF_TRANQUILLITY).build(),
-                        QuestTask.builder().quest(Quest.COLD_WAR).build(),
-                        QuestTask.builder().quest(Quest.ROMEO__JULIET).build(),
                         QuestTask.builder().quest(Quest.THE_GENERALS_SHADOW).build(),
-                        QuestTask.builder().quest(Quest.FIGHT_ARENA).build(),
                         QuestTask.builder().quest(Quest.DEVIOUS_MINDS).build(),
-                        QuestTask.builder().quest(Quest.DORICS_QUEST).build(),
-                        QuestTask.builder().quest(Quest.ENTER_THE_ABYSS).build(),
                         QuestTask.builder().quest(Quest.HAZEEL_CULT).build(),
                         SkillLevelTask.builder().skill(Skill.AGILITY).targetSkillLevel(69).build(),
                         SkillLevelTask.builder().skill(Skill.THIEVING).targetSkillLevel(64).build(),
@@ -1212,9 +1201,7 @@ public final class QuestRequirements
 
         REQUIREMENT_MAP.put(
                 Quest.TWILIGHTS_PROMISE,
-                Arrays.asList(
-                        QuestTask.builder().quest(Quest.CHILDREN_OF_THE_SUN).build()
-                )
+                Collections.singletonList(QuestTask.builder().quest(Quest.CHILDREN_OF_THE_SUN).build())
         );
 
         REQUIREMENT_MAP.put(
@@ -1270,9 +1257,7 @@ public final class QuestRequirements
 
         REQUIREMENT_MAP.put(
                 Quest.MEAT_AND_GREET,
-                Arrays.asList(
-                        QuestTask.builder().quest(Quest.TWILIGHTS_PROMISE).build()
-                )
+                Collections.singletonList(QuestTask.builder().quest(Quest.CHILDREN_OF_THE_SUN).build())
         );
 
         REQUIREMENT_MAP.put(
@@ -1391,8 +1376,11 @@ public final class QuestRequirements
         REQUIREMENT_MAP.put(Quest.THE_GENERALS_SHADOW,
                 Arrays.asList(
                         QuestTask.builder().quest(Quest.CURSE_OF_THE_EMPTY_LORD).build(),
-                        QuestTask.builder().quest(Quest.DESERT_TREASURE_I).build(),
-                        QuestTask.builder().quest(Quest.FIGHT_ARENA).build()));
+                        QuestTask.builder().quest(Quest.FIGHT_ARENA).build(),
+                        // We eventually need to figure out how to get the item names dynamically from within QuestRequirements
+                        ItemTask.builder().itemId(4657).itemName("Ring of visibility").build()
+                )
+        );
         REQUIREMENT_MAP.put(Quest.GETTING_AHEAD,
                 Arrays.asList(
                         SkillLevelTask.builder().skill(Skill.CRAFTING).targetSkillLevel(30).build(),
@@ -1524,7 +1512,8 @@ public final class QuestRequirements
         REQUIREMENT_MAP.put(
                 Quest.VALE_TOTEMS,
                 Arrays.asList(
-                        QuestTask.builder().quest(Quest.THE_FINAL_DAWN).build()
+                        QuestTask.builder().quest(Quest.CHILDREN_OF_THE_SUN).build(),
+                        SkillLevelTask.builder().skill(Skill.FLETCHING).targetSkillLevel(20).build()
                 )
         );
 
