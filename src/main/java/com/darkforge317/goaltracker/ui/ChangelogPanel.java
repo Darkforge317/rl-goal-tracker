@@ -147,6 +147,7 @@ public class ChangelogPanel extends JPanel
             }
         });
         contentPane.setText(ChangelogMarkdownRenderer.toHtml(entry.getMarkdown(), entry.getVersion()));
+        contentPane.setCaretPosition(0);
 
         JScrollPane scrollPane = new JScrollPane(contentPane);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
