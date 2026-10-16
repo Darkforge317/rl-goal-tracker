@@ -557,6 +557,7 @@ public final class QuestRequirements
                 Quest.EADGARS_RUSE,
                 Arrays.asList(
                         QuestTask.builder().quest(Quest.DRUIDIC_RITUAL).build(),
+                        QuestTask.builder().quest(Quest.TROLL_STRONGHOLD).build(),
                         SkillLevelTask.builder().skill(Skill.HERBLORE).targetSkillLevel(31).build()
                 )
         );
@@ -1554,13 +1555,12 @@ public final class QuestRequirements
      */
     public static List<Task> getRequirements(Quest quest, int indentLevel)
     {
-        return getRequirements(quest, indentLevel, new HashSet<>(), new HashSet<>());
+        return getRequirements(quest, indentLevel, new HashSet<>());
     }
 
     private static List<Task> getRequirements(
             Quest quest,
             int indentLevel,
-            Set<String> includedRequirements,
             Set<Quest> activeQuestPath)
     {
         List<Task> tasks = new ArrayList<>();
@@ -1586,12 +1586,9 @@ public final class QuestRequirements
                     }
                     tasks.add(withIndent);
                     List<Task> subRequirements = getRequirements(
-                            subQuest, indentLevel + 1, includedRequirements, activeQuestPath);
+                            subQuest, indentLevel + 1, activeQuestPath);
                     tasks.addAll(subRequirements);
                 } else {
-                    if (!includedRequirements.add(key)) {
-                        continue;
-                    }
                     tasks.add(withIndent);
                 }
             }

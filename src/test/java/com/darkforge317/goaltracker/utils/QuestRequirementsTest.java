@@ -130,6 +130,12 @@ public class QuestRequirementsTest
         assertHasQuest(dreamMentor, Quest.SHILO_VILLAGE);
         assertTrue(dreamMentor.stream().anyMatch(t -> t instanceof CombatLevelTask
                 && ((CombatLevelTask) t).getTargetCombatLevel() == 85));
+
+        List<Task> eadgarsRuse = QuestRequirements.getRequirements(Quest.EADGARS_RUSE, 0);
+        assertHasQuest(eadgarsRuse, Quest.DRUIDIC_RITUAL);
+        assertHasQuest(eadgarsRuse, Quest.TROLL_STRONGHOLD);
+        assertHasQuest(eadgarsRuse, Quest.DEATH_PLATEAU);
+        assertHasSkillLevel(eadgarsRuse, Skill.HERBLORE, 31);
     }
 
     @Test
@@ -445,12 +451,16 @@ public class QuestRequirementsTest
         assertHasSkillLevel(fremennikExiles, Skill.MINING, 60);
 
         List<Task> desertTreasureTwo = QuestRequirements.getRequirements(Quest.DESERT_TREASURE_II__THE_FALLEN_EMPIRE, 0);
+        assertHasQuest(desertTreasureTwo, Quest.DESERT_TREASURE_I);
+        assertHasQuest(desertTreasureTwo, Quest.SECRETS_OF_THE_NORTH);
         assertHasQuest(desertTreasureTwo, Quest.ENAKHRAS_LAMENT);
+        assertHasQuest(desertTreasureTwo, Quest.TEMPLE_OF_THE_EYE);
+        assertHasQuest(desertTreasureTwo, Quest.THE_GARDEN_OF_DEATH);
+        assertHasQuest(desertTreasureTwo, Quest.BELOW_ICE_MOUNTAIN);
+        assertHasQuest(desertTreasureTwo, Quest.HIS_FAITHFUL_SERVANTS);
         assertHasQuest(desertTreasureTwo, Quest.THE_GENERALS_SHADOW);
         assertHasQuest(desertTreasureTwo, Quest.DEVIOUS_MINDS);
         assertHasQuest(desertTreasureTwo, Quest.HAZEEL_CULT);
-        assertHasQuest(desertTreasureTwo, Quest.THE_GARDEN_OF_DEATH);
-        assertHasQuest(desertTreasureTwo, Quest.HIS_FAITHFUL_SERVANTS);
         assertHasSkillLevel(desertTreasureTwo, Skill.FIREMAKING, 75);
         assertHasSkillLevel(desertTreasureTwo, Skill.CONSTRUCTION, 60);
 

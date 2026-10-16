@@ -3,8 +3,8 @@ package com.darkforge317.goaltracker.ui;
 import com.darkforge317.goaltracker.GoalTrackerPlugin;
 import com.darkforge317.goaltracker.models.ActionHistory;
 import com.darkforge317.goaltracker.models.Goal;
-import com.darkforge317.goaltracker.models.enums.TaskType;
 import com.darkforge317.goaltracker.models.task.Task;
+import com.darkforge317.goaltracker.models.task.QuestTask;
 import com.darkforge317.goaltracker.utils.ReorderableList;
 import com.darkforge317.goaltracker.utils.ScrollSpeedUtils;
 import com.darkforge317.goaltracker.utils.TaskHierarchyUtils;
@@ -571,7 +571,7 @@ public final class GoalPanel extends JPanel implements Refreshable
             for (TaskItemContent tic : contents)
             {
                 Task t = tic.getTask();
-                if (t != null && t.getType() == TaskType.QUEST)
+                if (t instanceof QuestTask && !hasQuestAncestor(t))
                 {
                     processed++;
                     if (tic.addPrereqsFromContext())
@@ -618,6 +618,20 @@ public final class GoalPanel extends JPanel implements Refreshable
                     "Add pre-reqs",
                     JOptionPane.WARNING_MESSAGE);
         }
+    }
+
+    private boolean hasQuestAncestor(Task task)
+    {
+        Task parent = TaskHierarchyUtils.getParent(goal.getTasks(), task);
+        while (parent != null)
+        {
+            if (parent instanceof QuestTask)
+            {
+                return true;
+            }
+            parent = TaskHierarchyUtils.getParent(goal.getTasks(), parent);
+        }
+        return false;
     }
 
     private void refreshAfterPrerequisitesAdded()
