@@ -49,27 +49,5 @@ Put images beside the logs in a folder for that changelog version. For version `
 Images keep their aspect ratio and shrink to fit the panel. `{width=320px}` requests a display width and can enlarge small images; it is always clamped to the available panel width. Tables are not supported because they cannot be displayed reliably in the narrow panel; use lists or short paragraphs instead. List indentation is capped to keep deep nesting readable. Remote images aren't loaded. Preview image sizing in RuneLite.
 
 ## Changelog Template
+See [changelogs/template-changelogs.md](template-changelogs.md) for the template
 
-Hi everyone, we've got another great update for you today!
-
-[1-3 line summary of the update]
-
----
-
-## New Features
-- **[Title]**: [1-2 sentence description]
-
-## Quality of Life
-- **[Title]**: [1-2 sentence description]
-
-## Bug Fixes
-- **[Title]**: [1-2 sentence description]
-
-## Documentation
-- **[Title]**: [1-2 sentence description]
-
-## Developer Improvements
-- **[Title]**: [1-2 sentence description]
-
----
-That's all for now, thanks for using the Goal Tracker plugin!
