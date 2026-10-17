@@ -144,8 +144,10 @@ body {
   padding: 20px;
   border-radius: 6px;
   border: 1px solid #2d2d2d;
+  text-align: center; // Centers the text and image inside the card
 
   p {
+    text-align: left; // Keeps description text left-aligned
     margin-top: 0;
     margin-bottom: 15px;
     color: #ccc;
@@ -153,7 +155,9 @@ body {
 
   img {
     display: block;
-    max-width: 100%; // Ensures responsiveness on mobile windows
+    margin: 0 auto; // Centers the image horizontally
+    max-width: 280px; // Matches the actual approximate width of a RuneLite sidebar panel
+    width: 100%;      // Ensures it scales down perfectly on mobile screens
     height: auto;
   }
 }
