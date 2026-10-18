@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{{ page.title | default: "Goal Tracker" }}</title>
+        <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/style.css">
+    </head>
+
+    <!-- Pulls in the reusable header snippet -->
+    {% include header.html %}
+
+    <body>
+        <main class="container">
+            {{ content }}
+        </main>
+
+        <footer class="site-footer">
+            <div class="container">
+                <p>Goal Tracker is an open-source project. Contributions and pull requests are always welcome.</p>
+            </div>
+        </footer>
+    </body>
+</html>

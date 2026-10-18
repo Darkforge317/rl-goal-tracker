@@ -1,0 +1,16 @@
+# Site settings
+title: "Goal Tracker - RuneLite Plugin"
+email: ""
+description: "Documentation and guide for the Goal Tracker RuneLite plugin."
+
+# GitHub Pages Configuration
+baseurl: "/rl-goal-tracker"
+url: "https://Darkforge317.github.io"
+github_username: Darkforge317
+
+# Build settings
+markdown: kramdown
+theme: jekyll-theme-midnight
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag

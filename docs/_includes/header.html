@@ -1,0 +1,40 @@
+<header class="site-header">
+    <div class="container header-container">
+        <a href="{{ site.baseurl }}/" class="logo-wrapper">
+            <img src="{{ site.baseurl }}/assets/images/logo.png" class="plugin-logo">
+        </a>
+
+        <nav class="site-nav">
+            <ul class="nav-menu">
+                <!-- Data attributes help our JS script target links easily -->
+                <li><a href="{{ site.baseurl }}/" class="nav-item" data-path="/">Home</a></li>
+                <li><a href="{{ site.baseurl }}/guides/" class="nav-item" data-path="/guides/">User Guides</a></li>
+                <li><a href="{{ site.baseurl }}/developer/" class="nav-item" data-path="/developer/">Developer Docs</a></li>
+                <li><a href="https://github.com/Darkforge317/rl-goal-tracker" class="nav-item" target="_blank">GitHub</a></li>
+                <li><a href="https://github.com/Darkforge317/rl-goal-tracker/issues" target="_blank">Report an Issue</a></li>
+            </ul>
+        </nav>
+    </div>
+
+
+    <!-- Handle the active nav state -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const currentPath = window.location.pathname;
+            const navItems = document.querySelectorAll('.nav-menu .nav-item[data-path]');
+
+            navItems.forEach(navItem => {
+                const currentNavDataPath = navItem.getAttribute('data-path');
+
+                // Currently on Home page
+                if (currentNavDataPath === '/' && currentPath === '/rl-goal-tracker/') {
+                    navItem.classList.add('active');
+                }
+                // Currently on this nav item
+                else if (currentNavDataPath !== '/' && currentPath.includes(currentNavDataPath)) {
+                    navItem.classList.add('active');
+                }
+            });
+        });
+    </script>
+</header>

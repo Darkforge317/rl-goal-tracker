@@ -1,0 +1,16 @@
+source "https://rubygems.org"
+
+gem "jekyll", "~> 3.9"
+gem "jekyll-theme-midnight"
+
+# Standard library gems required for Ruby 3.4+ / Ruby 4.0
+gem "base64"
+gem "bigdecimal"
+gem "csv"
+gem "rexml"
+gem "webrick"
+
+group :jekyll_plugins do
+  gem "jekyll-feed"
+  gem "jekyll-seo-tag"
+end
