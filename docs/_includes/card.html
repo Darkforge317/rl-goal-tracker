@@ -1,0 +1,17 @@
+{% assign is_external = false %}
+{% if include.href contains 'http://' or include.href contains 'https://' %}
+{% assign is_external = true %}
+{% endif %}
+
+{% assign href = include.href %}
+{% unless is_external %}
+{% assign href = site.baseurl | append: include.href %}
+{% endunless %}
+
+<a href="{{ href }}" class="card-container"{% if is_external %} target="_blank" rel="noopener noreferrer"{% endif %}>
+    <div class="card-icon">
+        {{ site.data.icons[include.icon] | default: site.data.icons["default"] }}
+    </div>
+    <h3 class="card-title">{{ include.title }}</h3>
+    <p class="card-description">{{ include.description }}</p>
+</a>

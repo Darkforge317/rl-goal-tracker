@@ -1,0 +1,22 @@
+<nav class="breadcrumb-nav" aria-label="Breadcrumb">
+    <a href="{{ site.baseurl }}/">Home</a>
+
+    {% assign path_without_base = page.url | remove_first: site.baseurl %}
+    {% assign raw_parts = path_without_base | split: '/' %}
+    {% assign current_path = site.baseurl %}
+
+    {% for part in raw_parts %}
+    {% if part != '' and part != nil %}
+    {% unless part contains '.' %}
+    {% assign current_path = current_path | append: '/' | append: part %}
+    <span class="breadcrumb-separator">&gt;</span>
+    <a href="{{ current_path }}/">{{ part | replace: '-', ' ' | capitalize }}</a>
+    {% endunless %}
+    {% endif %}
+    {% endfor %}
+
+    {% if path_without_base != '/' and path_without_base != '' %}
+    <span class="breadcrumb-separator">&gt;</span>
+    <span class="breadcrumb-current">{{ page.title }}</span>
+    {% endif %}
+</nav>

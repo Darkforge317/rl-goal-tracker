@@ -1,7 +1,10 @@
 ---
 layout: default
 title: Guides - Goal Tracker
+show_coming_soon_page: true
 ---
+
+{% if page.show_coming_soon_page %}
 
 <section class="content-section">
     <h2>User Guides</h2>
@@ -9,4 +12,9 @@ title: Guides - Goal Tracker
 
     <div class="coming-soon-container">
         <img src="{{site.baseurl}}/assets/images/coming-soon.png" class="coming-soon-logo" alt="Page content coming soon">
-    </div></section>
+    </div>
+</section>
+
+{% else %}
+
+{% endif %}

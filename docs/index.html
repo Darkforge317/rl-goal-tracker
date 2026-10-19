@@ -5,94 +5,39 @@ title: Goal Tracker Documentation
 
 <!-- Features Section -->
 <section class="content-section">
-    <h2>Plugin Features</h2>
+    <h2>Welcome to the Goal Tracker plugin's documentation!</h2>
+    <p>Thanks for being here. The plugin is meant to be intuitive and not require much thought, but we're completely open to feedback if that's not the case!</p>
+    <p>If you have some feedback, please <a href="https://github.com/Darkforge317/rl-goal-tracker/issues">let us know!</a></p>
+    <p>On that note, ready to learn?</p>
 
-    <div class="features-grid">
-        <!-- Card 1 -->
-        <a href="/rl-goal-tracker/guides/presets/" class="feature-card">
-            <div class="card-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>
-            </div>
-            <h3 class="card-title">Preset Goal Lists</h3>
-            <p class="card-description">Quick setup of common goals with built-in presets for Barrows gear, Void armor, and Ironman progression.</p>
-        </a>
+    <div class="home-grid">
+        {% include card.html
+            href="/guides/"
+            title="Guides"
+            description="Learn how to use all of the features available in the plugin here."
+            icon="book"
+        %}
 
-        <!-- Card 2 -->
-        <a href="" class="feature-card">
-            <div class="card-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>
-            </div>
-            <h3 class="card-title">Pin Important Goals</h3>
-            <p class="card-description">Keep your top priorities easily accessible by pinning crucial goals directly to the top of your Home panel.</p>
-        </a>
+        {% include card.html
+        href="/developer/"
+        title="Developer Docs"
+        description="Want to contribute to the repo and don't know where to start? Start here!"
+        icon="computer"
+        %}
 
-        <!-- Card 3 -->
-        <a href="" class="feature-card">
-            <div class="card-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
-            </div>
-            <h3 class="card-title">Automatic Prerequisites</h3>
-            <p class="card-description">Automatically add all required prerequisite tasks and sub-quests for your quests in a single click.</p>
-        </a>
+        {% include card.html
+        href="https://runelite.net/plugin-hub/show/goal-tracker"
+        title="View the Plugin"
+        description="Start tracking all your goals today!"
+        icon="puzzle"
+        %}
 
-        <!-- Card 4 -->
-        <a href="" class="feature-card">
-            <div class="card-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-            </div>
-            <h3 class="card-title">Visual Progress Bars</h3>
-            <p class="card-description">Track your real-time progress toward completion with clean, visual progress indicators for each goal.</p>
-        </a>
-
-        <!-- Card 5 -->
-        <a href="" class="feature-card">
-            <div class="card-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            </div>
-            <h3 class="card-title">JSON Import & Export</h3>
-            <p class="card-description">Seamlessly transfer your goal configurations between accounts, export backups, or share setups with friends.</p>
-        </a>
-
-        <!-- Card 6 -->
-        <a href="" class="feature-card">
-            <div class="card-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            </div>
-            <h3 class="card-title">Custom Goals & Tasks</h3>
-            <p class="card-description">Create personalized goals with custom task lists, right-click menu management, and item searching capabilities.</p>
-        </a>
-    </div>
-</section>
-
-<hr class="section-divider">
-
-<!-- Screenshots Section -->
-<section class="content-section screenshots-section">
-    <h2>Screenshots</h2>
-
-    <div class="screenshot-item">
-        <p><strong>Home panel with goal cards</strong> — shows progress bars, presets, and export/import buttons.</p>
-        <img src="https://raw.githubusercontent.com/darkforge317/rl-goal-tracker/main/img/home_panel_new.jpg" alt="Home panel screenshot showing goal cards" style="border:1px solid #000; box-shadow: 2px 2px 6px rgba(0,0,0,0.3); border-radius:4px;" />
-    </div>
-
-    <div class="screenshot-item">
-        <p><strong>Inside a goal with task list</strong> — displays quest prerequisites, right-click task options, item search, and a quest selector.</p>
-        <img src="https://raw.githubusercontent.com/darkforge317/rl-goal-tracker/main/img/goal_view.png" alt="Goal task panel screenshot with tasks list" style="border:1px solid #000; box-shadow: 2px 2px 6px rgba(0,0,0,0.3); border-radius:4px;" />
-    </div>
-
-    <div class="screenshot-item">
-        <p><strong>Add quest prerequisites</strong> — add all prerequisite tasks for your quests in a single click. </p>
-        <img src="https://raw.githubusercontent.com/darkforge317/rl-goal-tracker/main/img/add_prereqs.gif" alt="Animated image of prerequisite tasks being automatically added to the Song of the Elves quest" style="border:1px solid #000; box-shadow: 2px 2px 6px rgba(0,0,0,0.3); border-radius:4px;" />
-    </div>
-
-    <div class="screenshot-item">
-        <p><strong>Right‑click menu on a goal card</strong> — options to move, pin, set parent/child relationships, mark complete, or delete.</p>
-        <img src="https://raw.githubusercontent.com/darkforge317/rl-goal-tracker/main/img/right_click_goals.jpg" alt="Right-click menu screenshot on Home panel goal card" style="border:1px solid #000; box-shadow: 2px 2px 6px rgba(0,0,0,0.3); border-radius:4px;" />
-    </div>
-
-    <div class="screenshot-item">
-        <p><strong>Add from preset</strong> — includes built-in options for Barrows gear, Void armor, and Ironman progression.</p>
-        <img src="https://raw.githubusercontent.com/darkforge317/rl-goal-tracker/main/img/add_from_preset.jpg" alt="Add from preset screenshot with preset options" style="border:1px solid #000; box-shadow: 2px 2px 6px rgba(0,0,0,0.3); border-radius:4px;" />
+        {% include card.html
+        href="https://github.com/Darkforge317/rl-goal-tracker/"
+        title="View Repository"
+        description="Ready to contribute, or just want a peak at the code? Click here!"
+        icon="github"
+        %}
     </div>
 </section>
 

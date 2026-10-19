@@ -1,13 +1,29 @@
 ---
 layout: default
 title: Dev Docs - Goal Tracker
+show_coming_soon_page: false
 ---
+
+{% if page.show_coming_soon_page %}
 
 <section class="content-section">
     <h2>Developer Docs</h2>
-    <p>Developer documentation coming soon!<p>
+    <p>Developer documentation coming soon!</p>
 
     <div class="coming-soon-container">
-        <img src="{{site.baseurl}}/assets/images/coming-soon.png" class="coming-soon-logo" alt="Page content coming soon">
+        <img src="{{ site.baseurl }}/assets/images/coming-soon.png" class="coming-soon-logo" alt="Page content coming soon">
     </div>
 </section>
+
+{% else %}
+
+<section class="content-section">
+    <h2>Developer Docs</h2>
+    <p>Welcome to the Goal Tracker developer documentation!</p>
+
+    <!-- Write and preview your active documentation here -->
+    <h3>Plugin Architecture</h3>
+    <p>Details about the RuneLite event bus and swing overlays...</p>
+</section>
+
+{% endif %}
