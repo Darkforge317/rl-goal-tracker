@@ -1,20 +1,30 @@
 ---
 layout: default
-title: Guides - Goal Tracker
+title: Guides
 show_coming_soon_page: true
 ---
-
-{% if page.show_coming_soon_page %}
-
 <section class="content-section">
-    <h2>User Guides</h2>
-    <p>Documentation and walkthroughs for Goal Tracker coming soon.</p>
+    <h2>Guides</h2>
+    <p>Choose a guide to get started. Detailed content is coming soon.</p>
 
-    <div class="coming-soon-container">
-        <img src="{{site.baseurl}}/assets/images/coming-soon.png" class="coming-soon-logo" alt="Page content coming soon">
+    <div class="home-grid">
+        {% include card.html
+            href="/guides/goals/"
+            title="Goals"
+            description="Create, import, and organize goals."
+            icon="preset"
+        %}
+        {% include card.html
+            href="/guides/tasks/"
+            title="Tasks"
+            description="Learn about task types, progress, and organization."
+            icon="progress"
+        %}
+        {% include card.html
+            href="/guides/settings.html"
+            title="Settings"
+            description="Learn about plugin settings."
+            icon="custom"
+        %}
     </div>
 </section>
-
-{% else %}
-
-{% endif %}

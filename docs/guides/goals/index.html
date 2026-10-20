@@ -1,0 +1,36 @@
+---
+layout: default
+title: Goal Guides - Goal Tracker
+show_coming_soon_page: true
+---
+<section class="content-section">
+    <h2>Goal Guides</h2>
+    <p>Choose a guide to get started. Detailed content is coming soon.</p>
+
+    <div class="home-grid">
+        {% include card.html
+            href="/guides/goals/adding-goals.html"
+            title="Adding Goals"
+            description="Create and name goals."
+            icon="preset"
+        %}
+        {% include card.html
+            href="/guides/goals/goal-presets.html"
+            title="Goal Presets"
+            description="Use and create preset goals."
+            icon="preset"
+        %}
+        {% include card.html
+            href="/guides/goals/importing-and-exporting-goals.html"
+            title="Importing and Exporting Goals"
+            description="Move goal data using JSON files."
+            icon="import-export"
+        %}
+        {% include card.html
+            href="/guides/goals/organizing-goals.html"
+            title="Organizing Goals"
+            description="Reorder, pin, rename, and delete goals."
+            icon="custom"
+        %}
+    </div>
+</section>

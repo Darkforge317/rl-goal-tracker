@@ -1,0 +1,54 @@
+---
+layout: default
+title: Task Guides - Goal Tracker
+show_coming_soon_page: true
+---
+<section class="content-section">
+    <h2>Task Guides</h2>
+    <p>Choose a guide to get started. Detailed content is coming soon.</p>
+
+    <div class="home-grid">
+        {% include card.html
+            href="/guides/tasks/task-types.html"
+            title="Task Types"
+            description="Explore supported task types and progress tracking."
+            icon="progress"
+        %}
+        {% include card.html
+            href="/guides/tasks/adding-tasks.html"
+            title="Adding Tasks"
+            description="Add tasks manually or from prerequisites."
+            icon="custom"
+        %}
+        {% include card.html
+            href="/guides/tasks/editing-tasks.html"
+            title="Editing Tasks"
+            description="Change task details."
+            icon="custom"
+        %}
+        {% include card.html
+            href="/guides/tasks/deleting-tasks.html"
+            title="Deleting Tasks"
+            description="Remove tasks and their descendants."
+            icon="custom"
+        %}
+        {% include card.html
+            href="/guides/tasks/undoing-and-redoing-task-changes.html"
+            title="Undoing and Redoing Task Changes"
+            description="Review task changes and restore earlier states."
+            icon="custom"
+        %}
+        {% include card.html
+            href="/guides/tasks/organizing-tasks.html"
+            title="Organizing Tasks"
+            description="Arrange tasks and manage parent-child relationships."
+            icon="custom"
+        %}
+        {% include card.html
+            href="/guides/tasks/task-completion-and-progress.html"
+            title="Task Completion and Progress"
+            description="Understand automatic and manual completion."
+            icon="progress"
+        %}
+    </div>
+</section>

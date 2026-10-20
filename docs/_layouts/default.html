@@ -12,7 +12,13 @@
 
     <body>
         <main class="container">
-            {{ content }}
+            {% include breadcrumbs.html %}
+
+            {% if page.show_coming_soon_page %}
+                {% include coming-soon.html %}
+            {% else %}
+                {{ content }}
+            {% endif %}
         </main>
 
         <footer class="site-footer">
