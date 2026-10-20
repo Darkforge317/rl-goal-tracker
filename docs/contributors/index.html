@@ -1,0 +1,105 @@
+---
+layout: default
+title: Contributors
+show_coming_soon_page: false
+---
+<section class="content-section contributor-intro-section">
+    <div class="contributor-intro-container">
+        <h1>Contributors</h1>
+        <p>We’re extremely grateful to everyone who has helped shape and improve Goal Tracker. Click a contributor’s profile to explore their work.</p>
+        <p><b>Interested in joining them?</b> You can <a href="https://github.com/Darkforge317/rl-goal-tracker" target="_blank">start contributing here</a>.</p>
+        <p><b>Intimidated by the thought?</b> We've all been there! I encourage you read through our <a href="{{ site.baseurl }}/developer/">Developer Docs</a> and lean on AI Agents for help!</p>
+    </div>
+    <img src="{{ site.baseurl }}/assets/images/thank-you.png" class="contributor-thank-you" alt="Thank you to Goal Tracker contributors">
+</section>
+
+<section class="content-section">
+    <h2>Plugin Owners</h2>
+    <div class="two-column-grid">
+        {% include contributor-card.html
+            name="Darkforge317"
+            username="Darkforge317"
+            type="Owner"
+            repository="Darkforge317/rl-goal-tracker"
+            avatar="/assets/images/contributors/Darkforge317.png"
+            description="Added Parent/Child task relationships, Shift+Click deletions, Combat Level and Quest Point tasks, item inventory caching, and changelogs. Also expanded the quest prerequisite data and created the plugin documentation."
+            badge="(CURRENT)"
+        %}
+        {% include contributor-card.html
+            name="Toofifty"
+            username="Toofifty"
+            type="Owner"
+            repository="Toofifty/rl-goal-tracker"
+            avatar="/assets/images/contributors/Toofifty.png"
+            description="Created and maintained the original plugin, including item tasks and live progress checks. Refactored task validation into services and established the early task, UI, and persistence structure that later contributors built on."
+        %}
+    </div>
+</section>
+
+<section class="content-section">
+    <h2>Darkforge317's Repository</h2>
+    <div class="two-column-grid">
+        {% include contributor-card.html
+            name="TannerR1776"
+            username="TannerR1776"
+            type="Contributor"
+            repository="Darkforge317/rl-goal-tracker"
+            avatar="/assets/images/contributors/TannerR1776.jpg"
+            description="Fixed item double-counting, improved skill and item task creation, and added editing for existing tasks while preserving task order and state."
+        %}
+        {% include contributor-card.html
+            name="MariaBiza"
+            username="MariaBiza"
+            type="Contributor"
+            repository="Darkforge317/rl-goal-tracker"
+            avatar="/assets/images/contributors/MariaBiza.jpg"
+            description="Replaced deprecated InventoryID and ItemID enums with supported game-value constants."
+        %}
+    </div>
+</section>
+
+<section class="content-section">
+    <h2>Toofifty's Repository</h2>
+    <div class="two-column-grid">
+        {% include contributor-card.html
+            name="AhDoozy"
+            username="AhDoozy"
+            type="Contributor"
+            repository="Toofifty/rl-goal-tracker"
+            avatar="/assets/images/contributors/AhDoozy.png"
+            description="Led a major plugin rebuild with quest prerequisites, presets, import/export, and task-management improvements. Also removed reflection from task completion handling and dropped an unused dependency."
+        %}
+        {% include contributor-card.html
+            name="boolemancer"
+            username="boolemancer"
+            type="Contributor"
+            repository="Toofifty/rl-goal-tracker"
+            avatar="/assets/images/contributors/boolemancer.png"
+            description="Added drag-and-drop task reordering using RuneLite’s reorder pane, making it easier to move tasks within a goal."
+        %}
+        {% include contributor-card.html
+            name="cecilia-sanare"
+            username="cecilia-sanare"
+            type="Contributor"
+            repository="Toofifty/rl-goal-tracker"
+            avatar="/assets/images/contributors/cecilia-sanare.jpg"
+            description="Reworked persistence with Gson and builders, added tests and CI, improved task indentation, and fixed task refresh and removal behavior."
+        %}
+        {% include contributor-card.html
+            name="jacobboertjes"
+            username="jacobboertjes"
+            type="Contributor"
+            repository="Toofifty/rl-goal-tracker"
+            avatar="/assets/images/contributors/jacobboertjes.png"
+            description="Added support for indenting tasks up to three levels and unindenting them."
+        %}
+        {% include contributor-card.html
+            name="mads-jm"
+            username="mads-jm"
+            type="Contributor"
+            repository="Toofifty/rl-goal-tracker"
+            avatar="/assets/images/contributors/mads-jm.jpg"
+            description="Fixed compatibility with current RuneLite APIs by removing unavailable quest enum references and addressed existing test failures."
+        %}
+    </div>
+</section>

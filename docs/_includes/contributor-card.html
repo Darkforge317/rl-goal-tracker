@@ -1,0 +1,29 @@
+{% if include.username and include.repository %}
+    {% if include.type == "Owner" %}
+        {% capture contribution_url %}https://github.com/{{ include.repository }}/commits?author={{ include.username }}{% endcapture %}
+    {% else %}
+        {% capture contribution_url %}https://github.com/{{ include.repository }}/pulls?q=is%3Apr+author%3A{{ include.username }}{% endcapture %}
+    {% endif %}
+    <a href="{{ contribution_url }}" class="card-container" target="_blank" rel="noopener noreferrer">
+{% else %}
+    <div class="card-container contributor-card-placeholder">
+{% endif %}
+        <div class="card-icon">
+            {% if include.avatar %}
+            <img src="{{ site.baseurl }}{{ include.avatar }}" class="contributor-avatar" alt="{{ include.name }} GitHub profile">
+            {% else %}
+            {{ site.data.icons.github }}
+            {% endif %}
+        </div>
+        <div class="contributor-card-heading">
+            <h3 class="card-title">{{ include.name | default: "Contributor Name" }}</h3>
+            {% if include.badge %}
+            <span class="contributor-badge">{{ include.badge }}</span>
+            {% endif %}
+        </div>
+        <p class="card-description">{{ include.description | default: "Contributor profile placeholder." }}</p>
+{% if include.username and include.repository %}
+    </a>
+{% else %}
+    </div>
+{% endif %}
