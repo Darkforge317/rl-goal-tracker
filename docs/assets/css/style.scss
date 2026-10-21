@@ -136,13 +136,9 @@ height: 60px;
 
 .content-section {
   h2 {
-    color: #fff;
+    color: var(--runelite-orange);
     font-size: 1.5rem;
     margin-bottom: 20px;
-  }
-
-  h3 {
-    color: var(--runelite-orange);
   }
 }
 
