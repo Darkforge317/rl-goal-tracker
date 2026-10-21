@@ -8,38 +8,67 @@ show_coming_soon_page: false
     <p>This page explains the names used for the plugin’s screens and the relationships between tasks.</p>
 
     <h2>Plugin Screens</h2>
-    <dl>
-        <dt><strong>Home Panel</strong></dt>
-        <dd>The main Goal Tracker view that lists your goals. Use it to create or open goals, add presets, and organize the goal list.</dd>
+    <h3>Home Panel</h3>
+    <p>The main Goal Tracker view that lists your goals. Use it to create or open goals, add presets, and organize the goal list.</p>
+    <figure class="guide-image">
+        <img src="{{ site.baseurl }}/assets/images/screenshots/home-panel.png" alt="Goal Tracker Home Panel showing the goal list and home actions">
+        <figcaption>The Home Panel lists your goals and provides controls for creating, importing, exporting, and organizing them.</figcaption>
+    </figure>
 
-        <dt><strong>Goal Panel</strong></dt>
-        <dd>The view for one goal. It shows that goal’s tasks and controls for adding, editing, and organizing them. Use <strong>Back</strong> to return to the Home Panel.</dd>
-    </dl>
+    <h3>Goal Panel</h3>
+    <p>The view for one goal. It shows that goal’s tasks and controls for adding, editing, and organizing them. Use <strong>Back</strong> to return to the Home Panel.</p>
+    <figure class="guide-image">
+        <img src="{{ site.baseurl }}/assets/images/screenshots/goal-panel.png" alt="Goal Panel displaying the tasks in a goal">
+        <figcaption>The Goal Panel displays and manages the tasks in one selected goal.</figcaption>
+    </figure>
 
     <h2>Goals and Tasks</h2>
-    <dl>
-        <dt><strong>Goal</strong></dt>
-        <dd>A named collection of related tasks. A goal appears as one entry on the Home Panel.</dd>
+    <h3>Goal</h3>
+    <p>A named collection of related tasks. A goal appears as one entry on the Home Panel.</p>
 
-        <dt><strong>Task</strong></dt>
-        <dd>An individual objective within a goal, such as reaching a skill level, completing a quest, collecting items, or checking off a custom objective.</dd>
-    </dl>
+    <h3>Task</h3>
+    <p>An individual objective within a goal, such as reaching a skill level, completing a quest, collecting items, or checking off a custom objective.</p>
 
     <h2>Task Relationships</h2>
-    <dl>
-        <dt><strong>Parent</strong></dt>
-        <dd>A task that has one or more tasks nested beneath it.</dd>
+    <h3>Parent</h3>
+    <p>A task that has one or more tasks nested beneath it.</p>
+    <figure class="guide-image">
+        <img src="{{ site.baseurl }}/assets/images/screenshots/parent-children-a.png" alt="Parent A with its child tasks highlighted">
+        <figcaption>Dragon Slayer II is shown as Parent A, with its child tasks grouped beneath it.</figcaption>
+    </figure>
+    <figure class="guide-image">
+        <img src="{{ site.baseurl }}/assets/images/screenshots/parent-children-b.png" alt="Parent B with its child tasks highlighted">
+        <figcaption>Dream Mentor is another parent task, with its own separate child tasks.</figcaption>
+    </figure>
 
-        <dt><strong>Child</strong></dt>
-        <dd>A task nested beneath a parent task. Its indentation shows the relationship.</dd>
+    <h3>Child</h3>
+    <p>A task nested beneath a parent task. Its indentation shows the relationship.</p>
+    <figure class="guide-image">
+        <img src="{{ site.baseurl }}/assets/images/screenshots/parents-and-children.png" alt="Goal task list showing parent tasks and their indented children">
+        <figcaption>Indented tasks are children of the nearest parent above them in the hierarchy.</figcaption>
+    </figure>
 
-        <dt><strong>Sibling</strong></dt>
-        <dd>Two or more tasks that share the same parent. Root tasks can also be siblings when they appear at the same level in the goal.</dd>
+    <h3>Sibling</h3>
+    <p>Two or more tasks that share the same parent. Root tasks can also be siblings when they appear at the same level in the goal.</p>
+    <figure class="guide-image">
+        <img src="{{ site.baseurl }}/assets/images/screenshots/siblings.png" alt="Several tasks at the same indentation level highlighted as siblings">
+        <figcaption>Highlighted tasks are siblings because they share the same parent.</figcaption>
+    </figure>
 
-        <dt><strong>Ancestor and descendant</strong></dt>
-        <dd>An ancestor is a parent anywhere above a task in a nested branch. A descendant is a child or deeper nested task below it. For example, a task can be a grandchild of its grandparent task.</dd>
+    <h3>Ancestor</h3>
+    <p>A parent anywhere above a task in a nested branch. A task’s parent, grandparent, and any higher parent are its ancestors.</p>
+    <figure class="guide-image">
+        <img src="{{ site.baseurl }}/assets/images/screenshots/ancestors.png" alt="Parent task highlighted as an ancestor of its nested tasks">
+        <figcaption>The highlighted task is an ancestor of all the tasks nested beneath it, including grandchildren and deeper descendants.</figcaption>
+    </figure>
 
-        <dt><strong>Root task</strong></dt>
-        <dd>A task in a goal that has no parent.</dd>
-    </dl>
+    <h3>Descendant</h3>
+    <p>A child or deeper nested task below an ancestor in the hierarchy.</p>
+    <figure class="guide-image">
+        <img src="{{ site.baseurl }}/assets/images/screenshots/descendants.png" alt="Nested tasks highlighted as descendants of a parent task">
+        <figcaption>Every highlighted task is a descendant of the selected parent task.</figcaption>
+    </figure>
+
+    <h3>Root task</h3>
+    <p>A task in a goal that has no parent.</p>
 </section>
