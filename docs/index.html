@@ -43,14 +43,28 @@ show_coming_soon_page: false
         href="/contributors/"
         title="Contributors"
         description="Meet the people who have helped build and maintain Goal Tracker."
-        icon="github"
+        icon="prerequisites"
         %}
 
         {% include card.html
-        href="https://github.com/Darkforge317/rl-goal-tracker/issues/new/choose"
-        title="Submit a Bug Report or Feature Request"
-        description="Report a problem or suggest an improvement for the plugin."
-        icon="click"
+        href="https://github.com/Darkforge317/rl-goal-tracker/issues/new?template=3-bug.yml"
+        title="Report a Bug"
+        description="Tell us about a problem you found in the plugin."
+        icon="beetle"
+        %}
+
+        {% include card.html
+        href="https://github.com/Darkforge317/rl-goal-tracker/issues/new?template=1-feature.yml"
+        title="Request a Feature"
+        description="Suggest a new capability for Goal Tracker."
+        icon="lightbulb"
+        %}
+
+        {% include card.html
+        href="https://github.com/Darkforge317/rl-goal-tracker/issues/new?template=2-quality-of-life.yml"
+        title="Suggest a Quality of Life Improvement"
+        description="Share an idea to make the plugin easier or nicer to use."
+        icon="sun-smile"
         %}
     </div>
 </section>

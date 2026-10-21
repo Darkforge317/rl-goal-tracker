@@ -37,6 +37,8 @@
 
 ## GitHub Issue Completion
 
+- When creating a GitHub issue, apply the matching repository label: `Unconfirmed Bug` for an unverified bug report, `Confirmed Bug` only after confirming the issue, `Feature` for a new feature request, `QoL` for a quality-of-life suggestion, and `Dev Todo List` for an out-of-scope non-bug task.
+- Use other labels such as `Documentation`, `High Priority`, or dependency labels when they accurately apply. Do not mark a bug confirmed until it has been reproduced or otherwise verified.
 - After merging a PR that resolves GitHub issue(s), add the `Next Release` label to each related issue.
 - Add a short comment to each issue summarizing the resolution and linking the merged PR, then close the issue if it is not already closed automatically.
 
