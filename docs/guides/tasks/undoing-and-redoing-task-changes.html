@@ -1,9 +1,22 @@
 ---
 layout: default
-title: Undoing and Redoing Task Changes - Goal Tracker
-show_coming_soon_page: true
+title: Undo and Redo
+show_coming_soon_page: false
 ---
 <section class="content-section">
-    <h2>Undoing and Redoing Task Changes</h2>
-    <!-- Add the guide content here. -->
+    <h1>Undoing and Redoing Task Changes</h1>
+    <p>The goal view’s <strong>Undo</strong> and <strong>Redo</strong> buttons track supported task-list actions while that goal is open. The buttons are disabled when there is no action to undo or redo.</p>
+
+    <h2>Supported Actions</h2>
+    <ul>
+        <li>Remove a task and its descendants.</li>
+        <li>Change a task’s parent or remove its parent.</li>
+        <li>Reorder tasks using drag and drop or the <strong>Move</strong> context-menu options.</li>
+        <li>Manually mark a task and its descendants complete or incomplete.</li>
+        <li>Add a child task using the row’s <strong>+</strong> button.</li>
+    </ul>
+
+    <h2>Use Undo or Redo</h2>
+    <p>Choose <strong>Undo</strong> to reverse the latest supported action. Choose <strong>Redo</strong> to apply it again. Making a new supported change after undo clears the redo sequence.</p>
+    <p>The current history does not include ordinary task additions from the bottom form, task target edits, or adding quest prerequisites. Those changes are saved normally but cannot be reversed with these buttons.</p>
 </section>

@@ -1,9 +1,43 @@
 ---
 layout: default
-title: Organizing Tasks - Goal Tracker
-show_coming_soon_page: true
+title: Organizing Tasks
+show_coming_soon_page: false
 ---
 <section class="content-section">
-    <h2>Organizing Tasks</h2>
-    <!-- Add the guide content here. -->
+    <h1>Organizing Tasks</h1>
+    <p>Tasks can be reordered and grouped into explicit parent/child relationships. The hierarchy is shown through indentation and can be collapsed to hide a branch.</p>
+
+    <h2>Drag and Drop</h2>
+    <p>Drag a task row to a valid insertion slot. Dragging a parent moves its entire subtree, including its descendants. A child stays within the sibling positions belonging to its current parent; it cannot be dragged out of that parent. Use <strong>Set parent</strong> when you want to change its relationship.</p>
+    <p>An unparented task cannot be dropped into the middle of another task’s child branch to become a child. Assign the parent explicitly with <strong>Set parent</strong>.</p>
+    <p>Right-click a task and use the <strong>Move</strong> menu to move it up or down, or to the top or bottom where available.</p>
+
+    <h2>Parent, Child, and Sibling Tasks</h2>
+    <p>A parent task groups one or more child tasks beneath it. Tasks with the same parent are siblings. A child may also be a parent, allowing nested requirement or project trees. Indentation reflects the relationship stored between tasks.</p>
+
+    <h3 id="assigning-a-parent">Assign a Parent to a Task</h3>
+    <ol>
+        <li>Right-click the task that should become a child.</li>
+        <li>Choose <strong>Set parent...</strong>.</li>
+        <li>Hover over a task. A green row and plus cursor indicate a valid parent; a red row and X cursor indicate an invalid target.</li>
+        <li>Click a valid task to assign it as the parent.</li>
+    </ol>
+    <p>Right-click or press Escape to cancel parent selection.</p>
+
+    <h3>Invalid Parent Relationships</h3>
+    <p>A task cannot be its own parent, its current parent, or one of its descendants. The selection is also rejected if it would exceed the supported hierarchy depth. Hover over an invalid row to see the reason.</p>
+
+    <h3>Remove Parent</h3>
+    <p>Right-click a child and choose <strong>Remove parent</strong>. The task becomes a sibling of its former parent, or a root task if the former parent had no parent. It is placed after the former parent’s full subtree, keeping the remaining children grouped together. For example, detaching C2 from B2 under A places C2 after B2’s children and before B3.</p>
+
+    <h2>Collapse and Expand</h2>
+    <p>Use the arrow beside a task with children to collapse or expand its branch. Collapsing hides descendants without removing them. The parent and its descendants still move together when dragged.</p>
+</section>
+
+<section class="content-section">
+    <h2>Related Guides</h2>
+    <ul>
+        <li><a href="{{ site.baseurl }}/guides/tasks/adding-tasks.html">Adding Tasks</a></li>
+        <li><a href="{{ site.baseurl }}/guides/tasks/undoing-and-redoing-task-changes.html">Undoing and Redoing Task Changes</a></li>
+    </ul>
 </section>

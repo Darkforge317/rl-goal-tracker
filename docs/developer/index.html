@@ -1,13 +1,45 @@
 ---
 layout: default
 title: Developer Docs
-show_coming_soon_page: true
+show_coming_soon_page: false
 ---
 
 <section class="content-section">
-    <h2>Developer Docs</h2>
-    <p>Welcome to the Goal Tracker developer documentation!</p>
+    <h1>Developer Documentation</h1>
+    <p>This guide introduces the Goal Tracker codebase and the contribution workflow. For general RuneLite development rules, follow the official <a href="https://github.com/runelite/runelite/wiki/Developer-Guide" target="_blank" rel="noopener noreferrer">RuneLite Developer Guide</a> and check the current <a href="https://github.com/runelite/runelite/wiki/Rejected-or-Rolled-Back-Features" target="_blank" rel="noopener noreferrer">Rejected or Rolled Back Features</a> page before adding RuneLite-facing behavior.</p>
 
-    <h3>Plugin Architecture</h3>
-    <p>Details about the RuneLite event bus and swing overlays...</p>
+    <h2>Get the Project Running</h2>
+    <ul>
+        <li>Use Java 11, as configured by the project’s Gradle toolchain.</li>
+        <li>Import the repository into IntelliJ IDEA, VS Code, or another Gradle-capable IDE.</li>
+        <li>Run <code>gradlew.bat test</code> on Windows or <code>./gradlew test</code> on macOS/Linux to run the unit tests.</li>
+        <li>Run <code>gradlew.bat build</code> or <code>./gradlew build</code> to compile and package the plugin.</li>
+    </ul>
+    <p>For the project’s existing RuneLite manual-launch procedure, see <a href="https://github.com/Darkforge317/rl-goal-tracker/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer">CONTRIBUTING.md</a>.</p>
+
+    <h2>How the Code Is Organized</h2>
+    <ul>
+        <li><code>GoalTrackerPlugin</code> connects RuneLite events, cached player data, persistence, and UI refreshes.</li>
+        <li><code>GoalManager</code> and <code>GoalSerializer</code> load and save goals in the player’s RuneLite configuration.</li>
+        <li><code>models</code> contains goals, task types, task hierarchy, and undo history.</li>
+        <li><code>services</code> contains focused operations such as task progress updates, changelog loading, panel navigation, and icons.</li>
+        <li><code>ui</code> contains Swing panels, task forms, task interactions, and the custom changelog renderer.</li>
+        <li><code>QuestRequirements</code> stores the prerequisite map; <code>GoalPresetRepository</code> defines the built-in presets.</li>
+        <li><code>src/test</code> contains unit tests for models, services, UI behavior, and serialization.</li>
+    </ul>
+
+    <h2>Threading and RuneLite APIs</h2>
+    <p>Read or update RuneLite client state on the client thread. Make Swing UI changes on the event dispatch thread. Keep event handlers short and avoid blocking the client thread on file or network operations.</p>
+    <p>Use supported RuneLite APIs and constants. Do not use reflection, JNI/JNA, <code>Unsafe</code>, runtime class loading or code generation, native serialization, or external process execution. Preserve compatibility with saved goal data when changing serialized models, and add tests for data-format changes.</p>
+
+    <h2>Tests and Manual Verification</h2>
+    <p>Add focused tests for changed behavior and run the relevant suite with the Gradle wrapper. Tests must not use Java reflection. When a change depends on live RuneLite state that unit tests cannot cover, document specific manual verification steps for a plugin maintainer to run in RuneLite.</p>
+
+    <h2>Pull Requests and Changelogs</h2>
+    <p>Keep pull requests focused and explain the behavior changed and how it was verified. For changelog-worthy work, add an entry to the next-release changelog in the same pull request. The <a href="https://github.com/Darkforge317/rl-goal-tracker/blob/main/src/main/resources/changelogs/README-changelogs.md" target="_blank" rel="noopener noreferrer">changelog guide</a> explains the release sections and image rules. Do not bump the plugin version; the plugin owner does that when preparing a release.</p>
+    <p>The repository’s <a href="https://github.com/Darkforge317/rl-goal-tracker/blob/main/AGENTS.md" target="_blank" rel="noopener noreferrer">AGENTS.md</a> has additional contributor and repository guidance.</p>
+
+    <h2>Working on This Documentation</h2>
+    <p>The site is built from HTML pages in <code>docs/</code> using Jekyll and the shared layout in <code>docs/_layouts/default.html</code>. Keep the YAML frontmatter on every page, including <code>show_coming_soon_page</code>. Set the flag to <code>false</code> to display the page body or <code>true</code> to show the shared Coming Soon section instead. This lets a page be hidden without removing its content.</p>
+    <p>To build the site locally, open a terminal in <code>docs/</code>, install the bundled gems with <code>bundle install</code> if needed, then run <code>bundle exec jekyll build</code>. The generated site is written to <code>docs/_site/</code>.</p>
 </section>

@@ -1,9 +1,45 @@
 ---
 layout: default
-title: Adding Tasks - Goal Tracker
-show_coming_soon_page: true
+title: Adding Tasks
+show_coming_soon_page: false
 ---
 <section class="content-section">
-    <h2>Adding Tasks</h2>
-    <!-- Add the guide content here. -->
+    <h1>Adding Tasks</h1>
+    <p>Open a goal to add tasks to it. New tasks are checked against supported RuneLite data so existing progress can be reflected right away.</p>
+
+    <h2>Ways to Add Tasks</h2>
+    <ul>
+        <li>Use the <strong>Quick add</strong> field at the bottom of a goal to create a custom task.</li>
+        <li>Expand <strong>More options</strong> to add skill, combat-level, quest, Quest point, or item tasks.</li>
+        <li>Choose the green <strong>+</strong> beside a task to create a child task directly under it.</li>
+        <li>Use <strong>Add Quest pre-reqs</strong> at the top of the goal to add known requirements for quest tasks.</li>
+    </ul>
+
+    <h2>Custom / Quick Add</h2>
+    <p>Enter a short description in <strong>Quick add</strong> and press Enter or choose <strong>Add</strong>. Custom tasks are manual checklist items; they do not read progress from the game.</p>
+
+    <h2>Skill Tasks</h2>
+    <p>Select a skill, then enter a target using either the Level or XP field. Updating one field updates the other to its corresponding target.</p>
+    <h3>Skill Level</h3>
+    <p>Enter a level from 1 to 127, including up to two decimal places. Whole levels through 99 are level tasks. Fractional levels and virtual levels are stored as the corresponding XP target so progress can be checked precisely.</p>
+    <h3>Skill XP</h3>
+    <p>Enter an XP target from 0 to 200 million. You can use <code>k</code> or <code>m</code> suffixes with whole numbers, such as <code>125k</code> or <code>2m</code>. Decimal suffixes such as <code>1.2m</code> are not accepted. If you enter a level first, the XP value is calculated for you.</p>
+
+    <h2>Combat Level</h2>
+    <p>Enter a combat-level target from 3 to 126. The spinner changes in 0.25 steps and accepts up to two decimal places.</p>
+
+    <h2>Quest</h2>
+    <p>Choose a quest from the searchable list and select <strong>Add</strong>. To add its known requirements, use <strong>Add Quest pre-reqs</strong> after creating it, or add prerequisite tasks from its right-click menu. See <a href="{{ site.baseurl }}/guides/tasks/organizing-tasks.html#assigning-a-parent">Organizing Tasks</a> for how task relationships are displayed.</p>
+
+    <h2>Quest Points</h2>
+    <p>Enter a whole-number target from 0 to 343 and choose <strong>Add</strong>.</p>
+
+    <h2>Items</h2>
+    <h3>Search</h3>
+    <p>Choose <strong>Search...</strong> to open RuneLite’s item search. Select an item to return to the task form. When creating a child task, the Add Child window temporarily hides during item search so the RuneLite chatbox can receive input.</p>
+    <h3>Quantity</h3>
+    <p>Enter the quantity to track. The quantity must be a positive whole number; <code>k</code> and <code>m</code> suffixes are accepted. Then choose <strong>Add</strong>.</p>
+
+    <h2>Automatic Completion Checks</h2>
+    <p>When a task is added, the plugin checks task types supported by the current RuneLite state. For example, an existing skill level, completed quest, Quest point total, or cached item count can make a new task show progress or completion immediately. If the relevant data is not currently available, it will update when RuneLite reports it.</p>
 </section>

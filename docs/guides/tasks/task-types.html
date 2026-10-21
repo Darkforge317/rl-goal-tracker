@@ -1,9 +1,46 @@
 ---
 layout: default
-title: Task Types - Goal Tracker
-show_coming_soon_page: true
+title: Task Types
+show_coming_soon_page: false
 ---
 <section class="content-section">
-    <h2>Task Types</h2>
-    <!-- Add the guide content here. -->
+    <h1>Task Types</h1>
+    <p>Each task represents one milestone in a goal. Some task types read progress from RuneLite; custom tasks are manual checklist items.</p>
+    <p>To create any of these, see <a href="{{ site.baseurl }}/guides/tasks/adding-tasks.html">Adding Tasks</a>.</p>
+
+    <h2 id="skill-level">Skill Level</h2>
+    <p>Tracks a target level for a selected skill. Whole real levels complete when your real level reaches the target. Fractional or virtual level targets use an XP threshold so the task can track progress between levels or above level 99.</p>
+
+    <h2 id="skill-xp">Skill XP</h2>
+    <p>Tracks a precise XP target for a selected skill. The form can accept a level target or a direct XP amount; the two fields stay synchronized while you enter a target.</p>
+
+    <h2 id="combat-level">Combat Level</h2>
+    <p>Tracks your RuneLite combat level from 3 to 126. Targets can include up to two decimal places, letting you track progress toward the next displayed combat level. The last observed value is saved across logouts and world hops.</p>
+
+    <h2 id="quests">Quests</h2>
+    <p>Tracks a quest’s RuneLite state: not started, in progress, or completed. Add known requirements with the goal’s <strong>Add Quest pre-reqs</strong> button or the quest task’s context menu.</p>
+
+    <h2 id="quest-points">Quest Points</h2>
+    <p>Tracks a whole-number Quest point target from 0 to 343. Current Quest points are read from RuneLite and the most recent total is saved across sessions.</p>
+
+    <h2 id="items">Items</h2>
+    <p>Tracks a requested quantity of an item. Progress combines matching items across the containers tracked by the plugin. Supported equivalent variants, such as potion doses, can contribute to the same normalized item target.</p>
+
+    <h3 id="inventory-types">Tracked containers and cached quantities</h3>
+    <p>The plugin tracks items in your inventory, worn equipment, bank, Seed Vault, and supported Group Ironman storage containers. Empty placeholder slots are not counted. Counts for containers RuneLite cannot currently read use the last saved cache; opening or changing a container refreshes its cached count. Cached quantities persist across logouts and world hops.</p>
+    <p>Completed item tasks stop updating automatically. If you mark one incomplete, its saved container counts are used to show current progress, and the next container refresh can update it again.</p>
+
+    <h2 id="custom">Custom</h2>
+    <p>A custom task is a manual checklist item. Use it for milestones the plugin cannot measure directly, such as finding a partner, completing an external preparation step, or following a personal plan. Mark it complete or incomplete yourself.</p>
+
+    <h2 id="progress-and-completion">Progress and completion</h2>
+    <p>Skill, XP, combat-level, Quest point, quest, and item tasks refresh from the corresponding RuneLite data when it is available. Items and Quest points can show partial progress. Custom tasks change only when you mark them manually. You can also manually mark tracked tasks complete or incomplete; automatic data updates may change them again later.</p>
+</section>
+
+<section class="content-section">
+    <h2>Related Guides</h2>
+    <ul>
+        <li><a href="{{ site.baseurl }}/guides/tasks/adding-tasks.html">Adding Tasks</a></li>
+        <li><a href="{{ site.baseurl }}/guides/tasks/task-completion-and-progress.html">Task Completion and Progress</a></li>
+    </ul>
 </section>

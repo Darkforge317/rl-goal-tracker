@@ -1,9 +1,24 @@
 ---
 layout: default
-title: Task Completion and Progress - Goal Tracker
-show_coming_soon_page: true
+title: Task Completion and Progress
+show_coming_soon_page: false
 ---
 <section class="content-section">
-    <h2>Task Completion and Progress</h2>
-    <!-- Add the guide content here. -->
+    <h1>Task Completion and Progress</h1>
+    <p>Tracked task types update from RuneLite data when that data is available. Custom tasks are manual. Task completion can also be changed from the task’s right-click menu.</p>
+
+    <h2>Automatic Progress Updates</h2>
+    <ul>
+        <li><strong>Skill level and XP:</strong> update when the matching skill progress changes and when player data is refreshed.</li>
+        <li><strong>Combat Level:</strong> updates from the current real combat skills and retains the last observed value across logouts and world hops.</li>
+        <li><strong>Quests:</strong> use RuneLite’s quest state and can show not started, in progress, or completed.</li>
+        <li><strong>Quest Points:</strong> update from the player’s current Quest point total.</li>
+        <li><strong>Items:</strong> use cached quantities from tracked containers. Container changes refresh their counts when RuneLite exposes them.</li>
+        <li><strong>Custom:</strong> has no automatic progress source.</li>
+    </ul>
+    <p>Newly added tasks are checked against available progress. A task can therefore appear in progress or complete as soon as it is added.</p>
+
+    <h2>Manually Change Completion</h2>
+    <p>Right-click a task and choose <strong>Mark as Completed</strong> or <strong>Mark as Incomplete</strong>. For a task with descendants, the manual change applies to that task and its subtree.</p>
+    <p>Manual completion is useful for custom tasks and for overriding a tracked task temporarily. An incomplete tracked task may become complete again when RuneLite data next shows that its target is met. Completed item tasks stop updating automatically until you mark them incomplete.</p>
 </section>

@@ -1,35 +1,36 @@
 ---
 layout: default
-title: Goal Guides - Goal Tracker
-show_coming_soon_page: true
+title: Goals
+show_coming_soon_page: false
 ---
 <section class="content-section">
-    <h2>Goal Guides</h2>
-    <p>Choose a guide to get started. Detailed content is coming soon.</p>
+    <h1>Goals</h1>
+    <p>A goal is a named collection of tasks. Use this section to create a goal, start from a preset, move goal data between RuneLite profiles, and keep your home list organized.</p>
+    <p>For definitions of Home Panel, Goal Panel, and other plugin terms, see <a href="{{ site.baseurl }}/guides/terminology.html">Terminology</a>.</p>
 
     <div class="two-column-grid">
         {% include card.html
             href="/guides/goals/adding-goals.html"
             title="Adding Goals"
-            description="Create and name goals."
+            description="Create a blank goal, give it a name, and add tasks to keep it."
             icon="preset"
         %}
         {% include card.html
             href="/guides/goals/goal-presets.html"
             title="Goal Presets"
-            description="Use and create preset goals."
+            description="Start with a built-in checklist for progression, quests, travel unlocks, or gear."
             icon="preset"
         %}
         {% include card.html
             href="/guides/goals/importing-and-exporting-goals.html"
             title="Importing and Exporting Goals"
-            description="Move goal data using JSON files."
+            description="Save goals to a JSON backup, then merge them with or replace the current list."
             icon="import-export"
         %}
         {% include card.html
             href="/guides/goals/organizing-goals.html"
             title="Organizing Goals"
-            description="Reorder, pin, rename, and delete goals."
+            description="Reorder and pin goals, rename them, and remove goals you no longer need."
             icon="custom"
         %}
     </div>

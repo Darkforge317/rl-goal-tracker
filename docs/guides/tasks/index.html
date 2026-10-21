@@ -1,53 +1,54 @@
 ---
 layout: default
-title: Task Guides - Goal Tracker
-show_coming_soon_page: true
+title: Tasks
+show_coming_soon_page: false
 ---
 <section class="content-section">
-    <h2>Task Guides</h2>
-    <p>Choose a guide to get started. Detailed content is coming soon.</p>
+    <h1>Tasks</h1>
+    <p>Tasks are the individual milestones inside a goal. They can track game progress automatically, or act as a manual checklist. Choose a guide below to learn about a specific task workflow.</p>
+    <p>For definitions of parent, child, sibling, and other plugin terms, see <a href="{{ site.baseurl }}/guides/terminology.html">Terminology</a>.</p>
 
     <div class="two-column-grid">
         {% include card.html
             href="/guides/tasks/task-types.html"
             title="Task Types"
-            description="Explore supported task types and progress tracking."
+            description="Compare skill, XP, combat, quest, Quest point, item, and custom tasks."
             icon="progress"
         %}
         {% include card.html
             href="/guides/tasks/adding-tasks.html"
             title="Adding Tasks"
-            description="Add tasks manually or from prerequisites."
+            description="Add tasks from the goal form, Quick Add, a task row, or quest prerequisites."
             icon="custom"
         %}
         {% include card.html
             href="/guides/tasks/editing-tasks.html"
             title="Editing Tasks"
-            description="Change task details."
+            description="Edit supported task targets without changing a task’s place in the hierarchy."
             icon="custom"
         %}
         {% include card.html
             href="/guides/tasks/deleting-tasks.html"
             title="Deleting Tasks"
-            description="Remove tasks and their descendants."
+            description="Remove a task and its children from the goal."
             icon="custom"
         %}
         {% include card.html
             href="/guides/tasks/undoing-and-redoing-task-changes.html"
             title="Undoing and Redoing Task Changes"
-            description="Review task changes and restore earlier states."
+            description="Use the goal’s Undo and Redo controls for supported task actions."
             icon="custom"
         %}
         {% include card.html
             href="/guides/tasks/organizing-tasks.html"
             title="Organizing Tasks"
-            description="Arrange tasks and manage parent-child relationships."
+            description="Reorder tasks, collapse branches, and assign or remove parent relationships."
             icon="custom"
         %}
         {% include card.html
             href="/guides/tasks/task-completion-and-progress.html"
             title="Task Completion and Progress"
-            description="Understand automatic and manual completion."
+            description="See which tasks update automatically and how manual completion works."
             icon="progress"
         %}
     </div>

@@ -1,29 +1,35 @@
 ---
 layout: default
 title: Guides
-show_coming_soon_page: true
+show_coming_soon_page: false
 ---
 <section class="content-section">
-    <h2>Guides</h2>
-    <p>Choose a guide to get started. Detailed content is coming soon.</p>
+    <h1>User Guides</h1>
+    <p>Learn how to create goals, add and organize tasks, and tune the plugin to your preferences.</p>
 
     <div class="two-column-grid">
         {% include card.html
+            href="/guides/terminology.html"
+            title="Terminology"
+            description="Learn the names for plugin screens, goals, tasks, and parent/child relationships."
+            icon="custom"
+        %}
+        {% include card.html
             href="/guides/goals/"
             title="Goals"
-            description="Create, import, and organize goals."
+            description="Create goals, use presets, back up or import your data, and organize the home list."
             icon="preset"
         %}
         {% include card.html
             href="/guides/tasks/"
             title="Tasks"
-            description="Learn about task types, progress, and organization."
+            description="Choose task types, add and edit tasks, track progress, and build parent/child task relationships."
             icon="progress"
         %}
         {% include card.html
             href="/guides/settings.html"
             title="Settings"
-            description="Learn about plugin settings."
+            description="Adjust scrolling behavior and the goal completion message color."
             icon="custom"
         %}
     </div>
