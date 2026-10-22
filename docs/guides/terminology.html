@@ -28,47 +28,52 @@ show_coming_soon_page: false
 
     <h3>Task</h3>
     <p>An individual objective within a goal, such as reaching a skill level, completing a quest, collecting items, or checking off a custom objective.</p>
+    <figure class="guide-image">
+        <img src="{{ site.baseurl }}/assets/images/screenshots/tasks-vs-goals.png" alt="The Home Panel lists goals, while the Goal Panel displays tasks within a goal">
+        <figcaption>The Home Panel shows goals; opening a goal displays the tasks it contains.</figcaption>
+    </figure>
 
     <h2>Task Relationships</h2>
-    <h3>Parent</h3>
-    <p>A task that has one or more tasks nested beneath it.</p>
+    <h3>Parent & Child</h3>
+    <p>A Parent task has one or more tasks nested within it.</p>
+    <p>A Child task is nested within a parent task. Its indentation shows the relationship.</p>
+
     <figure class="guide-image">
         <img src="{{ site.baseurl }}/assets/images/screenshots/parent-children-a.png" alt="Parent A with its child tasks highlighted">
         <figcaption>Dragon Slayer II is shown as Parent A, with its child tasks grouped beneath it.</figcaption>
     </figure>
+
+    <p>Notice that Lunar Diplomacy, Eadgar's Ruse, and 85 Combat aren't considered children of Dragon Slayer II. They're instead considered to be children of Dream Mentor.</p>
     <figure class="guide-image">
         <img src="{{ site.baseurl }}/assets/images/screenshots/parent-children-b.png" alt="Parent B with its child tasks highlighted">
         <figcaption>Dream Mentor is another parent task, with its own separate child tasks.</figcaption>
-    </figure>
-
-    <h3>Child</h3>
-    <p>A task nested beneath a parent task. Its indentation shows the relationship.</p>
-    <figure class="guide-image">
-        <img src="{{ site.baseurl }}/assets/images/screenshots/parents-and-children.png" alt="Goal task list showing parent tasks and their indented children">
-        <figcaption>Indented tasks are children of the nearest parent above them in the hierarchy.</figcaption>
     </figure>
 
     <h3>Sibling</h3>
     <p>Two or more tasks that share the same parent. Root tasks can also be siblings when they appear at the same level in the goal.</p>
     <figure class="guide-image">
         <img src="{{ site.baseurl }}/assets/images/screenshots/siblings.png" alt="Several tasks at the same indentation level highlighted as siblings">
-        <figcaption>Highlighted tasks are siblings because they share the same parent.</figcaption>
+        <figcaption>Highlighted tasks are siblings because they share the same parent (Dragon Slayer II).</figcaption>
+    </figure>
+
+    <h3>Orphan</h3>
+    <p>A task in a goal that has no parent.</p>
+    <figure class="guide-image">
+        <img src="{{ site.baseurl }}/assets/images/screenshots/orphans.png" alt="An image showing three orphan tasks that have no parents">
+        <figcaption>These three tasks have no parents, and are therefore Orphan tasks.</figcaption>
     </figure>
 
     <h3>Ancestor</h3>
     <p>A parent anywhere above a task in a nested branch. A task’s parent, grandparent, and any higher parent are its ancestors.</p>
     <figure class="guide-image">
         <img src="{{ site.baseurl }}/assets/images/screenshots/ancestors.png" alt="Parent task highlighted as an ancestor of its nested tasks">
-        <figcaption>The highlighted task is an ancestor of all the tasks nested beneath it, including grandchildren and deeper descendants.</figcaption>
+        <figcaption>Dragon Slayer II is an ancestor to all the tasks nested beneath it, including grandchildren and deeper descendants.</figcaption>
     </figure>
 
     <h3>Descendant</h3>
     <p>A child or deeper nested task below an ancestor in the hierarchy.</p>
     <figure class="guide-image">
         <img src="{{ site.baseurl }}/assets/images/screenshots/descendants.png" alt="Nested tasks highlighted as descendants of a parent task">
-        <figcaption>Every highlighted task is a descendant of the selected parent task.</figcaption>
+        <figcaption>The highlighted tasks are descendants of Dragon Slayer II.</figcaption>
     </figure>
-
-    <h3>Root task</h3>
-    <p>A task in a goal that has no parent.</p>
 </section>
